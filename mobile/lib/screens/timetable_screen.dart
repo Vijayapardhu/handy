@@ -528,7 +528,18 @@ class _Fact extends StatelessWidget {
       children: [
         Icon(icon, size: 13, color: muted),
         const SizedBox(width: 4),
-        Text(text, style: TextStyle(fontSize: 12, color: muted)),
+        // Flexible, because faculty names run long ("SURAMPUDI NAGENDRA
+        // GANAPATHI") and an unconstrained Text inside a Wrap overflows its
+        // line rather than giving way. Truncating here is the right trade —
+        // the full name is one tap away in the class sheet.
+        Flexible(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: muted),
+          ),
+        ),
       ],
     );
   }

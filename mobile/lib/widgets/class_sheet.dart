@@ -6,7 +6,6 @@ import '../logic/deadlines.dart';
 import '../logic/timetable.dart';
 import '../main.dart';
 import '../models/models.dart';
-import '../screens/subjects_screen.dart';
 import '../theme.dart';
 
 /// Everything the portal told us about one class, plus the student's own notes.
@@ -358,6 +357,19 @@ class _Row extends StatelessWidget {
     // empty field is noise in a list this dense.
     if (value == null || value!.isEmpty) return const SizedBox.shrink();
 
+    // A fixed label column, so every value starts at the same x.
+    //
+    // These used to be right-aligned, which is fine until a value wraps: a
+    // two-line right-aligned block has a ragged *left* edge, and against the
+    // single-line rows above and below it reads as broken rather than as one
+    // value on two lines. Faculty names and building names both wrap here
+    // routinely ("SURAMPUDI NAGENDRA GANAPATHI", "Aditya Global Business
+    // Incubator"), so this is the common case, not the edge case.
+    //
+    // Scales with the reader's text size so long labels aren't clipped when
+    // the system font is turned up.
+    final labelWidth = (118 * MediaQuery.textScalerOf(context).scale(1)).clamp(118.0, 200.0);
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 13),
       decoration: last
@@ -368,13 +380,17 @@ class _Row extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(label, style: Theme.of(context).textTheme.bodySmall)),
+          SizedBox(
+            width: labelWidth,
+            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ),
           const SizedBox(width: 16),
-          Flexible(
+          Expanded(
             child: Text(
               value!,
-              textAlign: TextAlign.right,
-              style: Theme.of(context).textTheme.titleMedium,
+              // Wrapped values need the extra leading — two lines set solid
+              // look like two separate rows.
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
             ),
           ),
         ],
