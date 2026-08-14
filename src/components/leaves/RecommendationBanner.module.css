@@ -1,0 +1,36 @@
+.banner {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+.banner[data-tone="safe"] {
+  background: var(--color-success-bg);
+  color: #14532d;
+}
+.banner[data-tone="caution"] {
+  background: var(--color-warning-bg);
+  color: #78350f;
+}
+.banner[data-tone="not_recommended"] {
+  background: var(--color-danger-bg);
+  color: #7f1d1d;
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.description {
+  font-size: 12.5px;
+  margin-top: 2px;
+  opacity: 0.9;
+}

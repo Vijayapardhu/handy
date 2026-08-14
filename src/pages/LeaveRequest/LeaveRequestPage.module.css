@@ -1,0 +1,65 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.note {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.labelText {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.input,
+.textarea {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.fieldError {
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.submitError {
+  font-size: 13px;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+}

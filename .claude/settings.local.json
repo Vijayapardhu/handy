@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp \"C:/Users/PARDHU/AppData/Local/Temp/claude/C--college-handy/eeac8e8a-3b7f-4f60-a4cc-46c558a508cc/scratchpad/e2e-sync.mjs\" ./e2e-sync.tmp.mjs)",
+      "Bash(node ./e2e-sync.tmp.mjs)"
+    ]
+  }
+}

@@ -1,0 +1,261 @@
+.summaryCard {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.summarySkeleton {
+  margin-bottom: var(--space-4);
+}
+
+.summaryCard > div {
+  flex: 1;
+}
+
+.summaryDivider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--color-border);
+  margin: 0 var(--space-4);
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.summaryTarget {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.summaryHint {
+  font-size: 11px;
+  color: var(--color-text-faint);
+}
+
+.summaryOverall {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.summaryWarn {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.tabActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.loadingStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.listHint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rowIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rowName {
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.rowMeta {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.rowProgress {
+  margin-top: 2px;
+}
+
+.need {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.needNumber {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-danger);
+}
+
+.unreachable {
+  font-size: 11px;
+  color: var(--color-text-faint);
+  max-width: 90px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.reached {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+
+.reachedPct {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.goalCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.goalTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.goalFlag {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.goalFlagOn {
+  background: var(--status-good-bg);
+  color: var(--status-good);
+}
+
+.goalFlagOff {
+  background: var(--status-critical-bg);
+  color: var(--status-critical);
+}
+
+.goalNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.goalNote strong {
+  color: var(--color-text);
+}
+
+.sliderRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.sliderValue {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.footerBanner {
+  margin-top: var(--space-5);
+  background: linear-gradient(135deg, var(--color-success-bg), #ecfdf5);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.footerTitle {
+  font-weight: 700;
+  color: var(--color-success);
+  font-size: 14px;
+}
+
+.footerSubtitle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}

@@ -1,0 +1,80 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12.5px;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.date {
+  color: var(--color-text-faint);
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.subject {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusChip {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.present {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+.absent {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+.leave {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+.excused {
+  color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  padding: var(--space-3);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+}

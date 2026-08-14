@@ -1,0 +1,196 @@
+rules_version = '2';
+
+// SRS §36-37: Firestore Security Rules are the actual authorization boundary —
+// the React app's route guards and the browser extension's UI are UX only.
+// Nothing here trusts a client-supplied role/claim.
+//
+// Two kinds of client write to this database, and both are constrained to the
+// caller's own uid:
+//
+//   1. The Handy web app (src/services/students/collegePortalImportService.ts).
+//   2. The "Handy College Sync" browser extension (extension/), which signs in
+//      as the student's own Firebase account over the Identity Toolkit REST
+//      API and writes with that ID token — it holds no privileged credential
+//      and is subject to exactly the same rules as the web app.
+//
+// Everything genuinely privileged (per-day attendance records, timetable
+// publishing, leave approval, admin subject/faculty management) is still
+// `allow write: if false` for every authenticated client and is performed by
+// the Admin SDK (scripts/seed-students.mjs, or a future Cloud Function) which
+// bypasses these rules entirely — that code never ships to the browser
+// (SRS §57-58).
+
+function isSignedIn() {
+  return request.auth != null;
+}
+
+function isOwner(studentId) {
+  return isSignedIn() && request.auth.uid == studentId;
+}
+
+// Private per-student namespace for self-registered (portal-import) data.
+// `subjects` is a flat, read-open collection shared with admin-provisioned
+// data, so every self-written subject is fenced into `self-<uid>` and can
+// never collide with — or overwrite — another student's or an admin's rows.
+// Mirrors selfImportSemesterId() in collegePortalImportService.ts.
+function selfNamespace() {
+  return 'self-' + request.auth.uid;
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Student doc id === Firebase Auth uid (see services/firebase/auth.ts).
+    match /students/{studentId} {
+      allow read: if isOwner(studentId);
+
+      // Self-registration: a student (via the web signup form or the
+      // extension) creates their own minimal stub. `profileComplete: false`
+      // is forced here so a client can never mint an already-onboarded doc
+      // and skip the college-portal capture that supplies the real data.
+      allow create: if isOwner(studentId)
+        && request.resource.data.uid == studentId
+        && request.resource.data.rollNumber is string
+        && request.resource.data.profileComplete == false;
+
+      // Self-editable fields: the SRS §27 personal ones, plus everything the
+      // college-portal import fills in. `hasOnly` is what keeps rollNumber,
+      // uid, email and createdAt immutable after creation — they are absent
+      // from this list, so any write touching them is rejected outright.
+      allow update: if isOwner(studentId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'name', 'department', 'course', 'year', 'section', 'semesterId',
+             'collegeId', 'photoUrl', 'admissionNo', 'semesterLabel', 'gender',
+             'dob', 'mobileNo', 'profileComplete', 'updatedAt'
+           ])
+        // semesterId may only ever move to this student's own private
+        // namespace — never to an admin-provisioned semester, which would
+        // let a self-registered account adopt a real cohort's timetable.
+        && (request.resource.data.semesterId == resource.data.semesterId
+            || request.resource.data.semesterId == selfNamespace());
+
+      allow delete: if false;
+    }
+
+    match /colleges/{collegeId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if isSignedIn();
+
+      // Self-registered students write their own captured subjects, fenced
+      // into their private namespace. Checking `resource` as well as
+      // `request.resource` on update is what stops an existing
+      // admin-provisioned subject from being hijacked by rewriting its
+      // semesterId to the caller's namespace.
+      allow create: if isSignedIn()
+        && request.resource.data.semesterId == selfNamespace();
+      allow update: if isSignedIn()
+        && resource.data.semesterId == selfNamespace()
+        && request.resource.data.semesterId == selfNamespace();
+      allow delete: if false;
+    }
+
+    match /timetableVersions/{versionId} {
+      // Published versions are visible to any signed-in student; draft
+      // versions are only ever read by the Admin SDK, which bypasses rules.
+      allow read: if isSignedIn() && resource.data.status == 'published';
+
+      // Self-registered students import their own timetable from the college
+      // portal (studenttimetableoption.aspx/ShowTimeTables), fenced into the
+      // same private namespace as their subjects — an admin-published version
+      // is never writable, because its semesterId can't match.
+      allow create: if isSignedIn()
+        && request.resource.data.semesterId == selfNamespace();
+      allow update: if isSignedIn()
+        && resource.data.semesterId == selfNamespace()
+        && request.resource.data.semesterId == selfNamespace();
+      allow delete: if false;
+    }
+
+    match /timetableEntries/{entryId} {
+      allow read: if isSignedIn();
+
+      // Entries carry no semesterId of their own, so they're fenced by the
+      // version they belong to: buildTimetableDocs() ids every self-imported
+      // version `self-<uid>-tt<n>`. matches() is a full-string match, so this
+      // is exactly a prefix test, and Firebase uids are alphanumeric — no
+      // regex metacharacters can sneak in.
+      allow create: if isSignedIn()
+        && request.resource.data.timetableVersionId.matches('self-' + request.auth.uid + '-.*');
+      allow update: if isSignedIn()
+        && resource.data.timetableVersionId.matches('self-' + request.auth.uid + '-.*')
+        && request.resource.data.timetableVersionId.matches('self-' + request.auth.uid + '-.*');
+      allow delete: if false;
+    }
+
+    // Per-day attendance records stay admin-only (SRS §25, §36). The college
+    // portal only exposes aggregate attended/held per subject — there is no
+    // per-day data to import — so nothing legitimate needs to write here from
+    // a client. Attendance History / Calendar stay empty for self-registered
+    // students by design.
+    match /attendance/{recordId} {
+      allow read: if isSignedIn() && resource.data.studentId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // A student may write their own aggregate summaries, but only ones tagged
+    // as coming from the college-portal import — a self-authored row can
+    // never masquerade as an admin-seeded one.
+    match /attendanceSummaries/{summaryId} {
+      allow read: if isSignedIn() && resource.data.studentId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.source == 'collegePortal';
+      allow update: if isSignedIn()
+        && resource.data.studentId == request.auth.uid
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.source == 'collegePortal';
+      allow delete: if false;
+    }
+
+    // Students MAY submit a correction request, but can never approve one.
+    match /attendanceCorrections/{correctionId} {
+      allow read: if isSignedIn() && resource.data.studentId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update, delete: if false;
+    }
+
+    // Students MAY submit a leave request, but can never approve/reject one —
+    // status must stay "pending" through every client-authored write.
+    match /leaveRequests/{leaveId} {
+      allow read: if isSignedIn() && resource.data.studentId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update, delete: if false;
+    }
+
+    // Students may only flip `read` on their own notifications.
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create, delete: if false;
+    }
+
+    // Students MAY report a timetable discrepancy, but never see or touch
+    // anyone else's reports, and can never mark one reviewed themselves.
+    match /timetableChangeReports/{reportId} {
+      allow read: if isSignedIn() && resource.data.studentId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.status == 'pending';
+      allow update, delete: if false;
+    }
+
+    // No admin collections (auditLogs, announcements management, faculty,
+    // semesters) are exposed to student clients at all in this V1 — omitting
+    // a match block denies by default.
+  }
+}

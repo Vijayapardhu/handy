@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>popup.js visual test (mocked chrome.* APIs, real sample data)</title>
+    <link rel="stylesheet" href="/extension/popup/popup.css" />
+    <style>
+      body { width: auto !important; padding: 24px; }
+      #harness-note { font: 12px monospace; color: #888; margin-bottom: 12px; }
+      #state-picker { font: 12px monospace; margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+      #state-picker button { padding: 4px 8px; cursor: pointer; }
+      .popup-frame { width: 300px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="harness-note">
+      Mocked chrome.runtime/chrome.tabs — real popup.js + popup.css, seeded with the real parsed
+      samples. Pick a state to render:
+    </div>
+    <div id="state-picker"></div>
+    <div class="popup-frame"><div id="root" class="loading">Loading…</div></div>
+
+    <script src="/extension/src/parser.js"></script>
+    <script>
+      // Build the mock BEFORE popup.js runs, using the real parser on the real samples.
+      window.__ready = Promise.all([
+        fetch("/extension/test/sample-response.json").then((r) => r.text()),
+        fetch("/extension/test/sample-timetable.json").then((r) => r.text()),
+      ]).then(([rawProfile, rawTimetable]) => {
+        const capturedAt = new Date(Date.now() - 3 * 60 * 1000).toISOString(); // "3m ago"
+        const profile = self.HandyParser.parseProfileResponse(
+          rawProfile,
+          "https://info.aec.edu.in/aus/Academics/studentprofile.aspx/ShowStudentProfileNew",
+          capturedAt,
+        );
+        const timetable = self.HandyParser.parseTimetableResponse(
+          rawTimetable,
+          "https://info.aec.edu.in/aus/Academics/studenttimetableoption.aspx/ShowTimeTables",
+          capturedAt,
+        );
+
+        // What buildStatus() in background.js produces. The popup has no state
+        // of its own, so these payloads are the whole surface to review.
+        const snapshot = { ...profile, timetable };
+        const account = { rollNumber: profile.rollNumber, state: "ready", lastSyncAt: capturedAt, lastError: null };
+        const PASSWORD = "Handy@123";
+
+        const STATES = {
+          synced: { ok: true, snapshot, password: PASSWORD, account },
+          // Profile captured, timetable tab still working in the background.
+          "awaiting timetable": { ok: true, snapshot: profile, password: PASSWORD, account },
+          // First capture, before the first sync has come back.
+          syncing: {
+            ok: true,
+            snapshot,
+            password: PASSWORD,
+            account: { ...account, lastSyncAt: null },
+          },
+          "sync failed": {
+            ok: true,
+            snapshot,
+            password: PASSWORD,
+            account: { ...account, lastError: "commit: PERMISSION_DENIED" },
+          },
+          // Stored credential went stale. Informational only — signing in on
+          // the website pushes the new password back and syncing resumes.
+          "changed password": {
+            ok: true,
+            snapshot,
+            password: PASSWORD,
+            account: { ...account, state: "needsPassword" },
+          },
+          "nothing captured": { ok: true, snapshot: null, password: PASSWORD, account: null },
+        };
+
+        let current = "synced";
+        if (location.hash && STATES[decodeURIComponent(location.hash.slice(1))]) {
+          current = decodeURIComponent(location.hash.slice(1));
+        }
+
+        // popup.js only talks to the service worker, so this one mock covers it.
+        window.chrome = {
+          runtime: {
+            sendMessage: (message) => {
+              console.log("chrome.runtime.sendMessage", message);
+              return Promise.resolve(STATES[current]);
+            },
+          },
+          tabs: { create: (opts) => console.log("chrome.tabs.create", opts) },
+        };
+
+        const picker = document.getElementById("state-picker");
+        for (const name of Object.keys(STATES)) {
+          const button = document.createElement("button");
+          button.textContent = name;
+          button.addEventListener("click", () => {
+            location.hash = name;
+            location.reload();
+          });
+          picker.appendChild(button);
+        }
+
+        const script = document.createElement("script");
+        script.src = "/extension/popup/popup.js";
+        document.body.appendChild(script);
+      });
+    </script>
+  </body>
+</html>

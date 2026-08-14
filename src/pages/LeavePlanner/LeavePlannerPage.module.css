@@ -1,0 +1,197 @@
+.dateCard {
+  margin-bottom: var(--space-4);
+}
+
+.dateLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.dateRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dateNav {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dateValue {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.classCountNotice {
+  margin-top: var(--space-3);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.noClasses {
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.impactCard {
+  margin-bottom: var(--space-4);
+}
+
+.impactHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.impactHeaderTitle {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 8px;
+}
+.legendDot[data-tone="positive"] {
+  background: var(--color-success);
+}
+.legendDot[data-tone="minor"] {
+  background: var(--color-warning);
+}
+.legendDot[data-tone="negative"] {
+  background: var(--color-danger);
+}
+
+.overallCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.overallLabel {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.overallSub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.overallRight {
+  text-align: right;
+}
+
+.overallImpact {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-success);
+}
+
+.overallImpact[data-negative="true"] {
+  color: var(--color-danger);
+}
+
+.overallRange {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  font-size: 12.5px;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  margin: var(--space-4) 0;
+}
+
+.ctaRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.alternatives {
+  margin-top: var(--space-4);
+}
+
+.alternativesTitle {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.alternativesNote {
+  font-size: 11.5px;
+  color: var(--color-text-faint);
+  margin-top: 2px;
+  margin-bottom: var(--space-3);
+}
+
+.altList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.altButton {
+  width: 100%;
+  text-align: left;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  cursor: pointer;
+}
+
+.altDate {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.altMeta {
+  display: block;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}

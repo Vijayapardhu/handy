@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>parser.js test</title>
+    <style>
+      body { font: 13px/1.5 ui-monospace, monospace; padding: 16px; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <pre id="out">running…</pre>
+    <script src="/extension/src/parser.js"></script>
+    <script>
+      function assertEq(checks, label, actual, expected) {
+        const pass = JSON.stringify(actual) === JSON.stringify(expected);
+        checks.push({ label, pass, actual, expected });
+      }
+
+      fetch("/extension/test/sample-response.json")
+        .then((r) => r.text())
+        .then((rawText) => {
+          const snapshot = self.HandyParser.parseProfileResponse(
+            rawText,
+            "https://info.aec.edu.in/aus/Academics/studentprofile.aspx/ShowStudentProfileNew",
+            new Date().toISOString(),
+          );
+
+          const checks = [];
+          assertEq(checks, "rollNumber", snapshot?.rollNumber, "26B21CS058");
+          assertEq(checks, "studentName", snapshot?.studentName, "MAGAPU VIJAYA PARDHU");
+          assertEq(checks, "admissionNo", snapshot?.admissionNo, "AUS26-10819");
+          assertEq(checks, "course", snapshot?.course, "B.Tech");
+          assertEq(checks, "branch", snapshot?.branch, "Computer Science & Engineering");
+          assertEq(checks, "semesterLabel", snapshot?.semesterLabel, "Regular(III Semester- 2025)");
+          assertEq(
+            checks,
+            "photoUrl",
+            snapshot?.photoUrl,
+            "https://info.aec.edu.in/aus/student_photos/oy1kmavzctmng1etwbfxzz0e_26B21CS058.jpg?ver=140826090602",
+          );
+          assertEq(checks, "gender", snapshot?.gender, "Male");
+          assertEq(checks, "dob", snapshot?.dob, "17/01/2008");
+          assertEq(checks, "mobileNo", snapshot?.mobileNo, "9494429963");
+          assertEq(checks, "email", snapshot?.email, "vijayapardhu17@gmail.com");
+          assertEq(checks, "subjects.length", snapshot?.attendance.subjects.length, 8);
+          assertEq(checks, "total", snapshot?.attendance.total, { held: 260, attended: 183, percent: 70.38 });
+          assertEq(checks, "subject[0] (normal row)", snapshot?.attendance.subjects[0], {
+            slNo: 1,
+            code: "2501IT05",
+            name: "Database Management Systems",
+            facultyId: "5734",
+            facultyName: "DR. M V B MURALI KRISHNA M",
+            held: 47,
+            attended: 32,
+            percent: 68.09,
+          });
+          assertEq(checks, "subject[1] (name has '&')", snapshot?.attendance.subjects[1]?.name, "Advanced Data Structures & Algorithm Analysis");
+          assertEq(checks, "subject[3] (no dash in faculty split ambiguity check)", snapshot?.attendance.subjects[3], {
+            slNo: 4,
+            code: "TH26",
+            name: "Technical Hour",
+            facultyId: "5382",
+            facultyName: "SURAMPUDI NAGENDRA GANAPATHI",
+            held: 51,
+            attended: 51,
+            percent: 100,
+          });
+          assertEq(checks, "subject[7] (zero-held, '.00' percent)", snapshot?.attendance.subjects[7], {
+            slNo: 8,
+            code: "2501UC13",
+            name: "Employability Skills-II",
+            facultyId: "3581",
+            facultyName: "MARNI SRINU",
+            held: 0,
+            attended: 0,
+            percent: 0,
+          });
+
+          const passCount = checks.filter((c) => c.pass).length;
+          const summary = `${passCount}/${checks.length} checks passed\n\n`;
+          const details = checks
+            .map(
+              (c) =>
+                `${c.pass ? "PASS" : "FAIL"}  ${c.label}` +
+                (c.pass ? "" : `\n   expected: ${JSON.stringify(c.expected)}\n   actual:   ${JSON.stringify(c.actual)}`),
+            )
+            .join("\n");
+
+          document.getElementById("out").textContent =
+            summary + details + "\n\n--- full snapshot ---\n" + JSON.stringify(snapshot, null, 2);
+          window.__testChecks = checks;
+          console.log(`RESULT ${passCount}/${checks.length}`);
+        })
+        .catch((e) => {
+          document.getElementById("out").textContent = "ERROR: " + e.message;
+          console.error(e);
+        });
+    </script>
+  </body>
+</html>

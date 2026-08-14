@@ -1,0 +1,33 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.critical {
+  color: var(--status-critical);
+  background: var(--status-critical-bg);
+}
+.low {
+  color: var(--status-low);
+  background: var(--status-low-bg);
+}
+.average {
+  color: var(--status-average);
+  background: var(--status-average-bg);
+}
+.good {
+  color: var(--status-good);
+  background: var(--status-good-bg);
+}
+.excellent {
+  color: var(--status-excellent);
+  background: var(--status-excellent-bg);
+}
+.na {
+  color: var(--status-na);
+  background: var(--status-na-bg);
+}

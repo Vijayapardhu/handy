@@ -1,0 +1,226 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-6) var(--space-5);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.logo {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--color-primary);
+  color: white;
+  font-size: 26px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-3);
+}
+
+.appName {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.tagline {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  max-width: 30ch;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/*
+ * The one-tap path: an identity row rather than a plain button, so the
+ * student recognises their own roll number before signing in as it.
+ */
+.identityButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary-bg, var(--color-surface));
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: filter 0.15s ease;
+}
+
+.identityButton:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.identityButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.identityAvatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.identityBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.identityLabel {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.identityRoll {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.identityChevron {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 11px;
+  color: var(--color-text-faint);
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.labelText {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  font: inherit;
+  font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.passwordWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.togglePassword {
+  position: absolute;
+  right: var(--space-3);
+  display: flex;
+  align-items: center;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-text-faint);
+  cursor: pointer;
+}
+
+.fieldError {
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.submitError {
+  font-size: 13px;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.textLink {
+  align-self: center;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-text-faint);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.footNote {
+  margin-top: var(--space-5);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 12px;
+  color: var(--color-text-faint);
+  line-height: 1.5;
+}
+
+.footNote svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
