@@ -31,6 +31,15 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Without these, FCM falls back to the launcher icon, which Android
+             masks to its alpha and renders as a white square. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/handy_orange" />
+
         <!-- Four home-screen widgets, all fed by AppState.pushToWidget(). Each
              runs in the launcher's process and renders only saved values. -->
         <receiver

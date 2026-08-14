@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -27,6 +28,10 @@ class Reminders {
     channelDescription: 'Reminds you before each class, with the room and building.',
     importance: Importance.high,
     priority: Priority.high,
+    // Silhouette for the status bar; the colour tints the small icon and the
+    // notification's accent line.
+    icon: 'ic_notification',
+    color: Color(0xFFF97316),
   );
 
   static const _taskChannel = AndroidNotificationDetails(
@@ -35,6 +40,8 @@ class Reminders {
     channelDescription: 'Reminds you about assignments and presentations that are due.',
     importance: Importance.high,
     priority: Priority.high,
+     icon: 'ic_notification',
+    color: Color(0xFFF97316),
   );
 
   Future<void> init() async {
@@ -45,7 +52,10 @@ class Reminders {
 
     await _plugin.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        // The status-bar icon must be a white-on-transparent silhouette;
+        // pointing this at ic_launcher renders the orange tile as a white
+        // blob. See tool/make_icon.mjs.
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
         iOS: DarwinInitializationSettings(),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// Firebase Cloud Messaging — the *server-initiated* half of notifications.
@@ -27,6 +28,8 @@ class Push {
     channelDescription: 'Attendance changes and announcements.',
     importance: Importance.high,
     priority: Priority.high,
+     icon: 'ic_notification',
+    color: Color(0xFFF97316),
   );
 
   /// Call once the student is signed in — the token is stored against their
