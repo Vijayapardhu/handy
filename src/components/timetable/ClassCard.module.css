@@ -80,3 +80,19 @@
   font-weight: 500;
   opacity: 0.8;
 }
+
+.block {
+  color: var(--color-text-faint);
+}
+
+/* Task attached to this class — deliberately accent-coloured, since it's the
+   one line on the card that needs acting on rather than reading. */
+.task {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-primary);
+}

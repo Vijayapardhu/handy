@@ -129,6 +129,8 @@ export function buildTimetableDocs(
         facultyId: subject?.facultyId ?? "",
         facultyName: subject?.facultyName ?? "",
         room: subject?.room ?? null,
+        block: subject?.block ?? null,
+        periodNo: slot.periodNo,
         type: slot.type,
         active: true,
       },

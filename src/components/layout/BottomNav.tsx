@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, BookOpen, Calendar, FileText, User } from "lucide-react";
+import { Home, BookOpen, Calendar, ClipboardList, FileText, User } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils/cn";
 import styles from "./BottomNav.module.css";
@@ -8,6 +8,7 @@ const ITEMS = [
   { to: ROUTES.home, label: "Home", icon: Home, end: true },
   { to: ROUTES.subjects, label: "Subjects", icon: BookOpen, end: false },
   { to: ROUTES.timetable, label: "Timetable", icon: Calendar, end: false },
+  { to: ROUTES.tasks, label: "Tasks", icon: ClipboardList, end: false },
   { to: ROUTES.leaves, label: "Leaves", icon: FileText, end: false },
   { to: ROUTES.profile, label: "Profile", icon: User, end: false },
 ];

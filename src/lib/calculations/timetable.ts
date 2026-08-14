@@ -46,6 +46,45 @@ export function getNextEntry(
   return today.find((e) => e.endTime >= nowTime) ?? null;
 }
 
+export interface FreePeriod {
+  periodNo: number;
+  startTime: string;
+  endTime: string;
+}
+
+/**
+ * Periods that exist in the week's grid but have no class on `dayOfWeek`.
+ *
+ * The portal publishes a fixed period grid (1..7 here) and only sends rows for
+ * periods that are actually taught, so a missing row *is* a free period. Times
+ * are recovered from the same period on other days, since a period keeps its
+ * slot all week — which is also why a period never taught on any day can't be
+ * reported: nothing tells us when it would have been.
+ */
+export function getFreePeriods(entries: TimetableEntryDoc[], dayOfWeek: number): FreePeriod[] {
+  const timesByPeriod = new Map<number, { startTime: string; endTime: string }>();
+  for (const entry of entries) {
+    if (entry.periodNo != null && !timesByPeriod.has(entry.periodNo)) {
+      timesByPeriod.set(entry.periodNo, { startTime: entry.startTime, endTime: entry.endTime });
+    }
+  }
+
+  const busy = new Set(
+    entries.filter((e) => e.active && e.dayOfWeek === dayOfWeek).map((e) => e.periodNo),
+  );
+
+  return [...timesByPeriod.entries()]
+    .filter(([periodNo]) => !busy.has(periodNo))
+    .map(([periodNo, times]) => ({ periodNo, ...times }))
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+}
+
+/** Free periods for the whole week, keyed by day — for "when can I get work done?". */
+export function getWeeklyFreePeriods(entries: TimetableEntryDoc[]): Map<number, FreePeriod[]> {
+  const taughtDays = [...new Set(entries.filter((e) => e.active).map((e) => e.dayOfWeek))].sort();
+  return new Map(taughtDays.map((day) => [day, getFreePeriods(entries, day)]));
+}
+
 const FIELD_LABELS: Record<TimetableEntryDiff["changes"][number]["field"], string> = {
   startTime: "Start Time",
   endTime: "End Time",

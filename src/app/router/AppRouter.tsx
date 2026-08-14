@@ -20,6 +20,7 @@ const SubjectDetailPage = lazy(() =>
   import("@/pages/SubjectDetail/SubjectDetailPage").then((m) => ({ default: m.SubjectDetailPage })),
 );
 const TimetablePage = lazy(() => import("@/pages/Timetable/TimetablePage").then((m) => ({ default: m.TimetablePage })));
+const TasksPage = lazy(() => import("@/pages/Tasks/TasksPage").then((m) => ({ default: m.TasksPage })));
 const LeavesPage = lazy(() => import("@/pages/Leaves/LeavesPage").then((m) => ({ default: m.LeavesPage })));
 const LeavePlannerPage = lazy(() =>
   import("@/pages/LeavePlanner/LeavePlannerPage").then((m) => ({ default: m.LeavePlannerPage })),
@@ -69,6 +70,7 @@ const router = createBrowserRouter([
               { path: ROUTES.subjectDetail(), element: <SubjectDetailPage /> },
               { path: ROUTES.subjectPlanner(), element: <AttendancePlannerPage /> },
               { path: ROUTES.timetable, element: <TimetablePage /> },
+              { path: ROUTES.tasks, element: <TasksPage /> },
               { path: ROUTES.leaves, element: <LeavesPage /> },
               { path: ROUTES.leavePlanner, element: <LeavePlannerPage /> },
               { path: ROUTES.leaveRequestNew, element: <LeaveRequestPage /> },

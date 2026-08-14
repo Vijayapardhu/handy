@@ -205,6 +205,9 @@
         facultyId: faculty ? String(faculty.employeecode ?? "").trim() : "",
         facultyName: faculty ? String(faculty.employeename ?? "").trim() : "",
         room: faculty && faculty.roomno ? String(faculty.roomno).trim() : null,
+        // The building. "AGBI-2.1" and "RB-221" are in different places on
+        // campus, and a room number alone doesn't say which.
+        block: faculty && faculty.blockname ? String(faculty.blockname).trim() : null,
       };
       if (!subject.code) continue;
       subjectsById.set(row.subjectid, subject);

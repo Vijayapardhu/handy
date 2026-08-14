@@ -29,6 +29,10 @@ export interface TimetableEntryDoc {
   facultyId: string;
   facultyName: string;
   room: string | null;
+  /** Building the room sits in — from the portal timetable, null for admin-entered rows. */
+  block?: string | null;
+  /** Portal period number (1..7). Drives free-period detection in the day view. */
+  periodNo?: number;
   type: TimetableEntryType;
   active: boolean;
 }

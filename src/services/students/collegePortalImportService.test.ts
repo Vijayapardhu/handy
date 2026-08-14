@@ -118,7 +118,16 @@ describe("parseTimetableResponse", () => {
       facultyId: "6916",
       facultyName: "PONNADA LATHA SREE",
       room: "RB-221",
+      block: "Ramanujan Bhavan",
     });
+  });
+
+  it("keeps the building, which a room number alone doesn't identify", () => {
+    // Technical Hour is the one class in a different building — exactly the
+    // case where showing only "AGBI-2.1" would send a student to the wrong place.
+    const techHour = timetable.subjects.find((s) => s.code === "TH26");
+    expect(techHour?.room).toBe("AGBI-2.1");
+    expect(techHour?.block).toBe("Aditya Global Business Incubator");
   });
 
   it("maps every slot, with dayid 1..6 landing on Monday..Saturday", () => {

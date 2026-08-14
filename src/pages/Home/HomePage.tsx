@@ -9,6 +9,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { OverallAttendanceCard } from "@/components/attendance/OverallAttendanceCard";
 import { NeedsAttentionList } from "@/components/attendance/NeedsAttentionList";
 import { NextClassCard } from "@/components/attendance/NextClassCard";
+import { DueSoonCard } from "@/components/tasks/DueSoonCard";
 import { LeavePlannerCta } from "@/components/attendance/LeavePlannerCta";
 import { StreakCard } from "@/components/attendance/StreakCard";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -98,6 +99,10 @@ export function HomePage() {
             thresholds={configQuery.data.statusThresholds}
             linkTo={`${ROUTES.subjects}?tab=overview`}
           />
+
+          {/* Sits high on purpose: a deadline two days out matters more
+              than a percentage that moved by 0.4%. */}
+          <DueSoonCard />
 
           <StreakCard />
 

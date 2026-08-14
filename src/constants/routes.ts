@@ -9,6 +9,7 @@ export const ROUTES = {
   subjectHistory: (id: string) => `/attendance/history?subjectId=${id}`,
   subjectPlanner: (id: string = ":subjectId") => `/subjects/${id}/planner`,
   timetable: "/timetable",
+  tasks: "/tasks",
   leaves: "/leaves",
   leavePlanner: "/leaves/planner",
   leaveRequestNew: "/leaves/request",

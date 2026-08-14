@@ -3,6 +3,7 @@ import { RefreshCcw, CalendarX2, CalendarSearch, MessageSquarePlus } from "lucid
 import { TopHeader } from "@/components/layout/TopHeader";
 import { DayTabs } from "@/components/timetable/DayTabs";
 import { ClassCard } from "@/components/timetable/ClassCard";
+import { FreePeriodRow } from "@/components/timetable/FreePeriodRow";
 import { ReportChangeForm } from "@/components/timetable/ReportChangeForm";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -10,7 +11,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { useActiveTimetable } from "@/hooks/useTimetable";
 import { useActiveSubjectsMap } from "@/hooks/useActiveSubjectsMap";
-import { getEntriesForDay } from "@/lib/calculations/timetable";
+import { useTasks } from "@/hooks/useTasks";
+import { getEntriesForDay, getFreePeriods } from "@/lib/calculations/timetable";
 import { addDaysIso, dayOfWeekFromIso, formatDisplayDate, todayIso } from "@/lib/date";
 import styles from "./TimetablePage.module.css";
 
@@ -29,12 +31,41 @@ export function TimetablePage() {
   const [showReportForm, setShowReportForm] = useState(false);
   const timetableQuery = useActiveTimetable(selectedDate);
   const subjectsMap = useActiveSubjectsMap();
+  const tasksQuery = useTasks();
 
   const dates = useMemo(() => weekDates(selectedDate), [selectedDate]);
   const dayEntries = useMemo(() => {
     if (!timetableQuery.data) return [];
     return getEntriesForDay(timetableQuery.data.entries, dayOfWeekFromIso(selectedDate));
   }, [timetableQuery.data, selectedDate]);
+
+  /**
+   * Classes and free periods merged into one time-ordered list, so the day
+   * reads as a day rather than as a list of classes with silent holes in it.
+   */
+  const dayItems = useMemo(() => {
+    if (!timetableQuery.data) return [];
+    const dayOfWeek = dayOfWeekFromIso(selectedDate);
+    const free = getFreePeriods(timetableQuery.data.entries, dayOfWeek);
+
+    const items = [
+      ...dayEntries.map((entry) => ({ kind: "class" as const, at: entry.startTime, entry })),
+      ...free.map((f) => ({ kind: "free" as const, at: f.startTime, free: f })),
+    ];
+    return items.sort((a, b) => a.at.localeCompare(b.at));
+  }, [timetableQuery.data, selectedDate, dayEntries]);
+
+  /** Open tasks grouped by subject, so each class can show its own. */
+  const openTasksBySubject = useMemo(() => {
+    const bySubject = new Map<string, typeof tasks>();
+    const tasks = (tasksQuery.data ?? []).filter((t) => !t.done && t.subjectId);
+    for (const task of tasks) {
+      const list = bySubject.get(task.subjectId!) ?? [];
+      list.push(task);
+      bySubject.set(task.subjectId!, list);
+    }
+    return bySubject;
+  }, [tasksQuery.data]);
 
   const isViewingPast = selectedDate !== today;
 
@@ -125,9 +156,18 @@ export function TimetablePage() {
         // Wrapper exists so the day's classes can lay out in columns on wider
         // screens; on mobile it's still a plain stack.
         <div className={styles.classList}>
-          {dayEntries.map((entry) => (
-            <ClassCard key={entry.id} entry={entry} subject={subjectsMap.bySubjectId.get(entry.subjectId)} />
-          ))}
+          {dayItems.map((item) =>
+            item.kind === "class" ? (
+              <ClassCard
+                key={item.entry.id}
+                entry={item.entry}
+                subject={subjectsMap.bySubjectId.get(item.entry.subjectId)}
+                tasks={openTasksBySubject.get(item.entry.subjectId) ?? []}
+              />
+            ) : (
+              <FreePeriodRow key={`free-${item.free.periodNo}`} free={item.free} />
+            ),
+          )}
         </div>
       )}
 

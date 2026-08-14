@@ -35,6 +35,8 @@ export interface CollegePortalTimetableSubject {
   facultyId: string;
   facultyName: string;
   room: string | null;
+  /** Building the room is in, e.g. "Ramanujan Bhavan". Null when the portal omits it. */
+  block: string | null;
 }
 
 export interface CollegePortalTimetableSlot {
