@@ -41,7 +41,7 @@ Color statusColour(double? percent) {
   return HandyColors.bad;
 }
 
-ThemeData handyTheme(Brightness brightness) {
+ThemeData handyTheme(Brightness brightness, [Color accent = HandyColors.orange]) {
   final dark = brightness == Brightness.dark;
 
   final bg = dark ? HandyColors.darkBg : HandyColors.lightBg;
@@ -55,10 +55,10 @@ ThemeData handyTheme(Brightness brightness) {
     brightness: brightness,
     scaffoldBackgroundColor: bg,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: HandyColors.orange,
+      seedColor: accent,
       brightness: brightness,
     ).copyWith(
-      primary: HandyColors.orange,
+      primary: accent,
       surface: surface,
       onSurface: text,
       outlineVariant: border,
@@ -133,7 +133,7 @@ ThemeData handyTheme(Brightness brightness) {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: HandyColors.orange, width: 1.6),
+        borderSide: BorderSide(color: accent, width: 1.6),
       ),
       hintStyle: TextStyle(color: muted),
       labelStyle: TextStyle(color: muted),
@@ -141,7 +141,7 @@ ThemeData handyTheme(Brightness brightness) {
 
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: HandyColors.orange,
+        backgroundColor: accent,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(54),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -151,21 +151,21 @@ ThemeData handyTheme(Brightness brightness) {
 
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: surface,
-      indicatorColor: HandyColors.orange.withValues(alpha: 0.14),
+      indicatorColor: accent.withValues(alpha: 0.14),
       elevation: 0,
       height: 68,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       iconTheme: WidgetStateProperty.resolveWith(
         (states) => IconThemeData(
           size: 23,
-          color: states.contains(WidgetState.selected) ? HandyColors.orange : muted,
+          color: states.contains(WidgetState.selected) ? accent : muted,
         ),
       ),
       labelTextStyle: WidgetStateProperty.resolveWith(
         (states) => TextStyle(
           fontSize: 11.5,
           fontWeight: FontWeight.w600,
-          color: states.contains(WidgetState.selected) ? HandyColors.orange : muted,
+          color: states.contains(WidgetState.selected) ? accent : muted,
         ),
       ),
     ),

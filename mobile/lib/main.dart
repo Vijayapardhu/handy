@@ -1,10 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'data/app_state.dart';
+import 'data/push.dart';
 import 'data/reminders.dart';
+import 'data/settings.dart';
 import 'data/repository.dart';
 import 'firebase_options.dart';
 import 'screens/home_shell.dart';
@@ -13,14 +17,29 @@ import 'theme.dart';
 
 late final Repository repository;
 late final Reminders reminders;
+late final Push push;
+final settings = AppSettings();
+
+/// Global so that routes pushed onto the root Navigator can reach it: an
+/// InheritedWidget inside HomeShell is *below* the Navigator, so a pushed
+/// screen sits outside its subtree and the lookup returns null.
+final appState = AppState();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   repository = Repository(FirebaseFirestore.instance, FirebaseAuth.instance);
-  reminders = Reminders(FlutterLocalNotificationsPlugin());
+  final localNotifications = FlutterLocalNotificationsPlugin();
+  reminders = Reminders(localNotifications);
+  push = Push(
+    FirebaseMessaging.instance,
+    localNotifications,
+    FirebaseFirestore.instance,
+    FirebaseAuth.instance,
+  );
   await reminders.init();
+  await settings.load();
 
   runApp(const HandyApp());
 }
@@ -30,13 +49,24 @@ class HandyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuilds the whole app when the student changes theme or accent, so the
+    // change lands everywhere at once rather than on the next screen push.
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, _) => _app(),
+    );
+  }
+
+  Widget _app() {
     return MaterialApp(
       title: 'Handy',
       debugShowCheckedModeBanner: false,
-      theme: handyTheme(Brightness.light),
-      darkTheme: handyTheme(Brightness.dark),
-      // Follows the phone, like the web app follows the browser.
-      themeMode: ThemeMode.system,
+      theme: handyTheme(Brightness.light, settings.accent.colour),
+      darkTheme: handyTheme(Brightness.dark, settings.accent.colour),
+      themeMode: settings.themeMode,
+      // builder puts the scope above the Navigator, so every route — including
+      // pushed ones like subject detail — can read app state.
+      builder: (context, child) => AppStateScope(state: appState, child: child!),
       home: const _AuthGate(),
     );
   }

@@ -41,6 +41,9 @@ dependencies:
   timezone: ^0.10.1
   home_widget: ^0.9.2+1
   intl: ^0.20.2
+  shared_preferences: ^2.5.3
+  cached_network_image: ^3.4.1
+  firebase_messaging: ^16.5.0
 
 dev_dependencies:
   flutter_test:
@@ -52,6 +55,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -63,6 +68,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -94,3 +102,24 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Launcher icon and splash, generated from assets/ by tool/make_icon.mjs.
+# Regenerate the images with `node tool/make_icon.mjs`, then re-run:
+#   dart run flutter_launcher_icons
+#   dart run flutter_native_splash:create
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/icon.png
+  # Adaptive icon: the launcher masks the foreground to its own shape, so the
+  # background is a flat colour rather than a second rounded square.
+  adaptive_icon_background: "#F97316"
+  adaptive_icon_foreground: assets/icon_foreground.png
+
+flutter_native_splash:
+  color: "#F97316"
+  image: assets/splash.png
+  android_12:
+    # Android 12+ draws its own masked circle and ignores the legacy image.
+    color: "#F97316"
+    image: assets/splash.png

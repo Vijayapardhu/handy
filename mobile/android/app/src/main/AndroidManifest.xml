@@ -31,8 +31,8 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Home-screen widget. Runs in the launcher process and renders
-             only what AppState.pushToWidget() last saved. -->
+        <!-- Four home-screen widgets, all fed by AppState.pushToWidget(). Each
+             runs in the launcher's process and renders only saved values. -->
         <receiver
             android:name=".HandyWidgetProvider"
             android:exported="false">
@@ -41,8 +41,42 @@
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/handy_widget_info" />
+                android:resource="@xml/next_class_widget_info" />
         </receiver>
+
+        <receiver
+            android:name=".AttendanceWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/attendance_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".TodayWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".DuesWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dues_widget_info" />
+        </receiver>
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -4,6 +4,8 @@ import '../data/app_state.dart';
 import '../data/repository.dart';
 import '../main.dart';
 import '../theme.dart';
+import '../widgets/student_photo.dart';
+import 'settings_screen.dart';
 
 /// Identity and account. Deliberately short: everything here comes from the
 /// college's own record, so there is almost nothing for a student to change.
@@ -28,23 +30,7 @@ class ProfileScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        Container(
-                          width: 58,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: HandyColors.orange.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            _initials(student?.name),
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: HandyColors.orange,
-                            ),
-                          ),
-                        ),
+                        StudentPhoto(rollNumber: student?.rollNumber, name: student?.name),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -118,6 +104,26 @@ class ProfileScreen extends StatelessWidget {
                 Card(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(18),
+                      child: Row(
+                        children: [
+                          Icon(Icons.tune, size: 19),
+                          SizedBox(width: 12),
+                          Expanded(child: Text("Settings", style: TextStyle(fontWeight: FontWeight.w600))),
+                          Icon(Icons.chevron_right, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Card(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
                     onTap: () => _confirmSignOut(context),
                     child: const Padding(
                       padding: EdgeInsets.all(18),
@@ -136,7 +142,9 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Center(
                   child: Text(
-                    'Signed in with ${student?.rollNumber ?? ''} · password ${Repository.defaultPassword}',
+                    // No password here: it may have been changed in Settings,
+                    // and printing a stale one is worse than printing none.
+                    'Signed in as ${student?.rollNumber ?? ''}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -146,12 +154,6 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  static String _initials(String? name) {
-    final parts = (name ?? '').trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return 'H';
-    return parts.take(2).map((p) => p[0].toUpperCase()).join();
   }
 
   void _confirmSignOut(BuildContext context) {

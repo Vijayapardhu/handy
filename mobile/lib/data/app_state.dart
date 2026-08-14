@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../logic/attendance.dart';
+import '../logic/deadlines.dart';
 import '../logic/timetable.dart';
 import '../main.dart';
 import '../models/models.dart';
@@ -90,33 +91,106 @@ class AppState extends ChangeNotifier {
     await pushToWidget();
   }
 
-  /// Hands the widget a flat summary. The widget is a separate process with no
-  /// Firebase access of its own — it can only render what's been saved for it.
+  /// Publishes everything the home-screen widgets render.
+  ///
+  /// Each widget runs in the launcher's process with no Firebase access of its
+  /// own, so it can only draw what has been saved here. That's why this writes
+  /// finished strings rather than raw values — a widget has no business
+  /// knowing how a percentage rounds or how a countdown is phrased.
   Future<void> pushToWidget() async {
-    final next = nextClass;
-    final subject = next == null ? null : subjectsById[next.subjectId];
+    final now = DateTime.now();
+    final nowHm = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final today = classBlocksForDay(entries, now.weekday % 7);
+    final next = today.where((b) => b.endTime.compareTo(nowHm) >= 0).firstOrNull;
     final percent = overallPercent;
-    final open = tasks.where((t) => !t.done).length;
 
-    await HomeWidget.saveWidgetData<String>(
-      'attendance',
-      percent == null ? '—' : '${percent.toStringAsFixed(2)}%',
+    Future<void> put(String key, String value) => HomeWidget.saveWidgetData<String>(key, value);
+
+    // Appearance and content preferences, so the launcher-side providers can
+    // honour them without reading the app's theme.
+    await put('widgetStyle', settings.widgetStyle.name);
+    await put('widgetShowFaculty', settings.widgetShowFaculty ? '1' : '0');
+    await put('widgetRows', '${settings.widgetRows}');
+
+    // Attendance
+    await put('attendance', percent == null ? '—' : '${percent.toStringAsFixed(2)}%');
+    await put(
+      'attendanceMeta',
+      '${summaries.fold<int>(0, (s, x) => s + x.attended)} / '
+          '${summaries.fold<int>(0, (s, x) => s + x.held)} classes',
     );
-    await HomeWidget.saveWidgetData<String>(
-      'nextClass',
-      next == null ? 'No more classes today' : (subject?.shortName ?? 'Class'),
-    );
-    await HomeWidget.saveWidgetData<String>(
-      'nextClassMeta',
+
+    // Next class — subject, time, venue, faculty and a ready-made countdown.
+    final subject = next == null ? null : subjectsById[next.first.subjectId];
+    await put('nextClass', next == null ? 'No more classes today' : (subject?.name ?? 'Class'));
+    await put('nextClassTime', next == null ? '' : '${next.startTime} – ${next.endTime}');
+    await put(
+      'nextClassVenue',
       next == null
           ? ''
-          : '${next.startTime} · ${[next.room, next.block].where((p) => p != null && p!.isNotEmpty).join(' · ')}',
+          : [next.first.room, next.first.block]
+              .whereType<String>()
+              .where((p) => p.isNotEmpty)
+              .join(' · '),
     );
-    await HomeWidget.saveWidgetData<String>(
-      'tasks',
-      open == 0 ? 'Nothing due' : '$open task${open == 1 ? '' : 's'} open',
+    await put('nextClassFaculty', next?.first.facultyName ?? '');
+    await put(
+      'nextClassCountdown',
+      next == null ? '' : _countdown(next.startTime, next.endTime, now),
     );
-    await HomeWidget.updateWidget(androidName: 'HandyWidgetProvider');
+
+    // Today's timetable — four rows is what fits a 4x2 widget.
+    await put('todayCount', today.isEmpty ? 'No classes today' : '${today.length} classes today');
+    for (var i = 0; i < 4; i++) {
+      final block = i < today.length ? today[i] : null;
+      await put('day${i}Time', block?.startTime ?? '');
+      await put(
+        'day${i}Subject',
+        block == null ? '' : (subjectsById[block.first.subjectId]?.name ?? 'Class'),
+      );
+      await put('day${i}Venue', block?.first.room ?? '');
+    }
+
+    // Dues
+    final open = tasks.where((t) => !t.done).toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    await put('tasks', open.isEmpty ? 'Nothing due' : '${open.length} open');
+    for (var i = 0; i < 3; i++) {
+      final task = i < open.length ? open[i] : null;
+      await put('due${i}Title', task?.title ?? '');
+      await put(
+        'due${i}When',
+        task == null ? '' : getDeadline(task.dueDate, now, done: task.done).label,
+      );
+    }
+
+    // Refresh every provider: a student may have any combination placed.
+    for (final provider in const [
+      'HandyWidgetProvider',
+      'AttendanceWidgetProvider',
+      'TodayWidgetProvider',
+      'DuesWidgetProvider',
+    ]) {
+      await HomeWidget.updateWidget(androidName: provider);
+    }
+  }
+
+  /// "in 25 min" / "now · ends 11:20". The widget can't recompute this on its
+  /// own, so it receives the finished phrase.
+  static String _countdown(String start, String end, DateTime now) {
+    DateTime at(String hhmm) {
+      final parts = hhmm.split(':');
+      return DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
+    }
+
+    final startsAt = at(start);
+    if (now.isAfter(startsAt)) return 'now · ends $end';
+
+    final minutes = startsAt.difference(now).inMinutes;
+    if (minutes < 60) return 'in $minutes min';
+    final hours = minutes ~/ 60;
+    final rest = minutes % 60;
+    return rest == 0 ? 'in $hours h' : 'in $hours h $rest min';
   }
 
   @override

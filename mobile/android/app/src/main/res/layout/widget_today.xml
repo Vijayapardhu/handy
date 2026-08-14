@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Today's sessions. Rows are hidden rather than blanked when the day is
+     shorter than four blocks (see TodayWidgetProvider). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/widget_background_dark">
+
+    <TextView
+        android:id="@+id/today_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textAllCaps="true"
+        android:letterSpacing="0.06"
+        android:textColor="#94A3B8" />
+
+    <LinearLayout
+        android:id="@+id/today_row_0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="7dp">
+        <TextView
+            android:id="@+id/today_time_0"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#F97316" />
+        <TextView
+            android:id="@+id/today_subject_0"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#F1F5F9" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/today_row_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="7dp">
+        <TextView
+            android:id="@+id/today_time_1"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#F97316" />
+        <TextView
+            android:id="@+id/today_subject_1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#F1F5F9" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/today_row_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="7dp">
+        <TextView
+            android:id="@+id/today_time_2"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#F97316" />
+        <TextView
+            android:id="@+id/today_subject_2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#F1F5F9" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/today_row_3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="7dp">
+        <TextView
+            android:id="@+id/today_time_3"
+            android:layout_width="52dp"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#F97316" />
+        <TextView
+            android:id="@+id/today_subject_3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#F1F5F9" />
+    </LinearLayout>
+
+</LinearLayout>

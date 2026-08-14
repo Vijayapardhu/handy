@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_description">Attendance, your next class and open tasks.</string>
+    <string name="widget_next_class_description">Next class with its room, building and countdown.</string>
+    <string name="widget_attendance_description">Your overall attendance percentage.</string>
+    <!-- Apostrophes must be escaped in Android string resources; an unescaped
+         one fails the resource compile rather than warning. -->
+    <string name="widget_today_description">Your classes for the day at a glance.</string>
+    <string name="widget_dues_description">Assignments and deadlines coming up.</string>
 </resources>
