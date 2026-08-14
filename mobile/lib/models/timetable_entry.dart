@@ -11,6 +11,8 @@ class TimetableEntry {
     required this.room,
     required this.block,
     required this.periodNo,
+    required this.strength,
+    required this.opted,
     required this.type,
     required this.active,
   });
@@ -29,6 +31,13 @@ class TimetableEntry {
   /// Building the room sits in — "AGBI-2.1" and "RB-221" are different places.
   final String? block;
   final int? periodNo;
+
+  /// Cohort the slot is scheduled for. ~145 where two sections are combined.
+  final int? strength;
+
+  /// How many students actually opted for it.
+  final int? opted;
+
   final String type; // lecture | lab | technical | break | activity
   final bool active;
 
@@ -44,6 +53,8 @@ class TimetableEntry {
       room: data['room'] as String?,
       block: data['block'] as String?,
       periodNo: (data['periodNo'] as num?)?.toInt(),
+      strength: (data['strength'] as num?)?.toInt(),
+      opted: (data['opted'] as num?)?.toInt(),
       type: data['type'] as String? ?? 'lecture',
       active: data['active'] as bool? ?? true,
     );

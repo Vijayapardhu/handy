@@ -4,6 +4,7 @@ import '../data/app_state.dart';
 import '../logic/deadlines.dart';
 import '../main.dart';
 import '../models/models.dart';
+import '../widgets/skeleton.dart';
 
 /// What the student has to remember and the portal doesn't know: assignments,
 /// presentations, lab records. The only screen in the app that writes.
@@ -13,6 +14,14 @@ class TasksScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
+
+    if (state.loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Tasks')),
+        body: const ListSkeleton(rows: 4, height: 84),
+      );
+    }
+
     final open = state.tasks.where((t) => !t.done).toList();
     final done = state.tasks.where((t) => t.done).toList();
 

@@ -208,6 +208,11 @@
         // The building. "AGBI-2.1" and "RB-221" are in different places on
         // campus, and a room number alone doesn't say which.
         block: faculty && faculty.blockname ? String(faculty.blockname).trim() : null,
+        // Class size. `noof_students` is the cohort the slot is scheduled for
+        // (144 where two sections are combined, as for Technical Hour);
+        // `opted_students` is how many actually take it.
+        strength: faculty ? Number(faculty.noof_students) || null : null,
+        opted: faculty ? Number(faculty.opted_students) || null : null,
       };
       if (!subject.code) continue;
       subjectsById.set(row.subjectid, subject);

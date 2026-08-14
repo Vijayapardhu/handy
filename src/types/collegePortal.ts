@@ -37,6 +37,10 @@ export interface CollegePortalTimetableSubject {
   room: string | null;
   /** Building the room is in, e.g. "Ramanujan Bhavan". Null when the portal omits it. */
   block: string | null;
+  /** Cohort the slot is scheduled for — 144 where two sections are combined. */
+  strength: number | null;
+  /** How many students actually opted for it. */
+  opted: number | null;
 }
 
 export interface CollegePortalTimetableSlot {

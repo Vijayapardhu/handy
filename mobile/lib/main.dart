@@ -83,10 +83,39 @@ class _AuthGate extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const _Splash();
         }
         return snapshot.data == null ? const SignInScreen() : const HomeShell();
       },
+    );
+  }
+}
+
+
+/// Shown for the instant before Firebase reports whether there's a session.
+/// A skeleton would be a lie here — nothing is known about what comes next —
+/// so this is the brand mark, matching the native splash it hands over from.
+class _Splash extends StatelessWidget {
+  const _Splash();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          alignment: Alignment.center,
+          child: const Text(
+            'H',
+            style: TextStyle(fontSize: 38, fontWeight: FontWeight.w800, color: Colors.white),
+          ),
+        ),
+      ),
     );
   }
 }

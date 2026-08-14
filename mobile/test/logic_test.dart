@@ -74,6 +74,8 @@ void main() {
           room: 'RB-221',
           block: 'Ramanujan Bhavan',
           periodNo: period,
+          strength: 72,
+          opted: 70,
           type: 'lecture',
           active: true,
         );

@@ -119,7 +119,21 @@ describe("parseTimetableResponse", () => {
       facultyName: "PONNADA LATHA SREE",
       room: "RB-221",
       block: "Ramanujan Bhavan",
+      strength: 72,
+      opted: 70,
     });
+  });
+
+  it("keeps class strength, including the combined-section cohorts", () => {
+    // Most subjects are one section of 72; Technical Hour and Employability
+    // Skills merge two, which is why their cohort is ~145.
+    const adsaa = timetable.subjects.find((s) => s.code === "2501CS10");
+    expect(adsaa?.strength).toBe(72);
+    expect(adsaa?.opted).toBe(70);
+
+    const techHour = timetable.subjects.find((s) => s.code === "TH26");
+    expect(techHour?.strength).toBe(145);
+    expect(techHour?.opted).toBe(109);
   });
 
   it("keeps the building, which a room number alone doesn't identify", () => {

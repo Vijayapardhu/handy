@@ -4,6 +4,7 @@ import '../data/app_state.dart';
 import '../logic/attendance.dart';
 import '../models/models.dart';
 import '../theme.dart';
+import '../widgets/skeleton.dart';
 import 'subject_detail_screen.dart';
 
 /// Every subject, ordered by risk rather than alphabetically — the one closest
@@ -16,6 +17,14 @@ class SubjectsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
+
+    if (state.loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Subjects')),
+        body: const ListSkeleton(rows: 6, height: 118),
+      );
+    }
+
     final summaryBySubject = {for (final s in state.summaries) s.subjectId: s};
 
     final rows = state.subjects

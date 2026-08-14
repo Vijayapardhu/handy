@@ -10,6 +10,7 @@ import '../logic/timetable.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import '../widgets/class_tile.dart';
+import '../widgets/skeleton.dart';
 import 'subject_detail_screen.dart';
 import 'subjects_screen.dart';
 
@@ -50,7 +51,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final state = AppStateScope.of(context);
 
     if (state.loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: SafeArea(bottom: false, child: TodaySkeleton()));
     }
 
     final now = DateTime.now();

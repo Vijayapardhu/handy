@@ -33,6 +33,9 @@ export interface TimetableEntryDoc {
   block?: string | null;
   /** Portal period number (1..7). Drives free-period detection in the day view. */
   periodNo?: number;
+  /** Class size and uptake, straight from the portal's timetable response. */
+  strength?: number | null;
+  opted?: number | null;
   type: TimetableEntryType;
   active: boolean;
 }
