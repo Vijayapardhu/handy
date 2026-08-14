@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's orange (#F97316), matching the web tokens and the launcher icon. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F97316" />
+    <corners android:radius="18dp" />
+</shape>

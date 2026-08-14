@@ -8,7 +8,11 @@
       "Bash(node ./prod-check.tmp.mjs)",
       "Bash(node --input-type=module -e \"import\\('./api/notify.js'\\).then\\(m=>console.log\\('api/notify.js loads, handler:',typeof m.default\\)\\).catch\\(e=>{console.error\\('FAILED:',e.message\\);process.exit\\(1\\)}\\)\")",
       "Bash(printf '\\\\nVITE_FIREBASE_VAPID_KEY=BJHkLfqd4x2cvdpfm6yXEtrA-ZfZtU87ReV5XPHcOcKd52bcVfRa-fi3k7eu3gk9Q2J0BTkBJxzNzmOtP3OdSyE\\\\n')",
-      "Bash(printf '\\\\n# Web Push \\(Firebase Console -> Cloud Messaging -> Web Push certificates\\).\\\\n# Public half of the VAPID key pair — safe in the client bundle.\\\\nVITE_FIREBASE_VAPID_KEY=\\\\n')"
+      "Bash(printf '\\\\n# Web Push \\(Firebase Console -> Cloud Messaging -> Web Push certificates\\).\\\\n# Public half of the VAPID key pair — safe in the client bundle.\\\\nVITE_FIREBASE_VAPID_KEY=\\\\n')",
+      "Bash(rm -f test/widget_test.dart)",
+      "Bash(flutter test *)",
+      "Bash(node check-account.tmp.mjs)",
+      "Bash(node migrate-passwords.tmp.mjs)"
     ]
   }
 }
