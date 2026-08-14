@@ -29,11 +29,7 @@ const AUTO_TIMETABLE_TIMEOUT_MS = 30_000;
 /** Tab this extension opened by itself, so it can close it again once it's done its job. */
 let helperTabId = null;
 
-console.log("[Handy] background service worker started");
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("[Handy] background received internal message:", message?.type, "from", sender?.url);
-
   if (message?.type === "CAPTURE_SNAPSHOT" && message.snapshot) {
     handleProfileCapture(message.snapshot)
       .then(sendResponse)
@@ -53,7 +49,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
-  console.log("[Handy] background received external message:", message?.type, "from", sender?.origin);
   handleExternalMessage(message).then(sendResponse);
   return true;
 });
@@ -66,7 +61,6 @@ chrome.runtime.onStartup.addListener(() => {
 
 async function handleProfileCapture(snapshot) {
   await storeSnapshot(snapshot);
-  console.log("[Handy] snapshot stored for", snapshot.rollNumber);
 
   const result = await syncNow();
   // The timetable lives on a different page the student has no reason to
@@ -78,8 +72,6 @@ async function handleProfileCapture(snapshot) {
 
 async function handleTimetableCapture(timetable) {
   await chrome.storage.local.set({ [TIMETABLE_KEY]: timetable, [AUTO_TIMETABLE_KEY]: false });
-  console.log("[Handy] timetable stored:", timetable.name, timetable.slots.length, "slots");
-
   await closeHelperTab();
 
   // The timetable is only writable attached to a profile capture (it needs
@@ -149,7 +141,6 @@ async function ensureTimetableCaptured() {
   if (timetable) return;
   if (helperTabId !== null) return; // one attempt at a time
 
-  console.log("[Handy] no timetable captured — opening the timetable page in the background");
   await chrome.storage.local.set({ [AUTO_TIMETABLE_KEY]: true });
 
   const tab = await chrome.tabs.create({ url: TIMETABLE_PAGE_URL, active: false });

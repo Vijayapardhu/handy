@@ -94,7 +94,6 @@ export default async function handler(req, res) {
       // Uninstalled apps and cleared site data leave tokens that will never
       // deliver again; keeping them means every future send reports failures.
       await db.doc(`students/${uid}`).update({ fcmTokens: FieldValue.arrayRemove(...dead) });
-      console.log("[notify] pruned", dead.length, "dead token(s) for", uid);
     }
 
     return res.status(200).json({

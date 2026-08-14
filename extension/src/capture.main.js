@@ -6,7 +6,6 @@
 // page already makes and relays matching response bodies to the isolated
 // content script via postMessage (same-origin only).
 (() => {
-  console.log("[Handy] main-world hook loading in frame:", window.location.href);
   // ShowStudentProfileNew -> bio-data + attendance (HTML in the envelope).
   // ShowTimeTables       -> the weekly timetable (JSON in the envelope).
   const TARGET_PATTERNS = [/ShowStudentProfileNew/i, /ShowTimeTables/i];
@@ -16,7 +15,6 @@
   }
 
   function emit(url, bodyText) {
-    console.log("[Handy] emitting captured response for", url, "(", bodyText.length, "chars )");
     window.postMessage(
       {
         __handySync: true,
@@ -33,24 +31,24 @@
   if (typeof originalFetch === "function") {
     window.fetch = async function handyFetch(...args) {
       const response = await originalFetch.apply(this, args);
+      // Anything that goes wrong in here is ours, and must never reach the
+      // page — the student is using this site, and a broken fetch would break
+      // it. Warn (rare, and the only clue if capture silently stops) and let
+      // the original response through untouched.
       try {
         const requestUrl = typeof args[0] === "string" ? args[0] : args[0]?.url;
         if (isTarget(requestUrl)) {
-          console.log("[Handy] fetch matched target:", requestUrl);
           response
             .clone()
             .text()
             .then((text) => emit(requestUrl, text))
-            .catch((e) => console.log("[Handy] fetch clone/text failed:", e));
+            .catch((e) => console.warn("[Handy] could not read response body:", e));
         }
       } catch (e) {
-        console.log("[Handy] fetch hook error:", e);
+        console.warn("[Handy] fetch hook failed:", e);
       }
       return response;
     };
-    console.log("[Handy] fetch hook installed");
-  } else {
-    console.log("[Handy] window.fetch was not a function at install time — nothing hooked");
   }
 
   const OriginalXHR = window.XMLHttpRequest;
@@ -65,15 +63,11 @@
   OriginalXHR.prototype.send = function handySend(...args) {
     this.addEventListener("load", function handyLoad() {
       try {
-        if (isTarget(this.__handySyncUrl)) {
-          console.log("[Handy] XHR matched target:", this.__handySyncUrl);
-          emit(this.__handySyncUrl, this.responseText);
-        }
+        if (isTarget(this.__handySyncUrl)) emit(this.__handySyncUrl, this.responseText);
       } catch (e) {
-        console.log("[Handy] XHR hook error:", e);
+        console.warn("[Handy] XHR hook failed:", e);
       }
     });
     return originalSend.apply(this, args);
   };
-  console.log("[Handy] XHR hook installed");
 })();

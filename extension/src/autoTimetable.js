@@ -11,7 +11,7 @@
 // This is an ASP.NET WebForms page whose control ids are generated, so the
 // selection below is heuristic: any <select> that looks like a timetable
 // chooser, then any button that looks like "show". If the page ever changes
-// shape, the console lines here are the first place to look — and the student
+// shape, attempt() gives up with a warning after ten tries — and the student
 // can still pick a timetable by hand in the tab that stays open.
 (() => {
   const PAGE_PATTERN = /studenttimetableoption\.aspx/i;
@@ -21,11 +21,7 @@
   if (!PAGE_PATTERN.test(window.location.href)) return;
 
   chrome.storage.local.get(AUTO_FLAG).then(({ [AUTO_FLAG]: pending }) => {
-    if (!pending) {
-      console.log("[Handy] on the timetable page, but not auto-driving it (no pending request)");
-      return;
-    }
-    console.log("[Handy] auto-selecting a timetable");
+    if (!pending) return; // The student opened this page themselves — stay passive.
     // WebForms hydrates its controls after load; retry rather than assuming
     // the page is ready the moment this script runs.
     attempt(0);
@@ -51,7 +47,6 @@
         select.value = options[0].value;
         select.dispatchEvent(new Event("input", { bubbles: true }));
         select.dispatchEvent(new Event("change", { bubbles: true }));
-        console.log("[Handy] chose timetable option:", options[0].textContent?.trim());
       }
 
       // A dropdown with an auto-postback needs nothing more; one without it
@@ -70,7 +65,6 @@
     const button = candidates.find((el) => SHOW_BUTTON.test(el.value || el.textContent || ""));
     if (!button) return false;
 
-    console.log("[Handy] clicking:", button.value || button.textContent?.trim());
     button.click();
     return true;
   }

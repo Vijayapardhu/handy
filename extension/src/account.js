@@ -173,7 +173,6 @@ export async function revalidateStoredPassword(rollNumber) {
       refreshToken: tokens.refreshToken,
       state: ACCOUNT_STATE.ready,
     });
-    console.log("[Handy] stored password still works — clearing needsPassword for", rollNumber);
     return true;
   } catch {
     return false; // Genuinely changed, or we can't tell right now. Leave the flag.

@@ -93,7 +93,6 @@ async function syncViaEndpoint(rollNumber, snapshot) {
     throw error;
   }
 
-  console.log("[Handy] synced via endpoint:", rollNumber, payload);
   return { uid: payload.uid, subjectCount: payload.subjectCount, slotCount: payload.slotCount };
 }
 

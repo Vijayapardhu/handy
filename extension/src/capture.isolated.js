@@ -5,13 +5,6 @@
 // file — see manifest.json), and forwards only the normalized snapshot to
 // the background service worker for storage.
 (() => {
-  console.log(
-    "[Handy] isolated relay loading in frame:",
-    window.location.href,
-    "HandyParser loaded:",
-    Boolean(self.HandyParser),
-  );
-
   window.addEventListener("message", (event) => {
     if (event.source !== window) return;
     if (event.origin !== window.location.origin) return;
@@ -19,33 +12,32 @@
     const data = event.data;
     if (!data || data.__handySync !== true || data.type !== "CAPTURED_RESPONSE") return;
 
-    console.log("[Handy] isolated relay received captured response for", data.url);
-
     // Two different endpoints reach this listener (see TARGET_PATTERNS in
     // capture.main.js) and their envelopes carry different payloads, so route
     // on the URL rather than trying each parser in turn.
+    //
+    // A parser returning null means the portal changed shape and capture is
+    // now silently broken, so it warns — but without the response body, which
+    // is the student's own record and this console is shared with the page.
     if (/ShowTimeTables/i.test(data.url)) {
       const timetable = self.HandyParser?.parseTimetableResponse(data.body, data.url, data.capturedAt);
       if (!timetable) {
-        console.log("[Handy] parseTimetableResponse returned null — unexpected shape:", data.body.slice(0, 300));
+        console.warn("[Handy] could not parse the timetable response");
         return;
       }
-      console.log("[Handy] parsed timetable, sending to background:", timetable.name, timetable.slots.length, "slots");
-      chrome.runtime.sendMessage({ type: "CAPTURE_TIMETABLE", timetable }).catch((e) => {
-        console.log("[Handy] sendMessage to background failed:", e);
+      chrome.runtime.sendMessage({ type: "CAPTURE_TIMETABLE", timetable }).catch(() => {
+        // Service worker asleep or the extension was reloaded mid-capture.
+        // The next page load captures again; nothing is lost.
       });
       return;
     }
 
     const snapshot = self.HandyParser?.parseProfileResponse(data.body, data.url, data.capturedAt);
     if (!snapshot) {
-      console.log("[Handy] parseProfileResponse returned null — response body did not match the expected shape:", data.body.slice(0, 300));
+      console.warn("[Handy] could not parse the profile response");
       return;
     }
 
-    console.log("[Handy] parsed snapshot, sending to background:", snapshot.rollNumber, snapshot.attendance.subjects.length, "subjects");
-    chrome.runtime.sendMessage({ type: "CAPTURE_SNAPSHOT", snapshot }).catch((e) => {
-      console.log("[Handy] sendMessage to background failed:", e);
-    });
+    chrome.runtime.sendMessage({ type: "CAPTURE_SNAPSHOT", snapshot }).catch(() => {});
   });
 })();

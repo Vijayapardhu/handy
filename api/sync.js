@@ -128,7 +128,6 @@ async function ensureAuthUser(rollNumber) {
   } catch (error) {
     if (error?.code !== "auth/user-not-found") throw error;
     const user = await auth.createUser({ email, password: ACCOUNT_PASSWORD });
-    console.log("[sync] created account for", rollNumber, user.uid);
     return user.uid;
   }
 }
