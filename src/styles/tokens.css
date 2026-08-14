@@ -55,8 +55,18 @@
   --font-sans:
     "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
+  /* Phone column width. Still the cap for single-column reading measures
+     (forms, the onboarding screen) at every viewport size. */
   --content-max-width: 480px;
+  /* Wide layout: content area beside the sidebar from --bp-md up. */
+  --content-max-width-wide: 1120px;
+  --sidebar-width: 232px;
   --bottom-nav-height: 72px;
+
+  /* Breakpoints, for reference — CSS media queries can't read custom
+     properties, so these are duplicated as literals in @media rules:
+       md 768px  bottom nav becomes a sidebar, content widens, grids go 2-up
+       lg 1100px grids go 3-up where the content suits it            */
 
   --color-skeleton-highlight: #f1f5f9;
   --color-desktop-backdrop: #eef2f7;

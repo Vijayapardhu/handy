@@ -60,3 +60,25 @@
   flex-direction: column;
   gap: var(--space-5);
 }
+
+/*
+ * Desktop: the overall-attendance card keeps the full width as the hero, and
+ * the supporting cards pair up beneath it instead of running down a single
+ * long column. Applies to the skeleton stack too, so loading and loaded
+ * states have the same shape.
+ */
+@media (min-width: 768px) {
+  .stack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .stack > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .greetingTitle {
+    font-size: 26px;
+  }
+}

@@ -110,3 +110,24 @@
   white-space: nowrap;
   cursor: pointer;
 }
+
+/* The day's classes: a stack on mobile, columns once there's room. */
+.classList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (min-width: 768px) {
+  .classList {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+@media (min-width: 1100px) {
+  .classList {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

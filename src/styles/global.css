@@ -46,7 +46,18 @@ p {
   margin: 0;
 }
 
-/* Desktop: centered content area rather than stretching mobile UI (SRS §46) */
+/*
+ * Two layouts, one shell.
+ *
+ * Below 768px: a phone column with the bottom nav — unchanged.
+ * From 768px:  the nav becomes a fixed sidebar and the content area widens to
+ *              --content-max-width-wide. The app used to stay pinned at 480px
+ *              on every screen, which left a laptop showing a phone-shaped
+ *              sliver; pages now get room to lay their cards out in columns.
+ *
+ * Individual pages opt into multi-column with the .grid-* helpers below
+ * rather than each redefining the same breakpoints.
+ */
 .app-shell {
   max-width: var(--content-max-width);
   margin: 0 auto;
@@ -58,20 +69,69 @@ p {
   transition: background-color 0.2s ease;
 }
 
-@media (min-width: 640px) {
-  .app-shell {
-    box-shadow: 0 0 0 1px var(--color-border);
-    min-height: 100vh;
-  }
-  body {
-    background: var(--color-desktop-backdrop);
-  }
-}
-
 .app-main {
   flex: 1;
   padding: var(--space-5) var(--space-4) calc(var(--bottom-nav-height) + var(--space-6));
   animation: page-fade-in 0.25s ease;
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    max-width: none;
+    /* Reserve the sidebar's width; the nav itself is position: fixed. */
+    padding-left: var(--sidebar-width);
+  }
+
+  .app-main {
+    max-width: var(--content-max-width-wide);
+    margin: 0 auto;
+    width: 100%;
+    /* No bottom nav to clear at this size. */
+    padding: var(--space-6) var(--space-6) var(--space-8);
+  }
+}
+
+/*
+ * Responsive card grids. Pages apply these to an existing list/stack
+ * container; below the breakpoint they collapse to a normal single column, so
+ * the mobile layout is untouched.
+ */
+.grid-2,
+.grid-3 {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/*
+ * Opt-in cap for pages that are inherently one column — forms, detail views,
+ * chronological lists. Without it their rows stretch the full width of a
+ * laptop and become hard to scan. Applied as a plain class (like .app-shell
+ * and .app-main) rather than through a CSS module, since it's shared.
+ */
+.page-narrow {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .page-narrow {
+    max-width: 720px;
+    margin: 0 auto;
+  }
 }
 
 @keyframes page-fade-in {

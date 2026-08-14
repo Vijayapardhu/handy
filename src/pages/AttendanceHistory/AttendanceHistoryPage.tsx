@@ -76,7 +76,7 @@ export function AttendanceHistoryPage() {
   }
 
   return (
-    <div>
+    <div className="page-narrow">
       <TopHeader
         title="Attendance History"
         subtitle="Every recorded class, by date"

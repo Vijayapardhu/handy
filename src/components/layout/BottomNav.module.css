@@ -1,3 +1,9 @@
+/*
+ * One nav, two shapes. Below 768px it's the fixed bottom bar with stacked
+ * icon-over-label items; from 768px the same markup becomes a left sidebar
+ * with the label beside the icon. Restyled rather than branched in JSX, so
+ * there's no second component to keep in sync and no layout shift on resize.
+ */
 .nav {
   position: fixed;
   bottom: 0;
@@ -29,4 +35,55 @@
 
 .active {
   color: var(--color-primary);
+}
+
+@media (min-width: 768px) {
+  .nav {
+    top: 0;
+    bottom: 0;
+    right: auto;
+    width: var(--sidebar-width);
+    max-width: none;
+    height: 100vh;
+    margin: 0;
+    padding: var(--space-6) var(--space-3);
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 2px;
+    border-top: none;
+    border-right: 1px solid var(--color-border);
+    /* The brand mark sits in the gap above the items via ::before. */
+  }
+
+  .nav::before {
+    content: "Handy";
+    display: block;
+    padding: 0 var(--space-3) var(--space-6);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--color-primary);
+  }
+
+  .item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    font-size: 14px;
+    padding: 10px var(--space-3);
+    border-radius: var(--radius-md);
+  }
+
+  .item:hover {
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  .active,
+  .active:hover {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+  }
 }

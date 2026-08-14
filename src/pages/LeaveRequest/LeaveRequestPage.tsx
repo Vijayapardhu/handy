@@ -32,7 +32,7 @@ export function LeaveRequestPage() {
   }
 
   return (
-    <div>
+    <div className="page-narrow">
       <TopHeader title="Request Leave" subtitle="Submit a leave request for review" back />
 
       <Card>

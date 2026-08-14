@@ -73,3 +73,25 @@
   color: var(--color-text-muted);
   margin-top: 2px;
 }
+
+/* Desktop: pair the list up rather than running one narrow column down a
+   wide screen. Collapses back to a single column below the breakpoint, so
+   the mobile layout is unchanged. */
+@media (min-width: 768px) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Column gap only: rows keep their own bottom borders as separators, so a
+       row gap would leave the dividers floating away from the content. */
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+
+  .insights {
+    flex-direction: row;
+  }
+
+  .insights > * {
+    flex: 1;
+  }
+}

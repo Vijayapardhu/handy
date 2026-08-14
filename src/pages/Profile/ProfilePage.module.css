@@ -207,3 +207,15 @@
 .logout {
   margin-top: var(--space-6);
 }
+
+/*
+ * Profile is a settings page: rows of label/value and link lists. Those read
+ * badly when stretched across a wide screen, so the column is capped and
+ * centred inside the wide content area instead of filling it.
+ */
+@media (min-width: 768px) {
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+}

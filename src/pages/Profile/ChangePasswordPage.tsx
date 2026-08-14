@@ -46,7 +46,7 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <div>
+    <div className="page-narrow">
       <TopHeader title="Change Password" back />
       <p className={styles.intro}>
         Your account uses the shared default password until you change it here. Pick something you'll

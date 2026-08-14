@@ -72,3 +72,14 @@
   font-size: 11px;
   color: var(--color-text-faint);
 }
+
+/* Desktop: pair the list up rather than running one narrow column down a
+   wide screen. Collapses back to a single column below the breakpoint, so
+   the mobile layout is unchanged. */
+@media (min-width: 768px) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}

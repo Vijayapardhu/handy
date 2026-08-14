@@ -48,7 +48,7 @@ export function AttendancePlannerPage() {
   const isError = subjectsQuery.isError || configQuery.isError;
 
   return (
-    <div>
+    <div className="page-narrow">
       <TopHeader title="Attendance Planner" subtitle="Plan your path to the target" back={Boolean(subjectId)} />
 
       {isLoading && <Skeleton height={92} className={styles.summarySkeleton} />}

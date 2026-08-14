@@ -42,7 +42,7 @@ export function ProfilePage() {
 
   if (!student) {
     return (
-      <div>
+      <div className={styles.page}>
         <div className={styles.header}>
           <h1 className={styles.title}>Profile</h1>
           <p className={styles.subtitle}>Manage your account and preferences</p>
@@ -58,7 +58,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div>
+    <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Profile</h1>
         <p className={styles.subtitle}>Manage your account and preferences</p>

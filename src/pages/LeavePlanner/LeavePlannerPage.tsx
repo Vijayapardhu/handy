@@ -22,7 +22,7 @@ export function LeavePlannerPage() {
   const alternativesQuery = useAlternativeDates(showAlternatives ? date : null);
 
   return (
-    <div>
+    <div className="page-narrow">
       <TopHeader title="Can I Take Leave?" subtitle="Check how taking leave will affect your attendance" />
 
       <Card className={styles.dateCard}>

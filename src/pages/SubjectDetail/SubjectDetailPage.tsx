@@ -39,7 +39,7 @@ export function SubjectDetailPage() {
 
   if (isError) {
     return (
-      <div>
+      <div className="page-narrow">
         <TopHeader title="Subject" back />
         <ErrorState message="Unable to load this subject. Please try again." onRetry={() => {
           subjectQuery.refetch();

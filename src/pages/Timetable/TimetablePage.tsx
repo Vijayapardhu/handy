@@ -121,11 +121,15 @@ export function TimetablePage() {
           <EmptyState title="No classes" description="Nothing scheduled on this day." />
         )}
 
-      {!timetableQuery.isError &&
-        !timetableQuery.isLoading &&
-        dayEntries.map((entry) => (
-          <ClassCard key={entry.id} entry={entry} subject={subjectsMap.bySubjectId.get(entry.subjectId)} />
-        ))}
+      {!timetableQuery.isError && !timetableQuery.isLoading && dayEntries.length > 0 && (
+        // Wrapper exists so the day's classes can lay out in columns on wider
+        // screens; on mobile it's still a plain stack.
+        <div className={styles.classList}>
+          {dayEntries.map((entry) => (
+            <ClassCard key={entry.id} entry={entry} subject={subjectsMap.bySubjectId.get(entry.subjectId)} />
+          ))}
+        </div>
+      )}
 
       <div className={styles.updateBanner}>
         <RefreshCcw size={16} />
