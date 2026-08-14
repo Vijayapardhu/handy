@@ -89,3 +89,38 @@
   color: var(--color-text-faint);
   margin-top: 2px;
 }
+
+/* Push permission prompt — sits above the list, and removes itself once the
+   student has answered (see PushPrompt). */
+.pushCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.pushIcon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.pushBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.pushTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pushHint {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}

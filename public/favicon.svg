@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="46" fill="#f97316"/>
-  <path d="M30 55 L45 70 L72 35" stroke="white" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Handy">
+  <!--
+    Matches the in-app brand mark (the rounded "H" tile on the login screen)
+    rather than the generic checkmark this used to be: --color-primary
+    (#f97316) with a white H, and the same 22% corner radius as .logo.
+  -->
+  <rect width="100" height="100" rx="22" fill="#f97316"/>
+  <path d="M33 26 V74 M67 26 V74 M33 50 H67"
+        stroke="#ffffff" stroke-width="11" stroke-linecap="round" fill="none"/>
 </svg>

@@ -58,4 +58,12 @@ export default [
       globals: { ...globals.browser, ...globals.webextensions },
     },
   },
+  {
+    // Service workers served as-is from public/ — ServiceWorkerGlobalScope,
+    // plus the `firebase` compat global its importScripts() calls define.
+    files: ["public/**/*-sw.js"],
+    languageOptions: {
+      globals: { ...globals.serviceworker, firebase: "readonly" },
+    },
+  },
 ];

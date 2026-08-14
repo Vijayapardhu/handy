@@ -77,6 +77,39 @@ is optional and rare.
 The one other way an account can exist is `scripts/seed-students.mjs`, the Admin SDK seeder used
 for the demo student.
 
+### Deployment
+
+Live at **https://handy-aus.vercel.app** (Vercel project `vijayapardhus-projects/handy`, deployed
+from this repo). Note `handy-vijayapardhus-projects.vercel.app` points at the same deployment but
+sits behind Vercel's SSO protection — the extension must use the public alias above, which is what
+`HANDY_URL` in `extension/src/config.js` and `manifest.json`'s `host_permissions` /
+`externally_connectable` are set to.
+
+`.npmrc` pins `legacy-peer-deps=true` because `eslint-plugin-react-hooks@4.6.2` predates `eslint@9`;
+without it Vercel's `npm install` fails outright.
+
+### Web push (`api/notify.js`)
+
+Firebase Cloud Messaging, wired end to end:
+
+- `src/services/notifications/pushService.ts` asks permission, registers
+  `public/firebase-messaging-sw.js`, and appends the FCM token to
+  `students/{uid}.fcmTokens` — one per device, so a phone and a laptop both ring.
+- The service worker gets its Firebase config as **query params at registration**, since a file in
+  `public/` can't read Vite env vars and hardcoding it would drift from `src/app/config/firebase.ts`.
+- `POST /api/notify` (same `x-handy-key` guard) writes a `notifications` document **first**, then
+  attempts the push. The in-app list is the reliable channel; push is best-effort on top. Tokens
+  Firebase reports as unregistered are pruned automatically.
+
+```bash
+curl -X POST https://handy-aus.vercel.app/api/notify \
+  -H "Content-Type: application/json" -H "x-handy-key: $HANDY_SYNC_API_KEY" \
+  -d '{"rollNumber":"26B21CS058","title":"Attendance alert","body":"DMS is below 75%","type":"attendance","url":"/subjects"}'
+```
+
+`VITE_FIREBASE_VAPID_KEY` holds the public half of the Web Push key pair (Firebase Console → Cloud
+Messaging → Web Push certificates) — client-safe, like the rest of the web config.
+
 ### The sync endpoint (`api/sync.js`)
 
 The extension doesn't write to Firestore itself when this is deployed — it POSTs the capture to

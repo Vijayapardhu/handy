@@ -61,7 +61,10 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
              'name', 'department', 'course', 'year', 'section', 'semesterId',
              'collegeId', 'photoUrl', 'admissionNo', 'semesterLabel', 'gender',
-             'dob', 'mobileNo', 'profileComplete', 'updatedAt'
+             'dob', 'mobileNo', 'profileComplete', 'updatedAt',
+             // Push registration tokens, appended by the student's own device
+             // (services/notifications/pushService.ts).
+             'fcmTokens'
            ])
         // semesterId may only ever move to this student's own private
         // namespace — never to an admin-provisioned semester, which would

@@ -27,6 +27,10 @@ export default defineConfig({
         // Cache last-known timetable/attendance API responses (Firestore SDK
         // uses its own offline persistence; this covers static app shell + assets).
         globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+        // The FCM service worker must be fetched fresh and registered on its
+        // own scope — precaching another service worker's script through this
+        // one causes stale-registration bugs that are miserable to debug.
+        globIgnores: ["**/firebase-messaging-sw.js"],
       },
     }),
   ],

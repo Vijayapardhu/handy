@@ -12,7 +12,13 @@ export const FIREBASE_PROJECT_ID = "handyy-aus";
 // create two different accounts for the same student.
 export const AUTH_EMAIL_DOMAIN = "handy.local";
 
-export const HANDY_URL = "https://handy.vijayaapardhu.dev";
+/**
+ * Live production URL. `handy-vijayapardhus-projects.vercel.app` is the other
+ * alias for the same deployment but sits behind Vercel's SSO protection, so it
+ * is NOT usable here. Update this (and manifest.json's host_permissions and
+ * externally_connectable) if a custom domain is attached later.
+ */
+export const HANDY_URL = "https://handy-aus.vercel.app";
 
 /**
  * Server-side sync endpoint (api/sync.js, deployed with the web app). Writing

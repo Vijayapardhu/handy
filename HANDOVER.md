@@ -204,6 +204,47 @@ asked for. It bypasses every rule and grants total project control, and every
 file in an extension is readable by anyone who installs it. This came up
 directly and the answer was a server-side function instead.
 
+### Deployed, and verified in production
+
+Live at **https://handy-aus.vercel.app**. The sync endpoint was exercised
+against the real project end to end (account created, 1 subject + 42 timetable
+entries written, `section=T6(CA3)`, re-sync idempotent with `effectiveFrom`
+preserved) and the test data deleted afterwards. So unlike everything before
+it, this path is genuinely confirmed, not just typechecked.
+
+Gotchas that cost time and will again:
+- `handy-vijayapardhus-projects.vercel.app` is the **protected** alias (Vercel
+  SSO). The extension must use `handy-aus.vercel.app`. Aliases have already
+  changed once mid-session — if sync starts 404ing, check `vercel alias ls`
+  first.
+- Vercel's `npm install` fails without `.npmrc` (`legacy-peer-deps=true`),
+  because of the pre-existing eslint-plugin-react-hooks/eslint@9 conflict.
+- Env vars live only on Vercel (10 of them: 8 `VITE_*`, plus
+  `FIREBASE_SERVICE_ACCOUNT` and `HANDY_SYNC_API_KEY`). `vercel env ls
+  production` to check.
+
+GitHub flagged the Firebase **web** API key in `extension/src/config.js` as a
+leaked secret. It was dismissed as a false positive: that key is public by
+design and the deployed bundle serves the same value. Don't "fix" it by
+removing it — that breaks the extension and hides nothing. The service-account
+key is the one that genuinely matters, and it exists only in
+`service-account.json` (gitignored) and Vercel's env.
+
+### Web push (FCM)
+
+`api/notify.js` + `src/services/notifications/pushService.ts` +
+`public/firebase-messaging-sw.js`. Two details worth knowing before touching
+it:
+
+- The FCM service worker receives its Firebase config as **query params at
+  registration time**, because a file in `public/` can't read Vite env vars.
+  It's registered explicitly on its own scope so it can't collide with the
+  Workbox PWA worker, which is also why `globIgnores` excludes it from
+  precache.
+- `/api/notify` writes the `notifications` document **before** attempting the
+  push, so a blocked permission or a dead token never loses the message. Dead
+  tokens are pruned on the two error codes that mean "gone for good".
+
 ### The timetable fetches itself
 
 The timetable only hits the network when something is chosen on

@@ -24,6 +24,7 @@
   "permissions": ["storage"],
   "host_permissions": [
     "https://info.aec.edu.in/*",
+    "https://handy-aus.vercel.app/*",
     "https://handy.vijayaapardhu.dev/*",
     "https://identitytoolkit.googleapis.com/*",
     "https://securetoken.googleapis.com/*",
@@ -52,6 +53,7 @@
   ],
   "externally_connectable": {
     "matches": [
+      "https://handy-aus.vercel.app/*",
       "https://handy.vijayaapardhu.dev/*",
       "http://localhost:5173/*",
       "http://127.0.0.1:5173/*"

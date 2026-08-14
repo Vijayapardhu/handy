@@ -22,6 +22,13 @@ export interface StudentDoc {
    * full data and never go through onboarding.
    */
   profileComplete: boolean;
+  /**
+   * FCM registration tokens, one per device the student enabled push on
+   * (see services/notifications/pushService.ts). Appended with arrayUnion,
+   * never replaced — a phone and a laptop should both ring. Tokens that
+   * Firebase reports as unregistered are pruned server-side by api/notify.js.
+   */
+  fcmTokens?: string[];
   admissionNo?: string | null;
   semesterLabel?: string | null;
   gender?: string | null;

@@ -1,4 +1,4 @@
-import { Bell, Calendar, TrendingDown, Target, FileText, Megaphone, CheckCheck } from "lucide-react";
+import { Bell, BellOff, Calendar, TrendingDown, Target, FileText, Megaphone, CheckCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Button } from "@/components/ui/Button";
@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from "@/hooks/useNotifications";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { formatDisplayDate } from "@/lib/date";
 import type { NotificationType } from "@/types/notification";
 import { cn } from "@/lib/utils/cn";
@@ -39,6 +40,8 @@ export function NotificationsPage() {
           )
         }
       />
+
+      <PushPrompt />
 
       {isError && <ErrorState message="Unable to load notifications." onRetry={refetch} />}
 
@@ -97,6 +100,48 @@ export function NotificationsPage() {
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+/**
+ * Only shown when push is genuinely actionable — i.e. the browser supports it
+ * and the student hasn't already decided. A permanent "enable notifications"
+ * banner that can't do anything (denied, or unsupported on iOS Safari outside
+ * an installed PWA) is just noise.
+ */
+function PushPrompt() {
+  const { state, enable, enabling } = usePushNotifications();
+
+  if (state === "checking" || state === "unsupported" || state === "granted") return null;
+
+  if (state === "denied") {
+    return (
+      <div className={styles.pushCard}>
+        <BellOff size={18} className={styles.pushIcon} />
+        <div>
+          <p className={styles.pushTitle}>Notifications are blocked</p>
+          <p className={styles.pushHint}>
+            Your browser is blocking them for this site. Re-allow them in the address-bar site
+            settings to get attendance alerts.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.pushCard}>
+      <Bell size={18} className={styles.pushIcon} />
+      <div className={styles.pushBody}>
+        <p className={styles.pushTitle}>Get notified</p>
+        <p className={styles.pushHint}>
+          Attendance alerts and timetable changes, even when Handy is closed.
+        </p>
+      </div>
+      <Button size="sm" onClick={enable} loading={enabling}>
+        Turn on
+      </Button>
     </div>
   );
 }
