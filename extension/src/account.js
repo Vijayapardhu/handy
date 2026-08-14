@@ -91,7 +91,8 @@ export async function authenticate(rollNumber) {
   }
 
   // `stored.password` is only ever set when the student changed theirs and
-  // typed the new one into the popup; otherwise it's the shared default.
+  // the web app pushed the new one back; otherwise it's the shared default.
+  let signInError = null;
   try {
     const tokens = await signInWithPassword(email, stored?.password ?? ACCOUNT_PASSWORD);
     await patchAccount(rollNumber, {
@@ -104,6 +105,7 @@ export async function authenticate(rollNumber) {
     return { idToken: tokens.idToken, uid: tokens.uid };
   } catch (error) {
     if (error instanceof FirebaseRestError && error.code === "NETWORK_ERROR") throw error;
+    signInError = error;
   }
 
   try {
@@ -119,13 +121,62 @@ export async function authenticate(rollNumber) {
     return { idToken: tokens.idToken, uid: tokens.uid };
   } catch (error) {
     if (error instanceof FirebaseRestError && error.code === "EMAIL_EXISTS") {
-      // The account exists but neither the default nor anything we hold opens
-      // it — the student changed their password in Handy. Only they can
-      // supply it, so ask rather than failing with a raw auth error.
+      // The account exists and our credential didn't open it. Conclude "the
+      // student changed their password" only if the sign-in above was
+      // actually *rejected*: a throttled or 5xx sign-in lands here looking
+      // identical, and telling a student their password changed when it
+      // didn't sends them to fix something that isn't broken. Surface the
+      // real failure instead.
+      if (!isCredentialRejection(signInError)) throw signInError ?? error;
       await patchAccount(rollNumber, { email, state: ACCOUNT_STATE.needsPassword });
       throw new NeedsPasswordError(rollNumber);
     }
     throw error;
+  }
+}
+
+/**
+ * Identity Toolkit's ways of saying "that email/password pair is wrong", as
+ * opposed to "I couldn't answer you right now". Anything outside this set
+ * (throttling, disabled account, an outage) is a fault to report, not a
+ * password to re-enter.
+ */
+const CREDENTIAL_REJECTIONS = new Set([
+  "INVALID_LOGIN_CREDENTIALS",
+  "INVALID_PASSWORD",
+  "EMAIL_NOT_FOUND",
+  "MISSING_PASSWORD",
+]);
+
+function isCredentialRejection(error) {
+  return error instanceof FirebaseRestError && CREDENTIAL_REJECTIONS.has(error.code);
+}
+
+/**
+ * Clears a stale `needsPassword` when the stored credential turns out to work
+ * after all. Best-effort and silent: it exists because the flag used to be set
+ * on failures that had nothing to do with the password, and once set nothing
+ * ever cleared it — an account could sync perfectly through the server for
+ * weeks while still being flagged.
+ */
+export async function revalidateStoredPassword(rollNumber) {
+  const stored = await getAccount(rollNumber);
+  if (stored?.state !== ACCOUNT_STATE.needsPassword) return false;
+
+  try {
+    const tokens = await signInWithPassword(
+      rollNumberToEmail(rollNumber),
+      stored.password ?? ACCOUNT_PASSWORD,
+    );
+    await patchAccount(rollNumber, {
+      uid: tokens.uid,
+      refreshToken: tokens.refreshToken,
+      state: ACCOUNT_STATE.ready,
+    });
+    console.log("[Handy] stored password still works — clearing needsPassword for", rollNumber);
+    return true;
+  } catch {
+    return false; // Genuinely changed, or we can't tell right now. Leave the flag.
   }
 }
 
@@ -154,11 +205,15 @@ export async function setPassword(rollNumber, password) {
   return { idToken: tokens.idToken, uid: tokens.uid };
 }
 
-export async function recordSyncResult(rollNumber, { ok, error }) {
+export async function recordSyncResult(rollNumber, { ok, error, route }) {
   // On failure, leave lastSyncAt alone — "last synced 2 days ago, then this
   // error" is the useful thing to show, not a blanked-out timestamp.
+  //
+  // `lastRoute` matters because the two routes have different failure modes:
+  // the server route needs no student password at all, so a stale credential
+  // is no reason to bother anyone while that route is working.
   const patch = ok
-    ? { lastSyncAt: new Date().toISOString(), lastError: null }
-    : { lastError: error ?? "Unknown error" };
+    ? { lastSyncAt: new Date().toISOString(), lastError: null, lastRoute: route ?? null }
+    : { lastError: error ?? "Unknown error", lastRoute: route ?? null };
   await patchAccount(rollNumber, patch);
 }

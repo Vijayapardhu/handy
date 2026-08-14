@@ -62,13 +62,27 @@
             password: PASSWORD,
             account: { ...account, lastError: "commit: PERMISSION_DENIED" },
           },
-          // Stored credential went stale. Informational only — signing in on
-          // the website pushes the new password back and syncing resumes.
+          // Stored credential went stale AND syncing is stuck behind it —
+          // signing in on the website pushes the new password back and syncing
+          // resumes. This is the only state that earns the alarm.
           "changed password": {
             ok: true,
             snapshot,
             password: PASSWORD,
-            account: { ...account, state: "needsPassword" },
+            account: {
+              ...account,
+              state: "needsPassword",
+              lastError: "authenticate: Handy password has changed",
+              lastRoute: "direct",
+            },
+          },
+          // Same stale credential, but the server route doesn't need it — so
+          // this must render as an ordinary healthy sync, not an alarm.
+          "changed password, syncing anyway": {
+            ok: true,
+            snapshot,
+            password: PASSWORD,
+            account: { ...account, state: "needsPassword", lastRoute: "endpoint" },
           },
           "nothing captured": { ok: true, snapshot: null, password: PASSWORD, account: null },
         };

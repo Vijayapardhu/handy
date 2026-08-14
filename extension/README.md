@@ -80,6 +80,21 @@ credential by signing in before storing it, so a bogus push can't clobber a
 working one. Syncing resumes by itself; the popup just says "open Handy and
 sign in once" while it waits.
 
+Two things keep that message honest, both learned the hard way:
+
+- A stale credential is only *concluded* from an outright rejection by
+  Identity Toolkit (`INVALID_LOGIN_CREDENTIALS` and friends). Sign-in and
+  sign-up fail identically when the account exists but the server was
+  throttling or erroring, and treating that as "your password changed" sends
+  a student to fix a password that was never wrong.
+- The popup asks "is my data reaching Handy", not "is every stored credential
+  current". Those came apart when the server sync route landed: it writes with
+  the Admin SDK and never touches a student password, so an account can sit
+  flagged `needsPassword` while syncing perfectly. The bar only appears when
+  the stale credential is actually blocking a sync, and a successful sync
+  through the server re-checks the stored password once and clears the flag if
+  it still works.
+
 The Handy web app has **no signup screen** — this extension is the only thing
 that can create an account. A student who has never run it has nothing to sign
 in to.

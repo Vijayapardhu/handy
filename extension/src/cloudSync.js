@@ -14,7 +14,7 @@
 //   b. one atomic commit: student profile fields, one subject + one summary
 //      per captured subject, and deactivate subjects a previous sync left
 //      behind that this capture no longer contains
-import { authenticate, recordSyncResult } from "./account.js";
+import { authenticate, recordSyncResult, revalidateStoredPassword } from "./account.js";
 import {
   buildImportDocs,
   buildStudentStub,
@@ -40,11 +40,20 @@ export async function syncSnapshotToCloud(snapshot) {
   if (SYNC_ENDPOINT) {
     try {
       const result = await syncViaEndpoint(rollNumber, snapshot);
-      await recordSyncResult(rollNumber, { ok: true });
+      await recordSyncResult(rollNumber, { ok: true, route: "endpoint" });
+      // This route never touches the student's password, so it can succeed
+      // while the account is still flagged as needing one. If that flag is
+      // stale, drop it — otherwise it survives forever and keeps the web app
+      // from offering one-tap sign-in.
+      await revalidateStoredPassword(rollNumber);
       return result;
     } catch (error) {
       if (!isEndpointUnavailable(error)) {
-        await recordSyncResult(rollNumber, { ok: false, error: `endpoint: ${error?.message ?? error}` });
+        await recordSyncResult(rollNumber, {
+          ok: false,
+          error: `endpoint: ${error?.message ?? error}`,
+          route: "endpoint",
+        });
         throw error;
       }
       console.warn("[Handy] sync endpoint unreachable, writing directly instead:", error?.message);
@@ -137,7 +146,7 @@ async function syncDirectToFirestore(rollNumber, snapshot) {
 
     stage = "commit";
     await commitWrites(idToken, writes);
-    await recordSyncResult(rollNumber, { ok: true });
+    await recordSyncResult(rollNumber, { ok: true, route: "direct" });
     return { uid, subjectCount: subjects.length, slotCount };
   } catch (error) {
     // Record *which* step failed. A bare "PERMISSION_DENIED" doesn't say
@@ -146,6 +155,7 @@ async function syncDirectToFirestore(rollNumber, snapshot) {
     await recordSyncResult(rollNumber, {
       ok: false,
       error: `${stage}: ${error?.message ?? String(error)}`,
+      route: "direct",
     });
     throw error;
   }

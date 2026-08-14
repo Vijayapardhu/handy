@@ -81,12 +81,19 @@ function ring(percent) {
  * stops working — the student changed their Handy password — is fixed by
  * signing in on the website once, which pushes the new password back here
  * automatically (see handyExtensionBridge.setExtensionPassword).
+ *
+ * The bar answers "is my data reaching Handy", not "is every stored credential
+ * current". Those came apart once the server sync route landed: it writes with
+ * the Admin SDK and never touches a student password, so an account can be
+ * flagged `needsPassword` while syncing perfectly. Showing an alarm then is
+ * just wrong — it asks the student to fix something that isn't broken.
  */
 function statusBar() {
   const account = status?.account ?? null;
   const hasTimetable = Boolean(status?.snapshot?.timetable);
+  const blocked = account?.state === "needsPassword" && Boolean(account?.lastError);
 
-  if (account?.state === "needsPassword") {
+  if (blocked) {
     return `
       <div class="bar bad column">
         <span>Your Handy password changed. Open Handy and sign in once — syncing resumes by itself.</span>
