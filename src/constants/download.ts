@@ -22,9 +22,17 @@ export const ANDROID = {
   releasedOn: "August 2026",
 } as const;
 
+/** Tag of the release the extension zip currently lives on — cut separately from the app's own RELEASE_TAG. */
+const EXTENSION_RELEASE_TAG = "v1.0.0";
+
 export const EXTENSION = {
-  /** Zip of the `extension/` folder, loaded unpacked — it is not on the Web Store. */
-  url: `${REPO}/releases/download/${RELEASE_TAG}/handy-college-sync-${RELEASE_TAG}.zip`,
+  /**
+   * extension/tool/pack.mjs always names its output `handy-unpacked.zip`
+   * regardless of version — the file to attach to a release, per that
+   * script's own instructions. Templating a version into this filename (as
+   * this used to do) points at an asset that was never actually uploaded.
+   */
+  url: `${REPO}/releases/download/${EXTENSION_RELEASE_TAG}/handy-unpacked.zip`,
   version: "1.0.0",
   /** Pinned in extension/manifest.json via an embedded public key. */
   id: "ledmfeohpnfmepdbncmcidoaflhijmkn",
