@@ -13,12 +13,21 @@ export const FIREBASE_PROJECT_ID = "handyy-aus";
 export const AUTH_EMAIL_DOMAIN = "handy.local";
 
 /**
- * Live production URL. `handy-vijayapardhus-projects.vercel.app` is the other
- * alias for the same deployment but sits behind Vercel's SSO protection, so it
- * is NOT usable here. Update this (and manifest.json's host_permissions and
- * externally_connectable) if a custom domain is attached later.
+ * Live production URL.
+ *
+ * The custom domain rather than the vercel.app alias: that alias now issues a
+ * 308 to this host, and while a 308 does preserve the method and body — so
+ * syncing kept working through it — routing every capture through a redirect
+ * is a fragile thing to depend on, and the extension should ask for the
+ * address it actually means.
+ *
+ * `handy-vijayapardhus-projects.vercel.app` is a third alias for the same
+ * deployment but sits behind Vercel's SSO protection, so it is NOT usable
+ * here. Both hosts below are already allowed in manifest.json's
+ * host_permissions and externally_connectable; changing to a fourth would
+ * need adding there too.
  */
-export const HANDY_URL = "https://handy-aus.vercel.app";
+export const HANDY_URL = "https://handy.vijayaapardhu.dev";
 
 /**
  * Server-side sync endpoint (api/sync.js, deployed with the web app). Writing
