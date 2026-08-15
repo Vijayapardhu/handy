@@ -19,3 +19,13 @@ service-account.json
 # ID and a reinstall for everybody. Keep a copy somewhere safe and off git.
 dist-extension/
 *.pem
+
+# Android release signing.
+#
+# The keystore itself lives OUTSIDE this repo (C:/college/handy-keystore) —
+# this repo is public, and a signing key in git history is a signing key
+# anybody can use to publish an update over yours. key.properties holds the
+# passwords, so it never goes in either.
+mobile/android/key.properties
+*.jks
+*.keystore

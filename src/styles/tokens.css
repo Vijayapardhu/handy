@@ -16,9 +16,13 @@
   --color-info-bg: #dbeafe;
 
   /* Neutrals */
-  --color-bg: #f8fafc;
+  /* Matched to the Flutter app's HandyColors (mobile/lib/theme.dart) so the
+     two products are the same product. The app is the reference: these were
+     #f8fafc and #e5e7eb, a half-shade cooler, which read as a different
+     surface when the two were open side by side. */
+  --color-bg: #f6f7f9;
   --color-surface: #ffffff;
-  --color-border: #e5e7eb;
+  --color-border: #e9edf3;
   --color-text: #0f172a;
   --color-text-muted: #64748b;
   --color-text-faint: #94a3b8;
@@ -73,8 +77,10 @@
 }
 
 [data-theme="dark"] {
-  --color-bg: #0b1120;
-  --color-surface: #131b2c;
+  /* Also HandyColors — dark border, text and muted already agreed; these two
+     did not. */
+  --color-bg: #0a0f1a;
+  --color-surface: #141c2b;
   --color-border: #1f2a3d;
   --color-text: #f1f5f9;
   --color-text-muted: #94a3b8;

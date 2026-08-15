@@ -1,3 +1,14 @@
+import java.util.Properties
+
+// Release signing credentials, kept out of the repo (see .gitignore). The
+// keystore itself lives outside the project entirely — this repo is public, and
+// a signing key in git history is a signing key anyone can publish an update
+// with. CI writes this file from repository secrets before building.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -40,11 +51,34 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            // Only configured when key.properties is present. Referencing a
+            // missing keystore here would break `flutter run --release` for
+            // anyone who has cloned the repo without the signing material,
+            // which is everyone except whoever cuts releases.
+            if (keystoreProperties.getProperty("storeFile") != null) {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // A debug-signed release was the previous state, and it is worse
+            // than it sounds: the debug key is generated per machine and is
+            // well known, so builds from two computers cannot update each
+            // other — Android refuses with a signature mismatch and the
+            // student sees only "App not installed".
+            signingConfig = if (keystoreProperties.getProperty("storeFile") != null) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn("No key.properties — signing release with the DEBUG key. Not distributable.")
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
