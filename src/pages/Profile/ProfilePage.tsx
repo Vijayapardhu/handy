@@ -13,6 +13,7 @@ import {
   Moon,
   Megaphone,
   Smartphone,
+  Download,
 } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -167,27 +168,30 @@ export function ProfilePage() {
         <ProfileLink to="#" icon={Info} title="About Handy" subtitle="Version 0.1.0" />
       </Card>
 
-      {/* An outbound link, so it is an <a> rather than a router Link — and it
-          opens in a new tab, because leaving the app to fetch an APK and
-          losing your place is a small betrayal. */}
+      {/* Straight at the file, not at the releases page — one tap starts the
+          download instead of landing on GitHub to hunt for the right asset.
+          `handy.apk` is a stable name the release workflow always publishes
+          alongside the versioned copy, so this link never needs editing.
+
+          No target="_blank": a download does not navigate anywhere, and a
+          blank tab that opens and sits there looks like something failed. */}
       <p className={styles.sectionTitle}>Android app</p>
       <Card padded={false} className={styles.linkGroup}>
         <a
           className={styles.link}
-          href="https://github.com/Vijayapardhu/handy/releases/latest"
-          target="_blank"
+          href="https://github.com/Vijayapardhu/handy/releases/latest/download/handy.apk"
           rel="noopener noreferrer"
         >
           <span className={styles.linkIcon}>
             <Smartphone size={18} />
           </span>
           <span className={styles.linkBody}>
-            <span className={styles.linkTitle}>Get the Android app</span>
+            <span className={styles.linkTitle}>Download the Android app</span>
             <span className={styles.linkSubtitle}>
               Widgets, class reminders and offline access
             </span>
           </span>
-          <ChevronRight size={18} className={styles.chevron} />
+          <Download size={18} className={styles.chevron} />
         </a>
       </Card>
 

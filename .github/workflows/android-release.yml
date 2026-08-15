@@ -94,9 +94,21 @@ jobs:
       - name: Name the file after the version
         id: rename
         working-directory: mobile
+        # Two copies of the same APK, on purpose.
+        #
+        # handy-<version>.apk is what a person downloads and keeps: the version
+        # is in the filename, so a phone's Downloads folder is not four
+        # identical-looking files.
+        #
+        # handy.apk is the stable name, and it exists so that
+        #   /releases/latest/download/handy.apk
+        # is a permanent direct-download link. A versioned name cannot be
+        # linked to from the website without editing the site on every release
+        # — and the release that got forgotten is the link that 404s.
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d+ -f1)
           cp build/app/outputs/flutter-apk/app-release.apk "handy-$VERSION.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "handy.apk"
           echo "apk=mobile/handy-$VERSION.apk" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
