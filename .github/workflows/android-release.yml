@@ -121,5 +121,12 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.rename.outputs.apk }}
+          # Both, and the second one is not optional: mobile/handy.apk is what
+          # /releases/latest/download/handy.apk resolves to, which is the link
+          # the website uses. Building it and forgetting to upload it is a
+          # green run that leaves that link 404ing — which is exactly what
+          # happened the first time.
+          files: |
+            ${{ steps.rename.outputs.apk }}
+            mobile/handy.apk
           fail_on_unmatched_files: true
