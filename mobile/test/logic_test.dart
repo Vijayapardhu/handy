@@ -68,6 +68,7 @@ void main() {
   markTests();
   leaveTests();
   recordTests();
+  leaveRecoveryTests();
 
   group('timetable', () {
     TimetableEntry entry(int day, int period, String start, String end) => TimetableEntry(
@@ -526,6 +527,100 @@ void recordTests() {
       expect(r.completed, 0);
       expect(r.onTimeRate, isNull);
       expect(r.streak, 0);
+    });
+  });
+}
+
+/// Recovery, and what a leave does to the overall figure.
+void leaveRecoveryTests() {
+  TimetableEntry slot(int day, String subjectId, String start) => TimetableEntry(
+        id: '$day-$subjectId-$start',
+        timetableVersionId: 'v1',
+        dayOfWeek: day,
+        startTime: start,
+        endTime: '10:20',
+        subjectId: subjectId,
+        facultyName: 'F',
+        room: 'RB-221',
+        block: 'RB',
+        periodNo: 1,
+        strength: 72,
+        opted: 70,
+        type: 'lecture',
+        active: true,
+      );
+
+  Subject subject(String id) =>
+      Subject(id: id, code: id, name: id, shortName: id, facultyName: 'F');
+
+  AttendanceSummary summary(String id, int attended, int held) =>
+      AttendanceSummary(subjectId: id, attended: attended, held: held);
+
+  group('leave recovery', () {
+    final entries = [
+      slot(1, 'maths', '09:30'),
+      slot(1, 'maths', '10:30'),
+      slot(1, 'physics', '11:20'),
+    ];
+    final subjects = [subject('maths'), subject('physics')];
+
+    List<LeaveCost> costsFor(List<AttendanceSummary> summaries) => leaveCost(
+          entries: entries,
+          subjects: subjects,
+          summaries: summaries,
+          from: DateTime(2026, 8, 17),
+          to: DateTime(2026, 8, 17),
+        );
+
+    test('asks for nothing back when the leave stays above target', () {
+      // 45/50 is 90%; two more held is 45/52, still 86.5%.
+      final costs = costsFor([summary('maths', 45, 50), summary('physics', 45, 50)]);
+      expect(costs.firstWhere((c) => c.subject.id == 'maths').recovery, 0);
+    });
+
+    test('counts the classes needed to climb back out', () {
+      // 38/50 = 76%. Missing two makes it 38/52 = 73.08%.
+      // (38+n)/(52+n) >= 0.75  =>  0.25n >= 1  =>  n >= 4
+      final costs = costsFor([summary('maths', 38, 50), summary('physics', 45, 50)]);
+      final maths = costs.firstWhere((c) => c.subject.id == 'maths');
+      expect(maths.after, 73.08);
+      expect(maths.recovery, 4);
+    });
+
+    test('counts recovery from after the leave, not from today', () {
+      // Already below before the leave, so recovery must be larger than the
+      // figure a student would get from today's position.
+      final costs = costsFor([summary('maths', 30, 50), summary('physics', 45, 50)]);
+      final maths = costs.firstWhere((c) => c.subject.id == 'maths');
+      expect(maths.recovery, greaterThan(classesNeededForTarget(30, 50, 75)));
+    });
+
+    test('totals the overall figure and its recovery', () {
+      final summaries = [summary('maths', 38, 50), summary('physics', 40, 50)];
+      final overall = overallLeaveCost(
+        summaries: summaries,
+        costs: costsFor(summaries),
+      );
+
+      expect(overall.attended, 78);
+      expect(overall.heldBefore, 100);
+      // Two maths periods and one physics.
+      expect(overall.periods, 3);
+      expect(overall.heldAfter, 103);
+      expect(overall.before, 78);
+      expect(overall.after, 75.73);
+      // Still above target, so nothing to claw back.
+      expect(overall.recovery, 0);
+    });
+
+    test('overall recovery kicks in once the leave pushes it below', () {
+      final summaries = [summary('maths', 37, 50), summary('physics', 37, 50)];
+      final overall = overallLeaveCost(
+        summaries: summaries,
+        costs: costsFor(summaries),
+      );
+      expect(overall.after! < 75, isTrue);
+      expect(overall.recovery, greaterThan(0));
     });
   });
 }

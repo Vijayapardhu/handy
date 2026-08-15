@@ -79,6 +79,7 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
 
     final periods = costs.fold<int>(0, (sum, c) => sum + c.periods);
     final falling = costs.where((c) => c.dropsBelow(SubjectsScreen.target)).toList();
+    final overall = overallLeaveCost(summaries: state.summaries, costs: costs);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Leave planner')),
@@ -201,6 +202,11 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
             ),
 
             const SizedBox(height: 22),
+            Text('YOUR OVERALL', style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 10),
+            _OverallCard(overall: overall),
+
+            const SizedBox(height: 22),
             Text('SUBJECT BY SUBJECT', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 10),
             ...costs.map((cost) => _CostRow(cost: cost)),
@@ -213,6 +219,116 @@ class _LeavePlannerScreenState extends State<LeavePlannerScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// The one number a student quotes, before and after.
+///
+/// Shown above the per-subject table because it is the question asked first —
+/// leaving it to be worked out by adding up nine rows is leaving it unanswered.
+class _OverallCard extends StatelessWidget {
+  const _OverallCard({required this.overall});
+
+  final OverallLeaveCost overall;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).textTheme.bodySmall?.color;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('NOW', style: Theme.of(context).textTheme.labelSmall),
+                    Text(
+                      overall.before == null
+                          ? '—'
+                          : '${overall.before!.toStringAsFixed(2)}%',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.8,
+                        color: muted,
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: AppIcon(
+                    HugeIcons.strokeRoundedArrowRight01,
+                    size: 20,
+                    color: muted,
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('AFTER', style: Theme.of(context).textTheme.labelSmall),
+                    Text(
+                      overall.after == null
+                          ? '—'
+                          : '${overall.after!.toStringAsFixed(2)}%',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1.2,
+                        color: statusColour(overall.after),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '${overall.attended} of ${overall.heldBefore} → '
+              '${overall.attended} of ${overall.heldAfter}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+
+            const SizedBox(height: 14),
+            Divider(height: 1, color: Theme.of(context).dividerColor),
+            const SizedBox(height: 14),
+
+            // The number that turns a cost into a decision.
+            Row(
+              children: [
+                AppIcon(
+                  overall.recovery == 0
+                      ? HugeIcons.strokeRoundedCheckmarkCircle01
+                      : HugeIcons.strokeRoundedChartUp,
+                  size: 17,
+                  color: overall.recovery == 0 ? HandyColors.good : HandyColors.warn,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    overall.recovery == 0
+                        ? 'Still above ${SubjectsScreen.target.toInt()}% — nothing to make up.'
+                        : 'Then attend ${overall.recovery} in a row to get back to '
+                            '${SubjectsScreen.target.toInt()}%.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: overall.recovery == 0 ? HandyColors.good : HandyColors.warn,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -257,6 +373,21 @@ class _CostRow extends StatelessWidget {
                             : Theme.of(context).textTheme.bodySmall?.color,
                       ),
                     ),
+                    // What it would take to undo, per subject. The overall
+                    // figure says whether the day is affordable; this says
+                    // which subject you would be paying it back in.
+                    if (cost.recovery > 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Then ${cost.recovery} in a row to reach '
+                        '${SubjectsScreen.target.toInt()}%',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: HandyColors.warn,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

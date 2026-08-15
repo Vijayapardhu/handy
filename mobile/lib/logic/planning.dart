@@ -103,6 +103,7 @@ class LeaveCost {
     required this.periods,
     required this.before,
     required this.after,
+    required this.recovery,
   });
 
   final Subject subject;
@@ -112,6 +113,14 @@ class LeaveCost {
   final int periods;
   final double? before;
   final double? after;
+
+  /// Classes to attend in a row afterwards to get back to target.
+  ///
+  /// The number that turns a cost into a decision. "You would drop to 73%" is
+  /// a fact a student can do nothing with; "and then eight in a row to get
+  /// back" is the thing they weigh against the day off. Zero means the leave
+  /// costs nothing to recover from, because it never went below.
+  final int recovery;
 
   /// Crossing the line is the outcome that matters; a percentage falling by a
   /// point is not news unless it lands on the wrong side of the target.
@@ -129,6 +138,7 @@ List<LeaveCost> leaveCost({
   required List<AttendanceSummary> summaries,
   required DateTime from,
   required DateTime to,
+  double target = 75,
 }) {
   final start = DateTime(from.year, from.month, from.day);
   final end = DateTime(to.year, to.month, to.day);
@@ -161,6 +171,9 @@ List<LeaveCost> leaveCost({
       before: roundPercentage(calculateAttendance(attended, held)),
       // Missing raises the denominator only: the classes are still held.
       after: roundPercentage(calculateAttendance(attended, held + entry.value)),
+      // Counted from the position the leave leaves you in, not from today —
+      // the whole question is what it takes to climb back out.
+      recovery: classesNeededForTarget(attended, held + entry.value, target),
     ));
   }
 
@@ -168,6 +181,55 @@ List<LeaveCost> leaveCost({
   // that ends up lowest, not the one they miss most of.
   costs.sort((a, b) => (a.after ?? 999).compareTo(b.after ?? 999));
   return costs;
+}
+
+/// What the leave does to the one number a student quotes.
+///
+/// Subject-by-subject is the actionable half, but "what does this do to my
+/// overall" is the question asked first, and answering it only per subject
+/// leaves the reader adding up nine figures in their head.
+class OverallLeaveCost {
+  const OverallLeaveCost({
+    required this.attended,
+    required this.heldBefore,
+    required this.heldAfter,
+    required this.before,
+    required this.after,
+    required this.recovery,
+  });
+
+  final int attended;
+  final int heldBefore;
+  final int heldAfter;
+  final double? before;
+  final double? after;
+
+  /// Classes to attend in a row afterwards to bring the overall back to
+  /// target. Zero when the leave does not put it below.
+  final int recovery;
+
+  int get periods => heldAfter - heldBefore;
+}
+
+/// Derived from [costs] rather than re-walking the calendar, so the two can
+/// never disagree about how many periods a range contains.
+OverallLeaveCost overallLeaveCost({
+  required List<AttendanceSummary> summaries,
+  required List<LeaveCost> costs,
+  double target = 75,
+}) {
+  final attended = summaries.fold<int>(0, (sum, s) => sum + s.attended);
+  final held = summaries.fold<int>(0, (sum, s) => sum + s.held);
+  final missed = costs.fold<int>(0, (sum, c) => sum + c.periods);
+
+  return OverallLeaveCost(
+    attended: attended,
+    heldBefore: held,
+    heldAfter: held + missed,
+    before: roundPercentage(calculateAttendance(attended, held)),
+    after: roundPercentage(calculateAttendance(attended, held + missed)),
+    recovery: classesNeededForTarget(attended, held + missed, target),
+  );
 }
 
 /// How a student is doing at finishing things, rather than at collecting them.
