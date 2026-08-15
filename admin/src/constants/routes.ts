@@ -1,0 +1,17 @@
+export const ROUTES = {
+  login: "/login",
+  dashboard: "/",
+  analytics: "/analytics",
+  students: "/students",
+  studentDetail: (id: string = ":studentId") => `/students/${id}`,
+  leaveRequests: "/leave-requests",
+  reports: "/reports",
+  academic: "/academic",
+  subjects: "/subjects",
+  timetables: "/timetables",
+  announcements: "/announcements",
+  materials: "/materials",
+  notifications: "/notifications",
+  updates: "/updates",
+  admins: "/admins",
+} as const;
