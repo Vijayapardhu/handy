@@ -85,43 +85,60 @@ export default async function handler(req, res) {
     }
 
     const uid = await ensureAuthUser(rollNumber);
-    const written = await writeSnapshot(db, uid, rollNumber, snapshot);
+    const result = await ingestSnapshot(db, uid, rollNumber, snapshot);
 
-    // Everything past this point is best-effort and happens after the write,
-    // so no messaging failure can cost a student their sync.
-    let shared = null;
-    if (snapshot.timetable) {
-      // Which rooms this student sits in, so a class rep's announcement can
-      // find them. Derived from the portal's own timetable rather than stored
-      // against the student: a membership list a student can edit is a
-      // membership list a student can join.
-      await syncGroupMemberships(db, uid, snapshot.timetable).catch((error) =>
-        console.error("[sync] group membership failed for", rollNumber, error),
-      );
-
-      shared = await publishSharedTimetable(db, {
-        timetable: snapshot.timetable,
-        section: snapshot.timetable.name,
-        syncedBy: uid,
-      }).catch((error) => {
-        console.error("[sync] shared timetable failed for", rollNumber, error);
-        return null;
-      });
-    }
-
-    await notifyDevices(db, uid, { ...written, shared }).catch((error) =>
-      console.error("[sync] push failed for", rollNumber, error),
-    );
-
-    await pruneNotifications(db, uid).catch((error) =>
-      console.error("[sync] prune failed for", rollNumber, error),
-    );
-
-    return res.status(200).json({ ok: true, uid, ...written, shared });
+    return res.status(200).json({ ok: true, uid, ...result });
   } catch (error) {
     console.error("[sync] failed for", rollNumber, error);
     return res.status(500).json({ ok: false, error: String(error?.message ?? error) });
   }
+}
+
+/**
+ * Everything that happens to a snapshot once we know whose it is.
+ *
+ * Exported because the extension is no longer the only way a snapshot arrives:
+ * /api/verify scrapes AEC and ACET server-side and produces the same shape.
+ * Sharing this rather than writing a second pipeline is what makes those
+ * campuses get subjects, attendance history, class groups, widgets and push
+ * for free — and it means a fix here reaches both, instead of one path quietly
+ * drifting behind the other.
+ *
+ * Everything after the write is best-effort: no messaging failure can cost a
+ * student their sync.
+ */
+export async function ingestSnapshot(db, uid, rollNumber, snapshot) {
+  const written = await writeSnapshot(db, uid, rollNumber, snapshot);
+
+  let shared = null;
+  if (snapshot.timetable) {
+    // Which rooms this student sits in, so a class rep's announcement can
+    // find them. Derived from the portal's own timetable rather than stored
+    // against the student: a membership list a student can edit is a
+    // membership list a student can join.
+    await syncGroupMemberships(db, uid, snapshot.timetable).catch((error) =>
+      console.error("[ingest] group membership failed for", rollNumber, error),
+    );
+
+    shared = await publishSharedTimetable(db, {
+      timetable: snapshot.timetable,
+      section: snapshot.timetable.name,
+      syncedBy: uid,
+    }).catch((error) => {
+      console.error("[ingest] shared timetable failed for", rollNumber, error);
+      return null;
+    });
+  }
+
+  await notifyDevices(db, uid, { ...written, shared }).catch((error) =>
+    console.error("[ingest] push failed for", rollNumber, error),
+  );
+
+  await pruneNotifications(db, uid).catch((error) =>
+    console.error("[ingest] prune failed for", rollNumber, error),
+  );
+
+  return { ...written, shared };
 }
 
 /**
@@ -306,7 +323,7 @@ function safeParse(body) {
  * function going cold — an in-memory limiter would reset on every new
  * instance and protect nothing.
  */
-async function withinRateLimit(db, rollNumber) {
+export async function withinRateLimit(db, rollNumber) {
   const ref = db.doc(`syncRateLimits/${rollNumber}`);
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
@@ -322,7 +339,7 @@ async function withinRateLimit(db, rollNumber) {
 }
 
 /** Creates the student's Firebase Auth account the first time their roll number is seen. */
-async function ensureAuthUser(rollNumber) {
+export async function ensureAuthUser(rollNumber) {
   const auth = getAuth();
   const email = `${rollNumber.trim().toLowerCase()}@${AUTH_EMAIL_DOMAIN}`;
   try {

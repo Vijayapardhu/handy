@@ -261,3 +261,50 @@ Note that this cuts both ways: it binds a hosted Handy to publishing its
 source. That is the intent — this exists so students can see exactly what reads
 their attendance — but it is worth understanding before building anything
 commercial on top of it.
+
+## Signing in without the extension (`POST /api/verify`)
+
+AUS students sync through the browser extension, which reads pages they have
+already opened and never sees a college password. AEC and ACET cannot work that
+way round: their portal has no captcha, so the server can sign in for them —
+and the portal login *is* the identity check. If Campus Connect accepts the
+credentials and returns data, a Handy account is created on the spot.
+
+```
+POST /api/verify
+{ "rollNumber": "24A91A0501", "password": "…", "campus": "AEC" | "ACET" }
+```
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Signed in. Returns `uid`, a Firebase **custom token**, and the SYSTEM_README §3 data shape. |
+| `400` | Missing credentials, or a campus this endpoint does not serve. |
+| `401` | The portal rejected the roll number or password. |
+| `403` | Campus locked for maintenance (`appConfig/campus_<CAMPUS>.locked`). |
+| `409` | `campus: "AUS"` — use the extension; the response says so in words. |
+| `429` | Rate limited, sharing the per-roll-number ceiling with `/api/sync`. |
+| `502` | Signed in, but the portal returned nothing. Deliberately not written. |
+| `500` | Portal or parser failure. Fires the Discord alert if configured. |
+
+The client exchanges `token` via `signInWithCustomToken`, so no password for the
+account that was just created ever travels back or has to be typed.
+
+**The password is never stored.** It is a local const for the length of the
+request — not written to Firestore, not logged, not included in an alert.
+
+### What these campuses do and do not get
+
+The scrape produces a `CollegePortalSnapshot`, the same shape the extension
+produces, and runs it through `ingestSnapshot()` — the same pipeline `/api/sync`
+uses. Subjects, attendance summaries, history, projections and push all work
+from one code path.
+
+Two things do not, and both are limits of what the portal exposes rather than
+decisions:
+
+- **No timetable.** `getTimeTableReport` is AUS-only, so there are no class
+  reminders, no home-screen timetable widgets and no free-period planning.
+- **No class-rep announcements or notes.** The attendance table names a subject
+  but never its lecturer, and a class group is `timetable-subject-faculty` —
+  without the faculty, two lecturers' rooms cannot be told apart, so no group
+  can be formed honestly.
