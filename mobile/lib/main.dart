@@ -114,22 +114,36 @@ class HandyApp extends StatelessWidget {
 
 /// Signed out shows sign-in; signed in shows the app. Firebase persists the
 /// session, so a returning student lands straight on Today.
+///
+/// Every one of those screens is chosen *here*, and none of them navigates to
+/// another. That matters more than it looks: SignInScreen has no success path
+/// of its own — it signs in and waits for this stream to swap it out. Pushing
+/// it as a route instead would leave it sitting on top of the navigator after
+/// a successful sign-in, spinner finished and nothing happening, while the
+/// HomeShell it should have become sat invisible underneath.
+///
+/// Which is why onboarding is a state read here rather than a route it pushes:
+/// ListenableBuilder rebuilds this when `onboarded` flips, and the whole
+/// sequence stays one swap of a single screen.
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const _Splash();
-        }
-        if (snapshot.data != null) return const HomeShell();
-        // A student who has never run the extension has no account yet, so a
-        // sign-in form is the wrong first screen: it can only reject them.
-        return settings.onboarded ? const SignInScreen() : const OnboardingScreen();
-      },
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, _) => StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const _Splash();
+          }
+          if (snapshot.data != null) return const HomeShell();
+          // A student who has never run the extension has no account yet, so a
+          // sign-in form is the wrong first screen: it can only reject them.
+          return settings.onboarded ? const SignInScreen() : const OnboardingScreen();
+        },
+      ),
     );
   }
 }

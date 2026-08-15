@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../widgets/app_icon.dart';
-import 'sign_in_screen.dart';
 
 /// What Handy is, before it asks anyone to sign in.
 ///
@@ -90,17 +89,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
-    if (!widget.asTour) await settings.setOnboarded(true);
-    if (!mounted) return;
-
+    // Opened from Profile: this is a route, so closing it is a pop.
     if (widget.asTour) {
       Navigator.of(context).pop();
       return;
     }
-    // Replaced rather than pushed: there is no back to an introduction.
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const SignInScreen()),
-    );
+
+    // First run: NOT a route. _AuthGate renders this screen directly and
+    // rebuilds when `onboarded` flips, so recording the flag is the whole of
+    // moving on. Pushing SignInScreen here instead would stack it above the
+    // gate — and since sign-in has no success path of its own, a successful
+    // sign-in would then leave the student staring at the form they had just
+    // filled in, with HomeShell rendered invisibly beneath it.
+    await settings.setOnboarded(true);
   }
 
   void _next() {
