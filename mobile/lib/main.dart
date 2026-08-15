@@ -12,8 +12,10 @@ import 'data/reminders.dart';
 import 'data/study_timer.dart';
 import 'data/settings.dart';
 import 'data/repository.dart';
+import 'data/updates.dart';
 import 'firebase_options.dart';
 import 'screens/home_shell.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/sign_in_screen.dart';
 import 'screens/timetable_changes_screen.dart';
 import 'theme.dart';
@@ -22,6 +24,7 @@ late final Repository repository;
 late final Reminders reminders;
 late final Push push;
 late final StudyTimer studyTimer;
+late final Updates updates;
 final settings = AppSettings();
 
 /// Global so that routes pushed onto the root Navigator can reach it: an
@@ -45,6 +48,7 @@ Future<void> main() async {
   FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
 
   repository = Repository(FirebaseFirestore.instance, FirebaseAuth.instance);
+  updates = Updates(FirebaseFirestore.instance);
   final localNotifications = FlutterLocalNotificationsPlugin();
   reminders = Reminders(localNotifications);
   studyTimer = StudyTimer(localNotifications);
@@ -121,7 +125,10 @@ class _AuthGate extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _Splash();
         }
-        return snapshot.data == null ? const SignInScreen() : const HomeShell();
+        if (snapshot.data != null) return const HomeShell();
+        // A student who has never run the extension has no account yet, so a
+        // sign-in form is the wrong first screen: it can only reject them.
+        return settings.onboarded ? const SignInScreen() : const OnboardingScreen();
       },
     );
   }

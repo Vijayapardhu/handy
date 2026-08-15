@@ -35,6 +35,7 @@ class AppSettings extends ChangeNotifier {
   static const _notifyNewDataKey = 'handy.notifyNewData';
   static const _deadlineLeadKey = 'handy.deadlineLeadDays';
   static const _classLeadKey = 'handy.classLeadMinutes';
+  static const _onboardedKey = 'handy.onboarded';
 
   ThemeMode themeMode = ThemeMode.system;
   AccentChoice accent = AccentChoice.orange;
@@ -119,6 +120,7 @@ class AppSettings extends ChangeNotifier {
     remindDeadlines = prefs.getBool(_remindDeadlinesKey) ?? true;
     remindClasses = prefs.getBool(_remindClassesKey) ?? true;
     notifyNewData = prefs.getBool(_notifyNewDataKey) ?? true;
+    onboarded = prefs.getBool(_onboardedKey) ?? false;
     deadlineLeadDays = prefs.getInt(_deadlineLeadKey) ?? 2;
     classLeadMinutes = prefs.getInt(_classLeadKey) ?? 15;
 
@@ -162,6 +164,18 @@ class AppSettings extends ChangeNotifier {
     if (first.isEmpty) return '';
     // Title-case the portal's shouting: MAGAPU -> Magapu.
     return first[0].toUpperCase() + first.substring(1).toLowerCase();
+  }
+
+  /// Whether the intro has been seen. False on a fresh install, and the reason
+  /// the app opens on an explanation rather than on a sign-in form asking for a
+  /// roll number that does not have an account yet.
+  bool onboarded = false;
+
+  Future<void> setOnboarded(bool value) async {
+    onboarded = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardedKey, value);
   }
 
   Future<void> setWidgetStyle(WidgetStyle style) async {

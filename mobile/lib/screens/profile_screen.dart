@@ -11,6 +11,7 @@ import 'account_screens.dart';
 import 'attendance_history_screen.dart';
 import 'leave_planner_screen.dart';
 import 'notifications_inbox_screen.dart';
+import 'onboarding_screen.dart';
 import 'settings_screen.dart';
 import 'support_screens.dart';
 import 'subjects_screen.dart';
@@ -194,6 +195,13 @@ class ProfileScreen extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
+                      _ActionRow(
+                        icon: HugeIcons.strokeRoundedPieChart,
+                        label: 'How Handy works',
+                        detail: 'The intro, including where the data comes from',
+                        onTap: () => _push(context, const OnboardingScreen(asTour: true)),
+                      ),
+                      const _Rule(),
                       _ActionRow(
                         icon: HugeIcons.strokeRoundedHelpCircle,
                         label: 'Help & FAQ',

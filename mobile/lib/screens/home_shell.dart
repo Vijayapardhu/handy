@@ -9,6 +9,7 @@ import '../data/app_state.dart';
 import '../logic/deadlines.dart';
 import '../main.dart';
 import '../widgets/form_sheet.dart';
+import '../widgets/update_sheet.dart';
 import 'profile_screen.dart';
 import 'subjects_screen.dart';
 import 'deadlines_screen.dart';
@@ -53,6 +54,16 @@ class _HomeShellState extends State<HomeShell> {
     // Registered here rather than at startup: the token is stored against
     // the student's uid, so there is nowhere to put it until they sign in.
     push.register();
+
+    // Handy is not on the Play Store, so nothing updates it on a student's
+    // behalf. Checked after the first frame so a slow network cannot delay the
+    // app opening, and never in a way that can throw — an update check is the
+    // least important thing happening at launch.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final update = await updates.check();
+      if (update == null || !mounted) return;
+      showUpdateSheet(context, update);
+    });
 
     // Taps on a widget arrive as a URI. Handled here rather than in main()
     // because acting on one means changing tab and pushing a sheet, and this
