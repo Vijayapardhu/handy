@@ -12,7 +12,7 @@ import { ANDROID, LINKS } from "@/constants/download";
  */
 export function SetupAndroid() {
   return (
-    <section className={`${styles.section} ${styles.sectionRuled}`} id="android">
+    <section className={styles.section} id="android">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
           <SectionHead

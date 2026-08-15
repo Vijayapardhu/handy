@@ -16,7 +16,7 @@ import { EXTENSION, LINKS } from "@/constants/download";
  */
 export function SetupExtension() {
   return (
-    <section className={`${styles.section} ${styles.sectionRuled}`} id="extension">
+    <section className={styles.section} id="extension">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
           <SectionHead

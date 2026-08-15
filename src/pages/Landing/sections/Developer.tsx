@@ -43,7 +43,7 @@ const PROFILE_LINKS = [
 
 export function Developer() {
   return (
-    <section className={`${styles.section} ${styles.sectionRuled}`} id="developer">
+    <section className={styles.section} id="developer">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
           <SectionHead

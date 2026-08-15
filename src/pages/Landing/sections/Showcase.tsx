@@ -19,7 +19,7 @@ export function Showcase() {
   const ref = useScrollProgress<HTMLDivElement>("pin");
 
   return (
-    <section className={`${styles.showcase} ${styles.sectionRuled}`} ref={ref} id="app">
+    <section className={styles.showcase} ref={ref} id="app">
       <div className={styles.showcaseStage}>
         <SectionHead
           centered

@@ -21,7 +21,7 @@ export function HowItWorks({ lenis }: { lenis: MutableRefObject<Lenis | null> })
   const railRef = useScrollProgress<HTMLDivElement>("cover");
 
   return (
-    <section className={`${styles.section} ${styles.sectionRuled}`} id="how">
+    <section className={styles.section} id="how">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
           <SectionHead

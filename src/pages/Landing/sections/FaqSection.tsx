@@ -4,7 +4,7 @@ import { SectionHead } from "../components/SectionHead";
 
 export function FaqSection() {
   return (
-    <section className={`${styles.section} ${styles.sectionRuled}`} id="faq">
+    <section className={styles.section} id="faq">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
           <SectionHead

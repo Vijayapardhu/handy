@@ -33,7 +33,7 @@ export function Widgets({ lenis }: { lenis: MutableRefObject<Lenis | null> }) {
   const [theme, setTheme] = useState<WidgetTheme>(WIDGET_THEMES[0]);
 
   return (
-    <section className={`${styles.widgets} ${styles.sectionRuled}`} id="widgets" ref={sectionRef}>
+    <section className={styles.widgets} id="widgets" ref={sectionRef}>
       <div className={styles.widgetsStage}>
         <SectionHead
           centered

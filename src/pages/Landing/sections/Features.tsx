@@ -13,7 +13,7 @@ import { delay } from "../reveal";
  */
 export function Features() {
   return (
-    <section className={`${styles.section} ${styles.sectionRuled}`} id="features">
+    <section className={styles.section} id="features">
       <div className={styles.inner}>
         <div className={styles.sectionHead}>
           <SectionHead

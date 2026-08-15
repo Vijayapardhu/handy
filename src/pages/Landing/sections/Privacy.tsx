@@ -28,7 +28,7 @@ const NEVER = [
  */
 export function Privacy() {
   return (
-    <section className={`${styles.section} ${styles.sectionRuled}`} id="privacy">
+    <section className={styles.section} id="privacy">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
           <SectionHead

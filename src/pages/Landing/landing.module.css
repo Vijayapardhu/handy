@@ -125,12 +125,6 @@
   scroll-margin-top: calc(var(--l-nav-height) + var(--s-5));
 }
 
-/* Sections that follow one another with no divider read as one long block.
-   A hairline between them costs nothing and gives the page a spine. */
-.sectionRuled {
-  border-top: 1px solid var(--l-border);
-}
-
 .inner {
   max-width: var(--l-max);
   margin-inline: auto;
@@ -2102,7 +2096,6 @@
 
 .closer {
   text-align: center;
-  border-top: 1px solid var(--l-border);
   /*
    * Centred rather than anchored to the bottom edge. Anchored at `50% 100%`
    * the glow was at full strength exactly where the section met the footer,

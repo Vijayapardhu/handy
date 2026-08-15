@@ -36,7 +36,7 @@ export function Problem() {
   const treeRef = useScrollProgress<HTMLDivElement>("enter");
 
   return (
-    <section className={`${styles.section} ${styles.sectionRuled}`}>
+    <section className={styles.section}>
       <div className={`${styles.inner} ${styles.sectionHead}`}>
         <SectionHead
           centered
