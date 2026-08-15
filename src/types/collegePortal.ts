@@ -64,6 +64,28 @@ export interface CollegePortalTimetable {
   sourceUrl: string;
 }
 
+/**
+ * What happened on one specific day, per subject.
+ *
+ * AUS never provides this — its portal exposes running totals only, which is
+ * why `attendance` (AttendanceRecordDoc) has been permanently empty for synced
+ * students and `attendanceMarks` exists to let them record their own day.
+ *
+ * AEC and ACET *do* provide it: ShowAttendance takes a date range, so asking
+ * for a single day returns that day's classes. Absent for AUS, present for the
+ * campuses that have it.
+ */
+export interface CollegePortalDailyAttendance {
+  /** ISO date, yyyy-MM-dd. */
+  date: string;
+  subjects: {
+    /** Joins to CollegePortalSubjectAttendance.code. */
+    code: string;
+    held: number;
+    attended: number;
+  }[];
+}
+
 export interface CollegePortalSnapshot {
   rollNumber: string | null;
   studentName: string | null;
@@ -86,6 +108,11 @@ export interface CollegePortalSnapshot {
    * other). Absent means "no timetable seen yet", never "no classes".
    */
   timetable?: CollegePortalTimetable | null;
+  /**
+   * Per-day attendance, where the portal exposes it. Absent means "this campus
+   * does not provide it", not "no classes happened".
+   */
+  daily?: CollegePortalDailyAttendance[];
   capturedAt: string;
   sourceUrl: string;
 }

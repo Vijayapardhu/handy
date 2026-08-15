@@ -52,8 +52,48 @@ function toTotal(overall) {
   return { held, attended, percent: Number(overall.per) || 0 };
 }
 
+/** yyyy-MM-dd for a date offset from today, matching AttendanceRecordDoc.date. */
+function isoDay(offsetDays) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Today's and yesterday's classes, as days rather than as totals.
+ *
+ * The portal lists every subject for a queried day, including ones with no
+ * class — `held: 0`. Those are dropped here: a row saying a subject met zero
+ * times is not a record of anything, and keeping them would fill a student's
+ * history with days that never happened.
+ *
+ * Only two days are available per sync, because that is what the scrape asks
+ * for. History therefore accumulates going forward rather than arriving
+ * complete — a student who starts using Handy today has today, not September.
+ */
+function toDaily(attendance) {
+  const days = [
+    { date: isoDay(0), rows: attendance?.today?.subjects ?? [] },
+    { date: isoDay(-1), rows: attendance?.yesterday?.subjects ?? [] },
+  ];
+
+  return days
+    .map(({ date, rows }) => ({
+      date,
+      subjects: rows
+        .map((row) => ({
+          code: String(row.subject ?? "").trim().toUpperCase(),
+          held: Number(row.held) || 0,
+          attended: Number(row.attended) || 0,
+        }))
+        .filter((row) => row.code.length > 0 && row.held > 0),
+    }))
+    .filter((day) => day.subjects.length > 0);
+}
+
 export function toSnapshot({ campus, rollNumber, data }) {
   const subjects = toSubjects(data.subjects ?? []);
+  const daily = toDaily(data.attendance);
 
   return {
     rollNumber,
@@ -81,6 +121,10 @@ export function toSnapshot({ campus, rollNumber, data }) {
     // Absent, not empty: an empty timetable would publish a version saying this
     // student has no classes, and wipe a real one if they ever had it.
     timetable: null,
+
+    // The one thing these campuses give that AUS does not: which classes
+    // actually met today and yesterday, and whether this student was there.
+    daily,
 
     capturedAt: new Date().toISOString(),
     sourceUrl: `https://info.aec.edu.in/${campus.toLowerCase()}/Academics/studentattendance.aspx`,

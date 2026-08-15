@@ -3,13 +3,19 @@
  * mobile's `AttendanceMark` (mobile/lib/models/models.dart:280-319).
  *
  * Deliberately a *separate* collection from `attendance` (AttendanceRecordDoc),
- * which stays admin-only and, for every real synced student, permanently
- * empty — the college portal exposes only per-subject running totals, never
- * a per-day record. This collection is what actually fills that gap: the
- * student's own account of a class, fully owned by them (see firestore.rules'
+ * which stays server-written. Which of the two a student has depends on their
+ * college: Aditya University's portal exposes per-subject running totals only,
+ * so `attendance` is permanently empty for them and this collection is the only
+ * per-day account that exists. AEC and ACET report a day at a time, so those
+ * students get real records in `attendance` — and where both cover the same
+ * class, the college's record wins (see portalAttendanceService.mergeAttendance).
+ *
+ * The distinction is what each one *is*, not where it came from: a mark is the
+ * student's own note about their day, fully owned by them (see firestore.rules'
  * `attendanceMarks/{markId}` block — full CRUD, no admin write path, no
- * approval step, because a mark is a note about your own day, not a claim
- * against the college's record).
+ * approval step), while `attendance` is the college's record and is
+ * `allow write: if false` for every client, because a record the student can
+ * rewrite is not a record.
  *
  * "cancelled" is a real third state, not a boolean present/absent — a
  * cancelled class counts toward neither attended nor held, so it must never

@@ -37,6 +37,55 @@ function selfSubjectId(uid, code, fallback) {
   return `self-${uid}-${slugify(code || `sl${fallback}`)}`;
 }
 
+/**
+ * Per-day attendance records, for the campuses whose portal reports a day
+ * rather than only a running total.
+ *
+ * These go in `attendance` (AttendanceRecordDoc), not `attendanceMarks`. The
+ * two say different things and must not be mixed: a mark is the student's own
+ * note about their day, fully theirs to edit or delete; this is the college's
+ * record, and a student being able to rewrite it would make it worthless. That
+ * is why `attendance` is `allow write: if false` for every client and only the
+ * Admin SDK writes here.
+ *
+ * The doc id is deterministic, so syncing the same day twice corrects the
+ * record rather than adding a second one.
+ *
+ * Status is coarser than the portal's numbers, because AttendanceRecordDoc
+ * holds a verdict and not a count: a subject that met twice and was attended
+ * once records as present. The running totals in `attendanceSummaries` remain
+ * the authority on how many — this collection answers "was I there that day".
+ */
+export function buildDailyAttendanceDocs(uid, snapshot, now) {
+  const days = snapshot.daily ?? [];
+  if (days.length === 0) return [];
+
+  const slNoByCode = new Map(
+    (snapshot.attendance?.subjects ?? []).map((subject) => [subject.code, subject.slNo]),
+  );
+
+  const records = [];
+  for (const day of days) {
+    for (const row of day.subjects ?? []) {
+      if (!row.code || (Number(row.held) || 0) <= 0) continue;
+      const subjectId = selfSubjectId(uid, row.code, slNoByCode.get(row.code) ?? 0);
+      records.push({
+        id: `${uid}_${subjectId}_${day.date}`,
+        studentId: uid,
+        subjectId,
+        // No timetable on these campuses, so there is no entry to point at.
+        timetableEntryId: null,
+        date: day.date,
+        status: (Number(row.attended) || 0) > 0 ? "present" : "absent",
+        source: "collegePortal",
+        recordedAt: now,
+        updatedAt: now,
+      });
+    }
+  }
+  return records;
+}
+
 export function buildImportDocs(uid, snapshot, now) {
   const semesterId = selfImportSemesterId(uid);
   const timetableSubjectByCode = new Map(

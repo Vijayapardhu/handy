@@ -26,6 +26,7 @@ import { getMessaging } from "firebase-admin/messaging";
 import { syncGroupMemberships } from "./_classGroups.js";
 import { publishSharedTimetable } from "./_sharedTimetable.js";
 import {
+  buildDailyAttendanceDocs,
   buildImportDocs,
   buildStudentStub,
   buildTimetableDocs,
@@ -405,8 +406,16 @@ async function writeSnapshot(db, uid, rollNumber, snapshot) {
     slotCount = await appendTimetable(db, batch, uid, snapshot, semesterId, now);
   }
 
+  // Per-day records, where the portal reports days rather than only totals.
+  // Merged rather than replaced: each sync brings today and yesterday, and
+  // overwriting the collection would throw away every day before those.
+  const daily = buildDailyAttendanceDocs(uid, snapshot, now);
+  for (const record of daily) {
+    batch.set(db.collection("attendance").doc(record.id), record, { merge: true });
+  }
+
   await batch.commit();
-  return { subjectCount: subjects.length, slotCount, attendanceChanged };
+  return { subjectCount: subjects.length, slotCount, dailyCount: daily.length, attendanceChanged };
 }
 
 /**
