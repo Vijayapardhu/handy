@@ -194,7 +194,13 @@ class NotificationSettingsScreen extends StatelessWidget {
                   ),
                   SwitchListTile(
                     value: settings.notifyNewData,
-                    onChanged: (v) => settings.setNotifyNewData(v),
+                    onChanged: (v) async {
+                      await settings.setNotifyNewData(v);
+                      // The server decides whether to send, so the preference
+                      // has to reach it — a switch that only changed a value
+                      // on this phone would have gone on being ignored.
+                      await repository.setNotifyNewData(v);
+                    },
                     title: const Text('New data'),
                     subtitle: Text(
                       'When your attendance or timetable updates',
@@ -209,6 +215,12 @@ class NotificationSettingsScreen extends StatelessWidget {
               'Class and deadline reminders are scheduled on this phone, so they '
               'arrive with no signal and nothing leaves the device to produce '
               'them. Only "new data" comes from a server.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Turning "new data" off silences the notification but still lets '
+              'your home-screen widgets update in the background.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 14),

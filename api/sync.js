@@ -132,10 +132,15 @@ async function notifyDevices(db, uid, written) {
   const tokens = student.data()?.fcmTokens ?? [];
   if (tokens.length === 0) return;
 
+  // A student who has turned "new data" off still gets their widgets
+  // refreshed — that is a silent data message, not an interruption. Only the
+  // visible half is suppressed.
+  const wanted = student.data()?.notifyNewData != false;
+
   const subjects = written?.subjectCount ?? 0;
   const messages = [];
 
-  if (subjects > 0) {
+  if (wanted && subjects > 0) {
     messages.push({
       channel: "handy_attendance",
       type: "attendance",
@@ -149,7 +154,7 @@ async function notifyDevices(db, uid, written) {
 
   // Only for the student who synced, and only when it actually moved —
   // everyone else on this timetable is told by publishSharedTimetable.
-  if (written?.shared?.changed) {
+  if (wanted && written?.shared?.changed) {
     messages.push({
       channel: "handy_timetable",
       type: "timetable",

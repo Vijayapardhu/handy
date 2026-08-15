@@ -81,12 +81,18 @@ class Reminders {
     required List<TimetableEntry> entries,
     required List<Task> tasks,
     required Map<String, Subject> subjectsById,
+    bool classes = true,
+    bool deadlines = true,
   }) async {
     for (final pending in await _plugin.pendingNotificationRequests()) {
       await _plugin.cancel(id: pending.id);
     }
-    await _scheduleClasses(entries, subjectsById);
-    await _scheduleTasks(tasks);
+    // Switching a kind off has to unschedule what is already queued, not just
+    // stop adding more — reminders are scheduled weeks ahead, so skipping the
+    // next scheduling pass would leave a month of them still to fire. That is
+    // why the cancel above happens unconditionally and these gate the rebuild.
+    if (classes) await _scheduleClasses(entries, subjectsById);
+    if (deadlines) await _scheduleTasks(tasks);
   }
 
   Future<void> _scheduleClasses(

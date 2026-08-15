@@ -17,6 +17,7 @@ class Student {
     required this.collegeId,
     required this.photoUrl,
     required this.profileComplete,
+    this.updatedAt,
   });
 
   final String id;
@@ -31,6 +32,11 @@ class Student {
   final String? photoUrl;
   final bool profileComplete;
 
+  /// ISO timestamp of the last write, which for these documents means the last
+  /// sync from the portal. Used as the cut-off for self-marked attendance, so
+  /// a class the portal has already counted is not counted again.
+  final String? updatedAt;
+
   factory Student.fromMap(String id, Map<String, dynamic> d) => Student(
         id: id,
         rollNumber: d['rollNumber'] as String? ?? '',
@@ -43,6 +49,7 @@ class Student {
         collegeId: d['collegeId'] as String? ?? '',
         photoUrl: d['photoUrl'] as String?,
         profileComplete: d['profileComplete'] as bool? ?? false,
+        updatedAt: d['updatedAt'] as String?,
       );
 }
 
@@ -222,5 +229,65 @@ class Faq {
         answer: d['answer'] as String? ?? '',
         // Missing order sinks to the bottom rather than jumping to the top.
         order: (d['order'] as num?)?.toInt() ?? 9999,
+      );
+}
+
+/// What a student says about one class on one day.
+///
+/// The portal publishes only per-subject totals — 32 of 47 — and republishes
+/// them irregularly, so between syncs a student has no idea where they stand.
+/// These marks fill that gap. They are the student's own account, never the
+/// college's: they live in their own collection, cannot overwrite the imported
+/// summaries, and anything computed from them is labelled an estimate.
+enum MarkStatus {
+  present('Present'),
+  absent('Missed'),
+  /// Held on the timetable but didn't happen. Counts as neither attended nor
+  /// held, which is the whole reason it needs a state of its own — recording a
+  /// cancelled class as "missed" would quietly damage your own projection.
+  cancelled('Cancelled');
+
+  const MarkStatus(this.label);
+  final String label;
+}
+
+class AttendanceMark {
+  const AttendanceMark({
+    required this.id,
+    required this.subjectId,
+    required this.date,
+    required this.status,
+    required this.startTime,
+    required this.periods,
+  });
+
+  final String id;
+  final String subjectId;
+
+  /// yyyy-MM-dd, matching how task due dates are stored.
+  final String date;
+  final MarkStatus status;
+
+  /// Which slot on that day, so two sessions of one subject stay distinct.
+  final String startTime;
+
+  /// A merged block counts once per period it covers — a three-period lab you
+  /// sat through is three classes to the register, not one.
+  final int periods;
+
+  /// Stable id, so marking the same class twice edits rather than duplicates.
+  static String idFor(String uid, String subjectId, String date, String startTime) =>
+      '$uid-$subjectId-$date-${startTime.replaceAll(':', '')}';
+
+  factory AttendanceMark.fromMap(String id, Map<String, dynamic> d) => AttendanceMark(
+        id: id,
+        subjectId: d['subjectId'] as String? ?? '',
+        date: d['date'] as String? ?? '',
+        status: MarkStatus.values.firstWhere(
+          (s) => s.name == d['status'],
+          orElse: () => MarkStatus.present,
+        ),
+        startTime: d['startTime'] as String? ?? '',
+        periods: (d['periods'] as num?)?.toInt() ?? 1,
       );
 }

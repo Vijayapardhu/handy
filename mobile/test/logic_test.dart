@@ -65,6 +65,7 @@ void main() {
   });
 
   planningTests();
+  markTests();
 
   group('timetable', () {
     TimetableEntry entry(int day, int period, String start, String end) => TimetableEntry(
@@ -227,6 +228,101 @@ void planningTests() {
         'near-exam',
       );
       expect(nextExam([task('a', DateTime(2026, 8, 18))], today), isNull);
+    });
+  });
+}
+
+/// Self-marked attendance: the student's own account, carried on top of the
+/// college's, without either being able to corrupt the other.
+void markTests() {
+  AttendanceMark mark(String date, MarkStatus status, {int periods = 1}) => AttendanceMark(
+        id: date + status.name,
+        subjectId: 's1',
+        date: date,
+        status: status,
+        startTime: '09:30',
+        periods: periods,
+      );
+
+  group('projected attendance', () {
+    test('is the portal figure untouched when nothing is marked', () {
+      final p = projectAttendance(attended: 32, held: 47, marks: []);
+      expect(p.attended, 32);
+      expect(p.held, 47);
+      expect(p.percent, 68.09);
+      // Nothing added means nothing projected — the UI must not claim an
+      // estimate it has not made.
+      expect(p.isProjected, isFalse);
+    });
+
+    test('carries attendance forward since the last sync', () {
+      final p = projectAttendance(
+        attended: 32,
+        held: 47,
+        since: '2026-08-10',
+        marks: [
+          mark('2026-08-11', MarkStatus.present),
+          mark('2026-08-12', MarkStatus.present),
+          mark('2026-08-13', MarkStatus.absent),
+        ],
+      );
+      expect(p.attended, 34);
+      expect(p.held, 50);
+      expect(p.addedFromMarks, 3);
+      expect(p.isProjected, isTrue);
+    });
+
+    test('ignores marks the portal has already counted', () {
+      // Marking a class then syncing must not count that class twice — which
+      // would punish exactly the students who bother to mark.
+      final p = projectAttendance(
+        attended: 32,
+        held: 47,
+        since: '2026-08-15',
+        marks: [
+          mark('2026-08-11', MarkStatus.present),
+          mark('2026-08-15', MarkStatus.present),
+          mark('2026-08-16', MarkStatus.present),
+        ],
+      );
+      expect(p.attended, 33);
+      expect(p.held, 48);
+    });
+
+    test('a cancelled class moves neither number', () {
+      final p = projectAttendance(
+        attended: 32,
+        held: 47,
+        marks: [mark('2026-08-16', MarkStatus.cancelled)],
+      );
+      expect(p.attended, 32);
+      expect(p.held, 47);
+      expect(p.isProjected, isFalse);
+    });
+
+    test('a merged block counts once per period', () {
+      // A three-period lab you sat through is three classes to the register.
+      final p = projectAttendance(
+        attended: 32,
+        held: 47,
+        marks: [mark('2026-08-16', MarkStatus.present, periods: 3)],
+      );
+      expect(p.attended, 35);
+      expect(p.held, 50);
+    });
+
+    test('missing every marked class drags the projection down', () {
+      final p = projectAttendance(
+        attended: 40,
+        held: 50,
+        marks: [
+          mark('2026-08-16', MarkStatus.absent),
+          mark('2026-08-17', MarkStatus.absent, periods: 2),
+        ],
+      );
+      expect(p.attended, 40);
+      expect(p.held, 53);
+      expect(p.percent, 75.47);
     });
   });
 }

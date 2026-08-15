@@ -30,10 +30,11 @@ class SubjectsScreen extends StatelessWidget {
     final rows = state.subjects
         .map((subject) {
           final summary = summaryBySubject[subject.id];
-          final percent = roundPercentage(
-            calculateAttendance(summary?.attended ?? 0, summary?.held ?? 0),
-          );
-          return (subject: subject, summary: summary, percent: percent);
+          // Carried forward by anything marked since the last sync, so the
+          // ranking reflects where a student actually stands rather than
+          // where they stood when the portal last published.
+          final projected = state.projectedFor(subject.id);
+          return (subject: subject, summary: summary, percent: projected.percent);
         })
         .toList()
       // Nulls (nothing held yet) sort last: they're not at risk, just unknown.

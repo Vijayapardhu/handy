@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../data/app_state.dart';
 import '../main.dart';
@@ -222,10 +223,15 @@ class _AttendanceHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percent = state.overallPercent;
+    // The projection, not the raw import: between syncs the portal's figure is
+    // simply out of date, and a student who has been marking their classes
+    // knows more about their own attendance than it does. Falls back to the
+    // portal's own number when nothing has been marked.
+    final projected = state.overallProjected;
+    final percent = projected.percent;
     final colour = statusColour(percent);
-    final attended = state.summaries.fold<int>(0, (s, x) => s + x.attended);
-    final held = state.summaries.fold<int>(0, (s, x) => s + x.held);
+    final attended = projected.attended;
+    final held = projected.held;
     final canSkip = classesCanSkip(attended, held, SubjectsScreen.target);
     final needed = classesNeededForTarget(
       attended,
@@ -276,9 +282,26 @@ class _AttendanceHero extends StatelessWidget {
                 const Spacer(),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    '$attended / $held',
-                    style: Theme.of(context).textTheme.bodySmall,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '$attended / $held',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      // Said plainly whenever the number is no longer the
+                      // college's. Handy must never let an estimate pass for
+                      // the record.
+                      if (projected.isProjected)
+                        Text(
+                          'estimated',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -503,6 +526,129 @@ class _NextClassCard extends StatelessWidget {
     final hours = minutes ~/ 60;
     final rest = minutes % 60;
     return rest == 0 ? '$hours h' : '$hours h $rest min';
+  }
+}
+
+/// Present, missed, or cancelled — for one class, on one day.
+///
+/// This is the half the college portal cannot give: it publishes running
+/// totals and republishes them irregularly, so between syncs a student's real
+/// position drifts away from the one Handy can show. Marking a class closes
+/// that gap immediately, and it is the only attendance figure in Handy the
+/// student writes themselves.
+///
+/// Tapping the state a class is already in clears it. The fastest way to undo
+/// a mistap should be to repeat it, not to hunt for a third control.
+class _MarkRow extends StatelessWidget {
+  const _MarkRow({required this.block, required this.state});
+
+  final ClassBlock block;
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final current = state.markFor(block.first.subjectId, today, block.startTime);
+
+    void mark(MarkStatus status) {
+      HapticFeedback.selectionClick();
+      repository.setMark(
+        subjectId: block.first.subjectId,
+        date: today,
+        startTime: block.startTime,
+        periods: block.periods,
+        status: current?.status == status ? null : status,
+      );
+    }
+
+    return Row(
+      children: [
+        _MarkChip(
+          label: 'Present',
+          icon: HugeIcons.strokeRoundedTick02,
+          colour: HandyColors.good,
+          selected: current?.status == MarkStatus.present,
+          onTap: () => mark(MarkStatus.present),
+        ),
+        const SizedBox(width: 6),
+        _MarkChip(
+          label: 'Missed',
+          icon: HugeIcons.strokeRoundedCancel01,
+          colour: HandyColors.bad,
+          selected: current?.status == MarkStatus.absent,
+          onTap: () => mark(MarkStatus.absent),
+        ),
+        const SizedBox(width: 6),
+        _MarkChip(
+          label: 'Cancelled',
+          icon: HugeIcons.strokeRoundedMinusSign,
+          colour: Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey,
+          selected: current?.status == MarkStatus.cancelled,
+          onTap: () => mark(MarkStatus.cancelled),
+        ),
+      ],
+    );
+  }
+}
+
+class _MarkChip extends StatelessWidget {
+  const _MarkChip({
+    required this.label,
+    required this.icon,
+    required this.colour,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final AppIconData icon;
+  final Color colour;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? colour.withValues(alpha: 0.16) : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected ? colour : Theme.of(context).dividerColor,
+              width: selected ? 1.4 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AppIcon(
+                icon,
+                size: 13,
+                color: selected ? colour : Theme.of(context).textTheme.bodySmall?.color,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? colour : Theme.of(context).textTheme.bodySmall?.color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -770,6 +916,9 @@ class _TimelineRow extends StatelessWidget {
     required this.state,
   });
 
+  /// Neither started nor over: nothing to record yet.
+  bool get upcoming => !finished && !running;
+
   final ClassBlock block;
   final Subject? subject;
   final bool finished;
@@ -914,6 +1063,13 @@ class _TimelineRow extends StatelessWidget {
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(height: 1.3),
                             ),
+                          ],
+                          // Only once the class has started. Marking yourself
+                          // present at a lecture that begins in three hours is
+                          // a promise, not a record.
+                          if (!upcoming) ...[
+                            const SizedBox(height: 10),
+                            _MarkRow(block: block, state: state),
                           ],
                         ],
                       ),

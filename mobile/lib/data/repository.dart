@@ -204,6 +204,58 @@ class Repository {
 
   Future<void> deleteTask(String taskId) => _db.collection('tasks').doc(taskId).delete();
 
+  /// The student's own day-by-day marks.
+  ///
+  /// A separate collection from the imported summaries, and from the
+  /// admin-only `attendance` records — the college's account and the
+  /// student's must never be able to overwrite one another.
+  Stream<List<AttendanceMark>> watchMarks() => _db
+      .collection('attendanceMarks')
+      .where('studentId', isEqualTo: _uid)
+      .snapshots()
+      .map((snap) => snap.docs.map((d) => AttendanceMark.fromMap(d.id, d.data())).toList());
+
+  /// Records — or corrects — one class on one day.
+  ///
+  /// Written at a deterministic id so marking the same class twice edits the
+  /// mark rather than stacking a second one; tapping the state it is already
+  /// in clears it, because the fastest way to undo a mistap should be to
+  /// repeat it.
+  Future<void> setMark({
+    required String subjectId,
+    required DateTime date,
+    required String startTime,
+    required int periods,
+    required MarkStatus? status,
+  }) async {
+    final day = date.toIso8601String().substring(0, 10);
+    final id = AttendanceMark.idFor(_uid, subjectId, day, startTime);
+    final ref = _db.collection('attendanceMarks').doc(id);
+
+    if (status == null) {
+      await ref.delete();
+      return;
+    }
+
+    await ref.set({
+      'studentId': _uid,
+      'subjectId': subjectId,
+      'date': day,
+      'startTime': startTime,
+      'periods': periods,
+      'status': status.name,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Lets the server decide whether to interrupt this student on a sync. Kept
+  /// on the student document because the server cannot read a phone's
+  /// preferences.
+  Future<void> setNotifyNewData(bool on) => _db.collection('students').doc(_uid).update({
+        'notifyNewData': on,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+
   /// Help content, maintained centrally rather than shipped in the binary — an
   /// answer that needs an app update to correct will stay wrong.
   ///

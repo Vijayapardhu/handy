@@ -64,7 +64,12 @@ service cloud.firestore {
              'dob', 'mobileNo', 'profileComplete', 'updatedAt',
              // Push registration tokens, appended by the student's own device
              // (services/notifications/pushService.ts).
-             'fcmTokens'
+             'fcmTokens',
+             // Whether the server may send this student a notification when a
+             // sync lands. It lives here rather than only on the device
+             // because the *server* is what decides whether to send, and it
+             // cannot read a phone's preferences.
+             'notifyNewData'
            ])
         // semesterId may only ever move to this student's own private
         // namespace — never to an admin-provisioned semester, which would
@@ -137,6 +142,26 @@ service cloud.firestore {
     match /attendance/{recordId} {
       allow read: if isSignedIn() && resource.data.studentId == request.auth.uid;
       allow write: if false;
+    }
+
+    // What the student says about their own attendance, day by day.
+    //
+    // Deliberately a *separate* collection from `attendance` above, which
+    // stays admin-only. The college's record and a student's own account of it
+    // are different claims and must never be able to overwrite each other: the
+    // portal publishes only per-subject totals, so these marks fill the gap
+    // between one sync and the next, and the app labels anything derived from
+    // them as an estimate rather than as the record.
+    //
+    // Fully student-owned, including delete — a mark is a note about your own
+    // day and mistyping one should not be permanent.
+    match /attendanceMarks/{markId} {
+      allow read, delete: if isSignedIn() && resource.data.studentId == request.auth.uid;
+      allow create, update: if isSignedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.subjectId is string
+        && request.resource.data.date is string
+        && request.resource.data.status in ['present', 'absent', 'cancelled'];
     }
 
     // A student may write their own aggregate summaries, but only ones tagged

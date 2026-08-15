@@ -21,12 +21,14 @@ class AppState extends ChangeNotifier {
   List<AttendanceSummary> summaries = [];
   List<TimetableEntry> entries = [];
   List<Task> tasks = [];
+  List<AttendanceMark> marks = [];
 
   bool loading = true;
   String? error;
 
   StreamSubscription<Student?>? _studentSub;
   StreamSubscription<List<Task>>? _tasksSub;
+  StreamSubscription<List<AttendanceMark>>? _marksSub;
 
   Map<String, Subject> get subjectsById => {for (final s in subjects) s.id: s};
 
@@ -35,6 +37,40 @@ class AppState extends ChangeNotifier {
     final attended = summaries.fold<int>(0, (sum, s) => sum + s.attended);
     final held = summaries.fold<int>(0, (sum, s) => sum + s.held);
     return roundPercentage(calculateAttendance(attended, held));
+  }
+
+  /// The same figure carried forward by what the student has marked since the
+  /// last sync. Falls back to the portal's own number when nothing is marked.
+  ProjectedAttendance get overallProjected => projectAttendance(
+        attended: summaries.fold<int>(0, (sum, s) => sum + s.attended),
+        held: summaries.fold<int>(0, (sum, s) => sum + s.held),
+        marks: marks,
+        since: lastSyncedOn,
+      );
+
+  ProjectedAttendance projectedFor(String subjectId) {
+    final summary = summaries.where((s) => s.subjectId == subjectId).firstOrNull;
+    return projectAttendance(
+      attended: summary?.attended ?? 0,
+      held: summary?.held ?? 0,
+      marks: marks.where((m) => m.subjectId == subjectId).toList(),
+      since: lastSyncedOn,
+    );
+  }
+
+  /// The mark for one class on one day, if there is one.
+  AttendanceMark? markFor(String subjectId, DateTime date, String startTime) {
+    final day = date.toIso8601String().substring(0, 10);
+    return marks
+        .where((m) => m.subjectId == subjectId && m.date == day && m.startTime == startTime)
+        .firstOrNull;
+  }
+
+  /// yyyy-MM-dd the portal figures were last written, so marks the portal has
+  /// already counted are not counted twice.
+  String? get lastSyncedOn {
+    final at = student?.updatedAt;
+    return (at != null && at.length >= 10) ? at.substring(0, 10) : null;
   }
 
   List<TimetableEntry> get todaysClasses =>
@@ -54,6 +90,7 @@ class AppState extends ChangeNotifier {
       // chain once per stale subscription.
       await _studentSub?.cancel();
       await _tasksSub?.cancel();
+      await _marksSub?.cancel();
 
       _studentSub = repository.watchStudent().listen((s) async {
         student = s;
@@ -77,6 +114,11 @@ class AppState extends ChangeNotifier {
       _tasksSub = repository.watchTasks().listen((t) async {
         tasks = t;
         await _afterDataChanged();
+        notifyListeners();
+      });
+
+      _marksSub = repository.watchMarks().listen((m) {
+        marks = m;
         notifyListeners();
       });
     } catch (e) {
@@ -121,6 +163,8 @@ class AppState extends ChangeNotifier {
       entries: entries,
       tasks: tasks,
       subjectsById: subjectsById,
+      classes: settings.remindClasses,
+      deadlines: settings.remindDeadlines,
     );
     await pushToWidget();
   }
