@@ -20,6 +20,17 @@ class AppState extends ChangeNotifier {
   List<Subject> subjects = [];
   List<AttendanceSummary> summaries = [];
   List<TimetableEntry> entries = [];
+
+  /// How many classes a day this student typically has, on days they have any.
+  ///
+  /// Two sources, because the two kinds of college give different things. With
+  /// a timetable it is exact — count the classes on each weekday that has any.
+  /// Without one (AEC, ACET), it is averaged from the college's own per-day
+  /// attendance records, which is why it improves as those accumulate.
+  ///
+  /// Null means there is not enough to say yet, and every figure derived from
+  /// it is hidden rather than guessed.
+  double? classesPerDay;
   List<Task> tasks = [];
   List<AttendanceMark> marks = [];
 
@@ -153,6 +164,16 @@ class AppState extends ChangeNotifier {
     final s = student;
     if (s == null || s.semesterId.isEmpty) return;
 
+    // A pull-to-refresh means "get me the current numbers". For a student whose
+    // college is read by scraping, re-reading Firestore alone cannot do that —
+    // nothing has put anything new there. This asks the portal first, and only
+    // when it is actually due, so holding the list open does not hammer it.
+    //
+    // Deliberately awaited: the spinner should still be turning while the
+    // college is being asked, otherwise the gesture looks finished and the
+    // numbers change a moment later on their own.
+    await portalAuth.resyncIfDue();
+
     final results = await Future.wait([
       repository.subjects(s.semesterId),
       repository.summaries(),
@@ -181,9 +202,31 @@ class AppState extends ChangeNotifier {
         deadlineLeadDays: settings.deadlineLeadDays,
       );
 
+  /// Works out how many classes a day this student has, from whichever source
+  /// their college provides.
+  ///
+  /// The timetable is preferred because it is exact and needs no history. The
+  /// per-day records are the fallback, and one day of them is not an average —
+  /// hence the two-day floor, which keeps a brand-new account from telling
+  /// somebody to come in for eleven days on the strength of one busy Tuesday.
+  Future<void> _recomputeClassesPerDay() async {
+    if (entries.isNotEmpty) {
+      final perWeekday = <int, int>{};
+      for (final entry in entries.where((e) => e.active)) {
+        perWeekday[entry.dayOfWeek] = (perWeekday[entry.dayOfWeek] ?? 0) + 1;
+      }
+      classesPerDay = classesPerActiveDay(perWeekday.values.toList());
+      return;
+    }
+
+    final recorded = await repository.classesPerRecordedDay();
+    classesPerDay = recorded.length >= 2 ? classesPerActiveDay(recorded) : null;
+  }
+
   /// Reminders and the home-screen widget both derive from the same data, so
   /// they're refreshed together whenever any of it changes.
   Future<void> _afterDataChanged() async {
+    await _recomputeClassesPerDay();
     if (entries.isEmpty && tasks.isEmpty) return;
     await reminders.reschedule(
       entries: entries,

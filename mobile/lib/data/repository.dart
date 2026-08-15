@@ -103,6 +103,30 @@ class Repository {
     return items;
   }
 
+  /// How many classes this student had on each day the college recorded one.
+  ///
+  /// Read from `attendance` — the college's own per-day record, which only the
+  /// campuses whose portal reports days have. Empty for Aditya University,
+  /// whose portal gives running totals only.
+  ///
+  /// One record is one subject on one day, so a subject with two back-to-back
+  /// periods counts once. That makes this a slight undercount, which is the
+  /// safe direction: it says a student needs *more* days rather than fewer.
+  Future<List<int>> classesPerRecordedDay() async {
+    final snap = await _db
+        .collection('attendance')
+        .where('studentId', isEqualTo: _uid)
+        .get();
+
+    final perDay = <String, int>{};
+    for (final doc in snap.docs) {
+      final date = doc.data()['date'] as String?;
+      if (date == null) continue;
+      perDay[date] = (perDay[date] ?? 0) + 1;
+    }
+    return perDay.values.toList();
+  }
+
   Future<List<AttendanceSummary>> summaries() async {
     final snap = await _db
         .collection('attendanceSummaries')

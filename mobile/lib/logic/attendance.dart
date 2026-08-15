@@ -47,7 +47,36 @@ int classesCanSkip(int attended, int held, double target) {
   }
 }
 
-/// The portal's figures brought forward by what the student has marked since.
+/// How many classes this subject typically has on a day it meets at all.
+///
+/// [heldPerDay] is the number of classes on each day the subject actually met —
+/// days it did not meet are not in the list, because averaging those in would
+/// say "0.4 classes a day" and make every answer below meaningless.
+///
+/// Returns null when there is nothing to average, which is the honest answer
+/// for a student who has just signed up: better no estimate than one built on
+/// a single Tuesday.
+double? classesPerActiveDay(List<int> heldPerDay) {
+  final days = heldPerDay.where((n) => n > 0).toList();
+  if (days.isEmpty) return null;
+  final total = days.fold<int>(0, (sum, n) => sum + n);
+  return total / days.length;
+}
+
+/// [classes] expressed as days, given how many classes a day usually holds.
+///
+/// The number a student actually plans around. "Attend 18 more classes" is
+/// arithmetic; "come in for 5 more days" is a decision they can make on a
+/// Sunday night — and the two are not the same question, because a day is
+/// several classes and missing one day costs several.
+///
+/// Rounded up: attending four and a half days is not a thing you can do, and
+/// rounding down would tell a student they are safe a day before they are.
+int? daysForClasses(int classes, double? perDay) {
+  if (perDay == null || perDay <= 0) return null;
+  if (classes <= 0) return 0;
+  return (classes / perDay).ceil();
+}
 ///
 /// The portal republishes irregularly — sometimes a fortnight apart — and in
 /// between, a student's real position drifts from the one Handy can show. This

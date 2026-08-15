@@ -46,6 +46,7 @@ class PortalAuth {
   static const _rollKey = 'handy.portal.roll';
   static const _passwordKey = 'handy.portal.password';
   static const _campusKey = 'handy.portal.campus';
+  static const _lastSyncKey = 'handy.portal.lastSync';
 
   /// Verifies against the college and signs in. Throws [PortalAuthException].
   Future<void> signIn({
@@ -67,6 +68,39 @@ class PortalAuth {
   Future<bool> get hasSavedCredential async =>
       (await _storage.read(key: _passwordKey))?.isNotEmpty ?? false;
 
+  /// The hour after which a day's attendance is worth fetching again.
+  ///
+  /// Classes finish by late afternoon, so a sync before then sees a half-marked
+  /// day and one after sees the whole of it. Syncing again past this hour is
+  /// what makes "were you in yesterday's classes" right rather than a snapshot
+  /// of lunchtime.
+  static const dayCompleteHour = 17;
+
+  /// A floor on how often the portal is asked, so opening the app four times
+  /// in a row is four screens and one sign-in.
+  static const _minGap = Duration(minutes: 30);
+
+  /// Whether to re-sync now.
+  ///
+  /// Two reasons to say yes: enough time has passed, or the school day has
+  /// finished since the last sync and today's record is therefore incomplete.
+  /// The second is the one that matters — without it a student who opens Handy
+  /// at 9am and again at 6pm keeps the morning's half-empty version all evening.
+  Future<bool> isResyncDue([DateTime? now]) async {
+    if (!await hasSavedCredential) return false;
+
+    final at = now ?? DateTime.now();
+    final raw = await _storage.read(key: _lastSyncKey);
+    final last = raw == null ? null : DateTime.tryParse(raw);
+    if (last == null) return true;
+
+    if (at.difference(last) >= _minGap) return true;
+
+    // The day finished between the last sync and now.
+    final sameDay = last.year == at.year && last.month == at.month && last.day == at.day;
+    return sameDay && last.hour < dayCompleteHour && at.hour >= dayCompleteHour;
+  }
+
   /// Re-runs the scrape with the saved credential, so attendance is current
   /// without the student doing anything.
   ///
@@ -85,6 +119,7 @@ class PortalAuth {
 
     try {
       await _verify(rollNumber: roll, password: password, campus: campus);
+      await _storage.write(key: _lastSyncKey, value: DateTime.now().toIso8601String());
       return true;
     } on PortalAuthException catch (error) {
       if (error.code == 'invalid_credentials') await forget();
@@ -94,12 +129,17 @@ class PortalAuth {
     }
   }
 
+  /// [resync], but only when [isResyncDue] says so. What app open and
+  /// pull-to-refresh both call.
+  Future<bool> resyncIfDue() async => await isResyncDue() ? resync() : false;
+
   /// Drops the saved credential. Called on sign-out, and when the college
   /// rejects it.
   Future<void> forget() async {
     await _storage.delete(key: _rollKey);
     await _storage.delete(key: _passwordKey);
     await _storage.delete(key: _campusKey);
+    await _storage.delete(key: _lastSyncKey);
   }
 
   /// POSTs to /api/verify and returns the Firebase custom token.

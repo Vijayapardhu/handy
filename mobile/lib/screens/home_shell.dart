@@ -71,8 +71,7 @@ class _HomeShellState extends State<HomeShell> {
     // Handy to check a percentage did not ask to be told the network is slow.
     // A success reloads, because the numbers on screen just went stale.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!await portalAuth.hasSavedCredential) return;
-      if (await portalAuth.resync() && mounted) appState.load();
+      if (await portalAuth.resyncIfDue() && mounted) appState.load();
     });
 
     // Taps on a widget arrive as a URI. Handled here rather than in main()

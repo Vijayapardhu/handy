@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/app_state.dart';
 import '../data/settings.dart';
 import '../main.dart';
 import '../widgets/app_icon.dart';
@@ -29,10 +30,19 @@ class WidgetSettingsScreen extends StatelessWidget {
         builder: (context, _) => ListView(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 36),
           children: [
+            // Three of the five are drawn from the timetable, and AEC/ACET's
+            // portal does not publish one. Naming widgets that would sit blank
+            // on their home screen is worse than not offering them: they would
+            // add one, see nothing, and conclude the app is broken.
             Text(
-              'Long-press your home screen, choose Widgets, then Handy. There '
-              'are five: next class, attendance, today, deadlines, and Overview '
-              '— the one you arrange below.',
+              AppStateScope.of(context).entries.isEmpty
+                  ? 'Long-press your home screen, choose Widgets, then Handy. Your college '
+                      'publishes attendance but not a timetable, so the attendance widget is '
+                      'the one with data to show — the next-class and today widgets would be '
+                      'empty.'
+                  : 'Long-press your home screen, choose Widgets, then Handy. There '
+                      'are five: next class, attendance, today, deadlines, and Overview '
+                      '— the one you arrange below.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
 

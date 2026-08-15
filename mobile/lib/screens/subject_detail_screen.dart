@@ -148,6 +148,18 @@ class SubjectDetailScreen extends StatelessWidget {
                           'Attend the next $needed in a row to get back above it.',
                       colour: colour,
                     ),
+                    // The same number as a decision rather than as arithmetic.
+                    // "18 more classes" is a figure; "about 5 days" is a thing
+                    // you can agree to on a Sunday night.
+                    if (daysForClasses(needed, state.classesPerDay) case final days?
+                        when days > 0) ...[
+                      const SizedBox(height: 8),
+                      _Fact(
+                        icon: HugeIcons.strokeRoundedCalendar01,
+                        text: 'At about ${state.classesPerDay!.toStringAsFixed(1)} classes a day, '
+                            'that is roughly $days more day${days == 1 ? '' : 's'} of turning up.',
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     _Fact(
                       icon: HugeIcons.strokeRoundedChartUp,
