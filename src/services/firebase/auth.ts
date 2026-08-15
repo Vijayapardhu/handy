@@ -1,5 +1,6 @@
 import {
   onAuthStateChanged,
+  signInWithCustomToken as firebaseSignInWithCustomToken,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updatePassword,
@@ -61,11 +62,24 @@ export async function signInWithRollNumber(rollNumber: string, password: string)
   return credential.user;
 }
 
+/**
+ * Signs in with a token minted by /api/verify.
+ *
+ * The server has already proved who this student is — by signing into their
+ * college portal with credentials only they know — so it hands back a Firebase
+ * custom token rather than the account's password. The password for an account
+ * the server just created never has to travel back to the browser or be typed,
+ * which means there is nothing here worth intercepting.
+ */
+export async function signInWithCustomToken(token: string): Promise<User> {
+  const credential = await firebaseSignInWithCustomToken(auth, token);
+  return credential.user;
+}
+
 // There is deliberately no registration function here. Accounts are created
 // only by the browser extension, the moment it captures a roll number it
-// hasn't seen (extension/src/account.js) — there is no signup screen in the
-// app, and a student who has never run the extension has no account to sign
-// in to.
+// hasn't seen (extension/src/account.js), or by /api/verify when a non-AUS
+// student's portal credentials check out — never by a form in this app.
 
 export async function signOut(): Promise<void> {
   await firebaseSignOut(auth);

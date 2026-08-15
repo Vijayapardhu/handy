@@ -125,11 +125,16 @@
 <h2>What is never read</h2>
 <div class="never">
   <ul>
-    <li><strong>Your college password.</strong> The extension reads pages after you have signed in. It never sees, stores, or transmits the password you typed.</li>
+    <li><strong>Your college password — at Aditya University.</strong> The extension reads pages after you have signed in. It never sees, stores, or transmits the password you typed.</li>
     <li><strong>Your browsing history, other tabs, bookmarks, or downloads.</strong> It has no permission to reach any of them.</li>
     <li><strong>Anything on any other website.</strong></li>
   </ul>
 </div>
+
+<h2>Signing in at AEC and ACET</h2>
+<p>Aditya Engineering College and Aditya College of Engineering &amp; Technology work differently, because their portal cannot be read the way Campus Connect can. Those students type their <strong>college portal password</strong> into Handy's sign-in screen once.</p>
+<p>What happens to it: it is sent over HTTPS to Handy's own server, which uses it to sign in to the college portal as you, reads your attendance and marks, and signs out again. It exists in memory for the few seconds that takes. It is <strong>not</strong> written to a database, <strong>not</strong> written to a log, and <strong>not</strong> included in any error report. Handy stores no copy of it, so there is nothing to leak later and nothing to give back if asked.</p>
+<p>Signing in successfully is also how your Handy account is created — there is no separate Handy password to choose, and none is sent back to your device.</p>
 
 <h2>Your Handy password</h2>
 <p>So that syncing can continue without asking you to type anything, the extension generates a Handy password on your own device and keeps it in the browser's local extension storage (<code>chrome.storage.local</code>) on that device. It is not sent anywhere except to Handy's own sign-in, and it never leaves your machine in any other direction. Removing the extension deletes it.</p>

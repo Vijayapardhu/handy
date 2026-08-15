@@ -69,9 +69,11 @@ export function HowItWorks({ lenis }: { lenis: MutableRefObject<Lenis | null> })
             <p className={styles.stepNote}>
               <Icon icon={SquareLock02Icon} size={18} />
               <span>
-                Your college password is never typed into Handy, never sent anywhere, and never
-                stored. The extension makes no request of its own — it only reads replies to requests
-                the portal made itself.
+                At Aditya University your college password is never typed into Handy, never sent
+                anywhere, and never stored — the extension makes no request of its own, it only
+                reads replies to requests the portal made itself. AEC and ACET students sign in with
+                their portal password instead, because their portal cannot be read this way; it goes
+                to the college to check it is them, and is never stored.
               </span>
             </p>
           </div>

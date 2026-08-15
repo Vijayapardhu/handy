@@ -70,11 +70,15 @@ const _pages = <_Page>[
   ),
   _Page(
     icon: HugeIcons.strokeRoundedNote01,
-    title: 'It never sees\nyour college password',
+    title: 'Your password stays\nyour password',
     body:
-        'The extension reads pages after you have signed in yourself. Your '
-        'attendance is never shown to another student — classmates see only that '
-        'a shared timetable changed.',
+        'At Aditya University the extension reads pages after you have signed in '
+        'yourself, so nothing is ever typed into Handy. At AEC and ACET you sign '
+        'in with your portal password once — it is sent to the college to check '
+        'it is you, and never stored.',
+    footnote:
+        'Either way, your attendance is never shown to another student. '
+        'Classmates see only that a shared timetable changed.',
   ),
 ];
 

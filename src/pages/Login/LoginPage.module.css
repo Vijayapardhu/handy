@@ -224,3 +224,37 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
+
+/* Portal sign-in (AEC / ACET) -------------------------------------------- */
+
+.hint {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.campusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.campusOption {
+  flex: 1 1 auto;
+  min-width: 96px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.campusOption:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}

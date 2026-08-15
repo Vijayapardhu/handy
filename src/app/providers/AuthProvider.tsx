@@ -7,6 +7,8 @@ import {
   signOut as firebaseSignOut,
   subscribeToAuthState,
 } from "@/services/firebase/auth";
+import { signInWithPortal as portalSignIn } from "@/services/students/portalSignInService";
+import type { Campus } from "@/lib/campus";
 import type { StudentDoc } from "@/types/student";
 
 interface AuthContextValue {
@@ -15,6 +17,12 @@ interface AuthContextValue {
   /** True while the initial Firebase auth check (and student profile fetch) is in flight. */
   loading: boolean;
   signIn: (rollNumber: string, password: string) => Promise<void>;
+  /**
+   * For campuses whose portal Handy can sign into (AEC, ACET). Proves identity
+   * against the college rather than against a Handy password, and creates the
+   * account on first use. AUS keeps `signIn` above — see LoginPage.
+   */
+  signInWithPortal: (rollNumber: string, portalPassword: string, campus: Campus) => Promise<void>;
   signOut: () => Promise<void>;
   refreshStudent: () => Promise<void>;
 }
@@ -57,6 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // onAuthStateChanged above will pick up the new user and load the profile.
   }
 
+  async function signInWithPortal(rollNumber: string, portalPassword: string, campus: Campus) {
+    // The service signs in with the custom token /api/verify returns, so the
+    // same onAuthStateChanged path above loads the profile — this deliberately
+    // has no separate "logged in" bookkeeping of its own to drift out of step.
+    await portalSignIn(rollNumber, portalPassword, campus);
+  }
+
   async function signOut() {
     await firebaseSignOut();
     setStudent(null);
@@ -69,7 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, student, loading, signIn, signOut, refreshStudent }}>
+    <AuthContext.Provider
+      value={{ user, student, loading, signIn, signInWithPortal, signOut, refreshStudent }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -126,7 +126,7 @@ export const FAQS = [
   },
   {
     q: "Do I have to give Handy my college password?",
-    a: "No, and there is nowhere to type it. You sign in to Campus Connect in your own browser tab exactly as you always do, Cloudflare check and all. The extension only reads the responses that page has already fetched once you are signed in — it never sends a request of its own, and never sees what you typed.",
+    a: "At Aditya University, no — and there is nowhere to type it. You sign in to Campus Connect in your own browser tab exactly as you always do, Cloudflare check and all. The extension only reads the responses that page has already fetched once you are signed in; it never sends a request of its own, and never sees what you typed. At AEC and ACET it is different, because their portal cannot be read that way: you type your portal password into Handy once, it is sent to the college to check it is you, and it is never stored — not in the app, not on the server, not in a log.",
   },
   {
     q: "Why do I need the extension at all?",

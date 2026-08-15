@@ -1,21 +1,26 @@
 import { useMemo } from "react";
-import { Bell, Menu } from "@/components/ui/icons";
+import { Bell } from "@/components/ui/icons";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useSubjectsWithAttendance, useSubject } from "@/hooks/useSubjects";
 import { useCollegeConfig } from "@/hooks/useCollegeConfig";
 import { useActiveTimetable } from "@/hooks/useTimetable";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useTasks } from "@/hooks/useTasks";
+import { useCampusFeatures } from "@/hooks/useCampusFeatures";
 import { OverallAttendanceCard } from "@/components/attendance/OverallAttendanceCard";
 import { NeedsAttentionList } from "@/components/attendance/NeedsAttentionList";
 import { NextClassCard } from "@/components/attendance/NextClassCard";
 import { DueSoonCard } from "@/components/tasks/DueSoonCard";
 import { LeavePlannerCta } from "@/components/attendance/LeavePlannerCta";
 import { StreakCard } from "@/components/attendance/StreakCard";
+import { DayProgressRow } from "@/components/home/DayProgressRow";
+import { ExamCountdownCard } from "@/components/home/ExamCountdownCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { aggregateAttendance } from "@/lib/calculations/attendance";
-import { getNextEntry } from "@/lib/calculations/timetable";
+import { getDueSoon } from "@/lib/calculations/deadlines";
+import { getEntriesForDay, getFreePeriods, getNextEntry } from "@/lib/calculations/timetable";
 import { todayIso, nowTimeHHmm, dayOfWeekFromIso } from "@/lib/date";
 import { ROUTES } from "@/constants/routes";
 import styles from "./HomePage.module.css";
@@ -33,13 +38,41 @@ export function HomePage() {
   const configQuery = useCollegeConfig(student?.collegeId);
   const timetableQuery = useActiveTimetable();
   const notificationsQuery = useNotifications();
+  const tasksQuery = useTasks();
+  const { hasTimetable } = useCampusFeatures();
 
   const today = todayIso();
+  const currentTime = nowTimeHHmm();
+  const dayOfWeek = dayOfWeekFromIso(today);
+
+  const todayEntries = useMemo(() => {
+    if (!timetableQuery.data) return [];
+    return getEntriesForDay(timetableQuery.data.entries, dayOfWeek);
+  }, [timetableQuery.data, dayOfWeek]);
+
   const nextEntry = useMemo(() => {
     if (!timetableQuery.data) return null;
-    return getNextEntry(timetableQuery.data.entries, dayOfWeekFromIso(today), nowTimeHHmm());
-  }, [timetableQuery.data, today]);
+    return getNextEntry(timetableQuery.data.entries, dayOfWeek, currentTime);
+  }, [timetableQuery.data, dayOfWeek, currentTime]);
   const nextSubject = useSubject(nextEntry?.subjectId);
+
+  /** The class right after `nextEntry` — only rendered while `nextEntry` is running. */
+  const afterEntry = useMemo(() => {
+    if (!nextEntry) return null;
+    const index = todayEntries.findIndex((e) => e.id === nextEntry.id);
+    return index >= 0 ? (todayEntries[index + 1] ?? null) : null;
+  }, [todayEntries, nextEntry]);
+  const afterSubject = useSubject(afterEntry?.subjectId);
+
+  const classesLeft = useMemo(
+    () => todayEntries.filter((e) => e.endTime >= currentTime).length,
+    [todayEntries, currentTime],
+  );
+  const freePeriodsLeft = useMemo(() => {
+    if (!timetableQuery.data) return 0;
+    return getFreePeriods(timetableQuery.data.entries, dayOfWeek).filter((f) => f.endTime >= currentTime).length;
+  }, [timetableQuery.data, dayOfWeek, currentTime]);
+  const dueSoonCount = useMemo(() => getDueSoon(tasksQuery.data ?? [], today).length, [tasksQuery.data, today]);
 
   const unreadCount = notificationsQuery.data?.filter((n) => !n.read).length ?? 0;
 
@@ -54,9 +87,6 @@ export function HomePage() {
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
-        <button className={styles.iconButton} aria-label="Menu">
-          <Menu size={22} />
-        </button>
         <Link to={ROUTES.notifications} className={styles.iconButton} aria-label="Notifications">
           <Bell size={22} />
           {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
@@ -100,18 +130,36 @@ export function HomePage() {
             linkTo={`${ROUTES.subjects}?tab=overview`}
           />
 
+          {/* Both of these are read off the timetable, which AEC and ACET's
+              portal does not expose. Shown empty they would claim this student
+              has no classes today, which is a statement about their week
+              rather than about what Handy can see. */}
+          {hasTimetable ? (
+            <DayProgressRow
+              classesLeft={classesLeft}
+              freePeriodsLeft={freePeriodsLeft}
+              dueSoonCount={dueSoonCount}
+            />
+          ) : null}
+
           {/* Sits high on purpose: a deadline two days out matters more
               than a percentage that moved by 0.4%. */}
           <DueSoonCard />
+
+          <ExamCountdownCard />
 
           <StreakCard />
 
           <NeedsAttentionList subjects={subjectsQuery.data} />
 
-          <NextClassCard
-            entry={nextEntry}
-            subject={nextSubject.data}
-          />
+          {hasTimetable && (
+            <NextClassCard
+              entry={nextEntry}
+              subject={nextSubject.data}
+              after={afterEntry}
+              afterSubject={afterSubject.data}
+            />
+          )}
 
           <LeavePlannerCta />
         </div>

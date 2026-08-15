@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { Home, BookOpen, Calendar, ClipboardList, FileText, User } from "@/components/ui/icons";
 import { ROUTES } from "@/constants/routes";
+import { useCampusFeatures } from "@/hooks/useCampusFeatures";
 import { cn } from "@/lib/utils/cn";
 import styles from "./BottomNav.module.css";
 
@@ -14,9 +15,14 @@ const ITEMS = [
 ];
 
 export function BottomNav() {
+  const { hasTimetable } = useCampusFeatures();
+  // AEC and ACET have no timetable to show — their portal does not expose one.
+  // A tab leading to a permanently empty screen is worse than no tab.
+  const items = hasTimetable ? ITEMS : ITEMS.filter((item) => item.to !== ROUTES.timetable);
+
   return (
     <nav className={styles.nav} aria-label="Primary">
-      {ITEMS.map(({ to, label, icon: Icon, end }) => (
+      {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}
