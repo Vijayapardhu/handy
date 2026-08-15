@@ -398,8 +398,22 @@ class _ClassRow extends StatelessWidget {
     final place =
         [entry.room, entry.block].whereType<String>().where((p) => p.isNotEmpty).join(' · ');
 
-    // Notes the student attached to this subject, surfaced on the class itself.
-    final notes = state.tasks.where((t) => !t.done && t.subjectId == entry.subjectId).toList();
+    // What the student has riding on this class.
+    //
+    // Two kinds, and the distinction matters. A deadline *pinned to this slot*
+    // belongs here whatever subject it is — "hand the record in at Tuesday's
+    // ADSAA" is about the slot, not the subject. Everything else for this
+    // subject is shown too, but only if it has not been pinned somewhere else:
+    // a deadline planned for Thursday's free period should appear on Thursday,
+    // not on all four of this subject's classes.
+    final pinned = state.tasks
+        .where((t) =>
+            !t.done && t.attachDay == entry.dayOfWeek && t.attachTime == block.startTime)
+        .toList();
+    final loose = state.tasks
+        .where((t) => !t.done && !t.isAttached && t.subjectId == entry.subjectId)
+        .toList();
+    final notes = [...pinned, ...loose];
     final label = _periodLabel(block);
 
     return Card(

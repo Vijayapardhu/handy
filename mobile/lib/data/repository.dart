@@ -100,6 +100,8 @@ class Repository {
     TaskRepeat repeat = TaskRepeat.none,
     int? attachDay,
     String? attachTime,
+    String? attachLabel,
+    int? leadDays,
   }) async {
     final now = DateTime.now().toIso8601String();
     final doc = await _db.collection('tasks').add({
@@ -115,6 +117,8 @@ class Repository {
       'repeat': repeat.name,
       'attachDay': attachDay,
       'attachTime': attachTime,
+      'attachLabel': attachLabel,
+      'leadDays': leadDays,
       'done': false,
       'completedAt': null,
       'createdAt': now,
@@ -139,7 +143,10 @@ class Repository {
     TaskRepeat? repeat,
     int? attachDay,
     String? attachTime,
+    String? attachLabel,
     bool clearAttachment = false,
+    int? leadDays,
+    bool clearLeadDays = false,
   }) async {
     await _db.collection('tasks').doc(taskId).update({
       if (title != null) 'title': title.trim(),
@@ -153,11 +160,15 @@ class Repository {
       if (subtasks != null) 'subtasks': subtasks.map((s) => s.toMap()).toList(),
       if (repeat != null) 'repeat': repeat.name,
       // Both halves move together — a day without a time pins nothing.
-      if (clearAttachment) ...{'attachDay': null, 'attachTime': null}
+      if (clearAttachment) ...{'attachDay': null, 'attachTime': null, 'attachLabel': null}
       else if (attachDay != null && attachTime != null) ...{
         'attachDay': attachDay,
         'attachTime': attachTime,
+        'attachLabel': attachLabel,
       },
+      // Null is a legitimate value here — it means "follow the default" — so
+      // clearing needs its own flag rather than an absent argument.
+      if (clearLeadDays) 'leadDays': null else if (leadDays != null) 'leadDays': leadDays,
       'updatedAt': DateTime.now().toIso8601String(),
     });
   }
@@ -189,6 +200,8 @@ class Repository {
       repeat: task.repeat,
       attachDay: task.attachDay,
       attachTime: task.attachTime,
+      attachLabel: task.attachLabel,
+      leadDays: task.leadDays,
     );
   }
 

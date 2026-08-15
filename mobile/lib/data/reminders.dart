@@ -230,7 +230,10 @@ class Reminders {
       // it is the one that stops something being forgotten outright.
       //
       // A set, so a lead of one day does not schedule the same evening twice.
-      for (final daysBefore in {leadDays, 1}) {
+      // The deadline's own lead when it has one, else the student's default.
+      // A lab record wants a week and an assignment wants two days; one number
+      // for both makes the early nudge noise and the late one useless.
+      for (final daysBefore in {task.leadDays ?? leadDays, 1}) {
         final due = tz.TZDateTime(
           tz.local,
           task.dueDate.year,

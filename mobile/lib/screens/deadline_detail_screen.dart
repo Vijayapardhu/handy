@@ -244,6 +244,22 @@ class DeadlineDetailScreen extends StatelessWidget {
                   label: 'Repeat',
                   value: taskRepeatLabels[task.repeat]!,
                   onTap: () => _pickRepeat(context, task),
+                ),
+                _EditRow(
+                  icon: HugeIcons.strokeRoundedNotification01,
+                  label: 'Remind me',
+                  value: task.leadDays == null
+                      ? 'Default (${settings.deadlineLeadDays} '
+                          '${settings.deadlineLeadDays == 1 ? 'day' : 'days'} before)'
+                      : '${task.leadDays} '
+                          '${task.leadDays == 1 ? 'day' : 'days'} before',
+                  onTap: () => _pickLead(context, task),
+                  // Only offers to clear when there is an override to clear;
+                  // "reset to default" on something already default does
+                  // nothing and looks broken.
+                  onClear: task.leadDays == null
+                      ? null
+                      : () => repository.updateTask(task.id, clearLeadDays: true),
                   last: true,
                 ),
               ],
@@ -348,6 +364,52 @@ class DeadlineDetailScreen extends StatelessWidget {
       labels: taskKindLabels,
       current: task.kind,
       onPick: (v) => repository.updateTask(task.id, kind: v),
+    );
+  }
+
+  /// How far ahead this particular deadline shouts.
+  ///
+  /// A week for a lab record, a day for something small. The evening-before
+  /// nudge is always sent as well and is not offered here, because it is the
+  /// one that stops a thing being forgotten outright.
+  void _pickLead(BuildContext context, Task task) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('FIRST REMINDER',
+                  style: Theme.of(sheetContext).textTheme.labelSmall),
+            ),
+            RadioListTile<int?>(
+              value: null,
+              groupValue: task.leadDays,
+              title: Text('Use my default (${settings.deadlineLeadDays} '
+                  '${settings.deadlineLeadDays == 1 ? 'day' : 'days'})'),
+              onChanged: (_) {
+                Navigator.of(sheetContext).pop();
+                repository.updateTask(task.id, clearLeadDays: true);
+              },
+            ),
+            for (final days in [1, 2, 3, 5, 7, 14])
+              RadioListTile<int?>(
+                value: days,
+                groupValue: task.leadDays,
+                title: Text(days == 1 ? '1 day before' : '$days days before'),
+                onChanged: (picked) {
+                  Navigator.of(sheetContext).pop();
+                  if (picked != null) repository.updateTask(task.id, leadDays: picked);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 
@@ -459,26 +521,46 @@ class DeadlineDetailScreen extends StatelessWidget {
   }
 }
 
-/// "When are you actually going to do this?"
+/// "When are you actually going to do this — or hand it in?"
 ///
 /// The gap nothing else can fill: Handy knows both when the work is due and
-/// when the student is free, and joining them turns a deadline from a fact
-/// into a plan. Picking a slot also schedules the one reminder that arrives
-/// while they can act on it — the two-days-out and evening-before nudges land
-/// when the day is already over.
-class _PlanSection extends StatelessWidget {
+/// where the student will be, and joining them turns a deadline from a fact
+/// into a plan.
+///
+/// Two kinds of moment, because there are two reasons to pin one. A free
+/// period is when you would *do* the work. A class is when you would *hand it
+/// in*, or need it with you — "the record is due at ADSAA on Tuesday" is the
+/// commonest deadline a student has, and a gap somewhere else in the week is
+/// no use for it.
+///
+/// Either way it schedules the one reminder that arrives while they can still
+/// act on it; the two-days-out and evening-before nudges land when the day is
+/// already over.
+class _PlanSection extends StatefulWidget {
   const _PlanSection({required this.task, required this.state});
 
   final Task task;
   final AppState state;
 
+  @override
+  State<_PlanSection> createState() => _PlanSectionState();
+}
+
+class _PlanSectionState extends State<_PlanSection> {
   static const _days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  /// Free periods or classes. Defaults to classes when the deadline belongs to
+  /// a subject, because a deadline with a subject is usually handed in at it.
+  late bool _showFree = widget.task.subjectId == null;
 
   @override
   Widget build(BuildContext context) {
+    final task = widget.task;
+    final state = widget.state;
     final scheme = Theme.of(context).colorScheme;
 
     if (task.isAttached) {
+      final label = task.attachLabel ?? 'That slot';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -486,13 +568,19 @@ class _PlanSection extends StatelessWidget {
           const SizedBox(height: 8),
           Card(
             child: ListTile(
-              leading: AppIcon(HugeIcons.strokeRoundedCoffee02, size: 20, color: scheme.primary),
+              leading: AppIcon(
+                label == 'Free period'
+                    ? HugeIcons.strokeRoundedCoffee02
+                    : HugeIcons.strokeRoundedBookOpen01,
+                size: 20,
+                color: scheme.primary,
+              ),
               title: Text(
                 '${_days[task.attachDay!]} at ${task.attachTime}',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               subtitle: Text(
-                'A free period. You will be reminded when it starts.',
+                '$label · you will be reminded when it starts.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               trailing: IconButton(
@@ -506,28 +594,60 @@ class _PlanSection extends StatelessWidget {
       );
     }
 
-    final slots = plannableSlots(state.entries, task.dueDate, DateTime.now());
+    final shortNames = {
+      for (final s in state.subjects)
+        s.id: s.shortName.isEmpty ? s.name : s.shortName,
+    };
+
+    final slots = plannableSlots(
+      state.entries,
+      task.dueDate,
+      DateTime.now(),
+      freePeriodsOnly: _showFree,
+      // Narrowed to the deadline's own subject when it has one: every other
+      // class is a moment the student will not be thinking about this.
+      subjectId: _showFree ? null : task.subjectId,
+      shortNames: shortNames,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _Section(title: 'When will you do it?'),
         const SizedBox(height: 8),
+
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: true, label: Text('A free period')),
+            ButtonSegment(value: false, label: Text('At a class')),
+          ],
+          selected: {_showFree},
+          showSelectedIcon: false,
+          onSelectionChanged: (s) => setState(() => _showFree = s.first),
+        ),
+        const SizedBox(height: 12),
+
         if (slots.isEmpty)
           Text(
             state.entries.isEmpty
                 ? 'Handy needs your timetable before it can suggest a time.'
-                : 'No free periods between now and the deadline.',
+                : _showFree
+                    ? 'No free periods between now and the deadline.'
+                    : task.subjectId == null
+                        ? 'No classes between now and the deadline.'
+                        : 'No more of this subject before it is due.',
             style: Theme.of(context).textTheme.bodySmall,
           )
         else ...[
           Text(
-            'Free periods before this is due. Pick one and it becomes a plan.',
+            _showFree
+                ? 'Free periods before this is due. Pick one and it becomes a plan.'
+                : 'Pick the class you will hand it in at, or need it for.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 10),
           SizedBox(
-            height: 84,
+            height: 88,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: slots.length,
@@ -542,10 +662,14 @@ class _PlanSection extends StatelessWidget {
                       task.id,
                       attachDay: slot.dayOfWeek,
                       attachTime: slot.startTime,
+                      // Stored, not looked up later: the college republishes
+                      // and the slot may become something else, and a pin that
+                      // renamed itself would misreport what was chosen.
+                      attachLabel: slot.label,
                     );
                   },
                   child: Container(
-                    width: 116,
+                    width: 124,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -568,7 +692,9 @@ class _PlanSection extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Period ${slot.periodNo}',
+                          slot.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -583,6 +709,7 @@ class _PlanSection extends StatelessWidget {
     );
   }
 }
+
 
 class _SubtaskProgress extends StatelessWidget {
   const _SubtaskProgress({required this.task});

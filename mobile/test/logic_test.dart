@@ -69,6 +69,7 @@ void main() {
   leaveTests();
   recordTests();
   leaveRecoveryTests();
+  pinningTests();
 
   group('timetable', () {
     TimetableEntry entry(int day, int period, String start, String end) => TimetableEntry(
@@ -621,6 +622,89 @@ void leaveRecoveryTests() {
       );
       expect(overall.after! < 75, isTrue);
       expect(overall.recovery, greaterThan(0));
+    });
+  });
+}
+
+/// Pinning a deadline to a class rather than to a gap.
+void pinningTests() {
+  TimetableEntry slot(int day, String subjectId, String start, String end, int period) =>
+      TimetableEntry(
+        id: '$day-$subjectId-$start',
+        timetableVersionId: 'v1',
+        dayOfWeek: day,
+        startTime: start,
+        endTime: end,
+        subjectId: subjectId,
+        facultyName: 'F',
+        room: 'RB-221',
+        block: 'RB',
+        periodNo: period,
+        strength: 72,
+        opted: 70,
+        type: 'lecture',
+        active: true,
+      );
+
+  group('pinning to a class', () {
+    // Monday: maths then physics. Tuesday: maths only, leaving gaps.
+    final week = [
+      slot(1, 'maths', '09:30', '10:20', 1),
+      slot(1, 'physics', '10:30', '11:20', 2),
+      slot(2, 'maths', '09:30', '10:20', 1),
+    ];
+    final names = {'maths': 'MA', 'physics': 'PH'};
+    final today = DateTime(2026, 8, 15); // Saturday
+
+    test('offers classes instead of gaps when asked', () {
+      final slots = plannableSlots(
+        week, DateTime(2026, 8, 18), today,
+        freePeriodsOnly: false, shortNames: names,
+      );
+      expect(slots, isNotEmpty);
+      expect(slots.every((s) => s.isClass), isTrue);
+      expect(slots.map((s) => s.label), contains('MA'));
+    });
+
+    test('narrows to the deadline own subject', () {
+      final slots = plannableSlots(
+        week, DateTime(2026, 8, 18), today,
+        freePeriodsOnly: false, subjectId: 'physics', shortNames: names,
+      );
+      // Only Monday's physics falls in range, and no maths at all.
+      expect(slots.map((s) => s.label).toSet(), {'PH'});
+    });
+
+    test('labels a free period as one', () {
+      final slots = plannableSlots(week, DateTime(2026, 8, 18), today);
+      expect(slots, isNotEmpty);
+      expect(slots.every((s) => s.label == 'Free period'), isTrue);
+      expect(slots.every((s) => !s.isClass), isTrue);
+    });
+
+    test('merges a multi-period class into one offer', () {
+      // A three-period lab should be offered once, not three times.
+      final lab = [
+        slot(1, 'lab', '09:30', '10:20', 1),
+        slot(1, 'lab', '10:30', '11:20', 2),
+        slot(1, 'lab', '11:20', '12:10', 3),
+      ];
+      final slots = plannableSlots(
+        lab, DateTime(2026, 8, 18), today,
+        freePeriodsOnly: false, shortNames: {'lab': 'LAB'},
+      );
+      expect(slots.where((s) => s.dayOfWeek == 1).length, 1);
+      expect(slots.first.startTime, '09:30');
+      expect(slots.first.endTime, '12:10');
+    });
+
+    test('still never offers today or a Sunday', () {
+      final slots = plannableSlots(
+        week, DateTime(2026, 8, 20), today,
+        freePeriodsOnly: false, shortNames: names,
+      );
+      expect(slots.every((s) => s.date.isAfter(today)), isTrue);
+      expect(slots.any((s) => s.date.weekday == DateTime.sunday), isFalse);
     });
   });
 }

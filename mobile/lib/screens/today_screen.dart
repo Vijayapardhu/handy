@@ -14,6 +14,7 @@ import '../theme.dart';
 import '../widgets/class_sheet.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/student_photo.dart';
+import 'deadline_detail_screen.dart';
 import 'subject_detail_screen.dart';
 import 'subjects_screen.dart';
 import '../widgets/app_icon.dart';
@@ -1304,7 +1305,17 @@ class _DueRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
-        child: Padding(
+        // Opens the deadline. These were inert, which is the worst state for
+        // something that looks exactly like the tappable rows on every other
+        // screen — a card that ignores a tap reads as a broken app.
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => DeadlineDetailScreen(taskId: task.id),
+            ),
+          ),
+          child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
@@ -1341,6 +1352,7 @@ class _DueRow extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

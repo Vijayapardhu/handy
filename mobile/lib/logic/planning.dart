@@ -10,7 +10,11 @@ import '../models/timetable_entry.dart';
 import 'attendance.dart';
 import 'timetable.dart';
 
-/// A free period on a specific date, rather than on an abstract weekday.
+/// A moment before a deadline that a student could pin it to.
+///
+/// Two kinds, because there are two reasons to pin: a free period is when you
+/// would *do* the work, and a class is when you would *hand it in* or need it
+/// with you. Both want a reminder at the same moment, so they are one type.
 class PlannableSlot {
   const PlannableSlot({
     required this.date,
@@ -18,6 +22,8 @@ class PlannableSlot {
     required this.startTime,
     required this.endTime,
     required this.periodNo,
+    required this.label,
+    this.isClass = false,
   });
 
   final DateTime date;
@@ -25,22 +31,36 @@ class PlannableSlot {
   final String startTime;
   final String endTime;
   final int periodNo;
+
+  /// "Free period", or the subject's short name.
+  final String label;
+
+  /// A scheduled class rather than a gap.
+  final bool isClass;
 }
 
-/// Every free period between tomorrow and the due date, soonest first.
+/// Every slot between tomorrow and the due date that a deadline could be
+/// pinned to, soonest first.
 ///
 /// Starts from tomorrow rather than today: a slot that has already passed is
 /// not a plan, and one starting in ten minutes is not one either. Sundays are
 /// skipped because the college does not teach on them, so the timetable has
 /// nothing to say about which parts of one are free.
 ///
-/// Capped, because a deadline three weeks out has forty free periods before it
-/// and a list of forty is not a decision anyone makes.
+/// [subjectId] narrows it to that subject's own classes — the "hand it in at
+/// ADSAA on Tuesday" case, where the useful moment is the lesson itself and
+/// not a gap somewhere else in the week.
+///
+/// Capped, because a deadline three weeks out has forty slots before it and a
+/// list of forty is not a decision anyone makes.
 List<PlannableSlot> plannableSlots(
   List<TimetableEntry> entries,
   DateTime dueDate,
   DateTime today, {
   int limit = 12,
+  bool freePeriodsOnly = true,
+  String? subjectId,
+  Map<String, String> shortNames = const {},
 }) {
   final start = DateTime(today.year, today.month, today.day);
   final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
@@ -52,13 +72,34 @@ List<PlannableSlot> plannableSlots(
     if (date.weekday == DateTime.sunday) continue;
 
     final day = date.weekday % 7;
-    for (final free in freePeriods(entries, day)) {
+
+    if (freePeriodsOnly) {
+      for (final free in freePeriods(entries, day)) {
+        slots.add(PlannableSlot(
+          date: date,
+          dayOfWeek: day,
+          startTime: free.startTime,
+          endTime: free.endTime,
+          periodNo: free.periodNo,
+          label: 'Free period',
+        ));
+        if (slots.length >= limit) return slots;
+      }
+      continue;
+    }
+
+    // Classes, merged into blocks so a three-period lab offers itself once
+    // rather than three times over.
+    for (final block in classBlocksForDay(entries, day)) {
+      if (subjectId != null && block.first.subjectId != subjectId) continue;
       slots.add(PlannableSlot(
         date: date,
         dayOfWeek: day,
-        startTime: free.startTime,
-        endTime: free.endTime,
-        periodNo: free.periodNo,
+        startTime: block.startTime,
+        endTime: block.endTime,
+        periodNo: block.first.periodNo ?? 0,
+        label: shortNames[block.first.subjectId] ?? 'Class',
+        isClass: true,
       ));
       if (slots.length >= limit) return slots;
     }

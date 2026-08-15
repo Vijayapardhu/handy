@@ -40,6 +40,10 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
   final bool _showDone = false;
   _View _view = _View.upcoming;
 
+  /// What the student is looking for. Empty most of the time, so the field
+  /// only appears once there are enough deadlines for finding one to be work.
+  String _query = '';
+
   /// Day selected in the calendar view; null means the whole month.
   DateTime? _selectedDay;
   late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
@@ -66,7 +70,20 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
     final dueToday = countWhere((d) => d == 0);
     final thisWeek = countWhere((d) => d >= 0 && d <= 7);
 
+    final needle = _query.trim().toLowerCase();
+    bool matches(Task t) {
+      if (needle.isEmpty) return true;
+      // Subject too, so "adsaa" finds the record even when the title never
+      // says the subject — which is most of the time, because a student
+      // writing it down already knows what it is for.
+      final subject = t.subjectId == null ? '' : (state.subjectsById[t.subjectId]?.name ?? '');
+      final shortName =
+          t.subjectId == null ? '' : (state.subjectsById[t.subjectId]?.shortName ?? '');
+      return '${t.title} ${t.notes} $subject $shortName'.toLowerCase().contains(needle);
+    }
+
     final visible = open.where((t) {
+      if (!matches(t)) return false;
       final days = getDeadline(t.dueDate, now).daysLeft;
       return switch (_filter) {
         _Filter.all => true,
@@ -106,6 +123,29 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
               ),
             ),
           ),
+
+          // Appears once there are enough to make finding one work. Below
+          // that, a search box is a control with nothing to do.
+          if (state.tasks.length >= 6)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: TextField(
+                  onChanged: (v) => setState(() => _query = v),
+                  decoration: InputDecoration(
+                    hintText: 'Search deadlines',
+                    isDense: true,
+                    prefixIcon: AppIcon(HugeIcons.strokeRoundedSearch01, size: 18),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: AppIcon(HugeIcons.strokeRoundedCancel01, size: 16),
+                            onPressed: () => setState(() => _query = ''),
+                          ),
+                  ),
+                ),
+              ),
+            ),
 
           if (state.tasks.isEmpty)
             SliverFillRemaining(
@@ -155,12 +195,16 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
 
             if (visible.isEmpty)
               SliverToBoxAdapter(
-                child: _Note(switch (_filter) {
-                  _Filter.overdue => 'Nothing overdue. Good.',
-                  _Filter.today => 'Nothing due today.',
-                  _Filter.week => 'Nothing due this week.',
-                  _Filter.all => 'Everything here is done.',
-                }),
+                child: _Note(
+                  needle.isNotEmpty
+                      ? 'Nothing matches "$_query".'
+                      : switch (_filter) {
+                          _Filter.overdue => 'Nothing overdue. Good.',
+                          _Filter.today => 'Nothing due today.',
+                          _Filter.week => 'Nothing due this week.',
+                          _Filter.all => 'Everything here is done.',
+                        },
+                ),
               ),
 
             for (final group in groups) ...[
@@ -1106,6 +1150,7 @@ class _TaskFormState extends State<TaskForm> {
   DateTime _due = DateTime.now();
   TimeOfDay? _time;
   String? _subjectId;
+  TaskRepeat _repeat = TaskRepeat.none;
   bool _more = false;
   bool _busy = false;
 
@@ -1129,6 +1174,7 @@ class _TaskFormState extends State<TaskForm> {
           : '${_time!.hour.toString().padLeft(2, '0')}:'
               '${_time!.minute.toString().padLeft(2, '0')}',
       subjectId: _subjectId,
+      repeat: _repeat,
     );
     if (mounted) Navigator.of(context).pop();
   }
@@ -1244,6 +1290,23 @@ class _TaskFormState extends State<TaskForm> {
                 ),
                 const SizedBox(height: 12),
               ],
+              // Repeat at creation, because the deadlines that recur are known
+              // to recur when they are written down — a weekly lab record is
+              // never a one-off that turns out to repeat later.
+              Text('REPEATS', style: Theme.of(context).textTheme.labelSmall),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: TaskRepeat.values
+                    .map((r) => ChoiceChip(
+                          label: Text(r == TaskRepeat.none ? 'No' : taskRepeatLabels[r]!),
+                          selected: _repeat == r,
+                          onSelected: (_) => setState(() => _repeat = r),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _notes,
                 maxLines: 2,

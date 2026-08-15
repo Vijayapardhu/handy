@@ -152,6 +152,8 @@ class Task {
     this.repeat = TaskRepeat.none,
     this.attachDay,
     this.attachTime,
+    this.attachLabel,
+    this.leadDays,
     this.completedAt,
   });
 
@@ -175,6 +177,21 @@ class Task {
   /// college republished the timetable. A day and a clock time survive that.
   final int? attachDay;
   final String? attachTime;
+
+  /// What that slot is, in words — "Free period" or a subject's short name.
+  ///
+  /// Stored rather than looked up, because a pin can outlive the timetable it
+  /// was made against: the college republishes, the slot becomes something
+  /// else, and a pin that silently renamed itself would be lying about what
+  /// the student chose.
+  final String? attachLabel;
+
+  /// Days before the due date for this deadline's first nudge.
+  ///
+  /// Null means "use whatever the student set as their default". A lab record
+  /// wants a week and an assignment wants two days, and forcing one number on
+  /// both makes the early one noise and the late one useless.
+  final int? leadDays;
 
   /// ISO timestamp of when this was ticked off. Written since the beginning
   /// but never read until there was a record to build from it — which is why
@@ -208,6 +225,8 @@ class Task {
         ),
         attachDay: (d['attachDay'] as num?)?.toInt(),
         attachTime: d['attachTime'] as String?,
+        attachLabel: d['attachLabel'] as String?,
+        leadDays: (d['leadDays'] as num?)?.toInt(),
         completedAt: d['completedAt'] as String?,
       );
 }
