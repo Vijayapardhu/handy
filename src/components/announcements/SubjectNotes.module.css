@@ -1,0 +1,283 @@
+.card {
+  margin-top: var(--space-4);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.count {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.addButton {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-primary-dark);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* The shelf ------------------------------------------------------------- */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.note {
+  padding: var(--space-3) 0;
+}
+
+.note + .note {
+  border-top: 1px solid var(--color-border);
+}
+
+.noteHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.noteTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.87rem;
+  font-weight: 600;
+}
+
+.noteDescription {
+  margin: 4px 0 0;
+  font-size: 0.79rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.noteMeta {
+  margin: 8px 0 0;
+  font-size: 0.7rem;
+  color: var(--color-text-faint);
+}
+
+.files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chip,
+.chipBroken {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: 0.74rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.chip:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.chipBroken {
+  color: var(--color-text-faint);
+}
+
+.chipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22ch;
+}
+
+.chipSize {
+  color: var(--color-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Composer -------------------------------------------------------------- */
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.83rem;
+  resize: vertical;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.composerActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.pendingList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pendingRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+}
+
+.pendingRow[data-status="failed"] {
+  border-color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.pendingMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Controls -------------------------------------------------------------- */
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-faint);
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.confirmRow {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.confirmYes,
+.confirmNo {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmYes {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.confirmNo {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.error {
+  margin: 6px 0 0;
+  font-size: 0.74rem;
+  color: var(--color-danger);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

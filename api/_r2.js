@@ -160,18 +160,22 @@ export function describeUpload(filename) {
   return { extension: ext, kind: match[0], contentType: match[1] };
 }
 
+/** What an upload is for, which decides only where it is filed. */
+export const UPLOAD_PURPOSES = { announcement: "announcements", note: "notes" };
+
 /**
  * The object key, chosen by the server.
  *
- * Grouped by class so a bucket listing is navigable, and ending in a random
- * id so one upload can never overwrite another — including deliberately, by a
- * rep who guesses a classmate's filename. The original name is not used in the
- * key at all: it travels in the announcement document instead, where it cannot
- * carry a path traversal or a surprise second extension.
+ * Grouped by purpose and then by class so a bucket listing is navigable, and
+ * ending in a random id so one upload can never overwrite another — including
+ * deliberately, by a rep who guesses a classmate's filename. The original name
+ * is not used in the key at all: it travels in the document instead, where it
+ * cannot carry a path traversal or a surprise second extension.
  */
-export function uploadKey({ groupKey, extension }) {
+export function uploadKey({ groupKey, extension, purpose = "announcement" }) {
+  const folder = UPLOAD_PURPOSES[purpose] ?? UPLOAD_PURPOSES.announcement;
   const safeGroup = String(groupKey).replace(/[^A-Za-z0-9_-]/g, "_");
-  return `announcements/${safeGroup}/${randomUUID()}.${extension}`;
+  return `${folder}/${safeGroup}/${randomUUID()}.${extension}`;
 }
 
 /** Per-file ceiling. Generous for board photos and slide decks, hostile to video dumps. */

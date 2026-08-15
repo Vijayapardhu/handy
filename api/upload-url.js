@@ -22,6 +22,7 @@ import { isClassRep } from "./_classGroups.js";
 import {
   MAX_UPLOAD_BYTES,
   UPLOAD_EXPIRY_SECONDS,
+  UPLOAD_PURPOSES,
   describeUpload,
   presignPut,
   publicUrl,
@@ -90,7 +91,11 @@ export default async function handler(req, res) {
       return res.status(403).json({ ok: false, error: "not_a_class_rep" });
     }
 
-    const key = uploadKey({ groupKey, extension: described.extension });
+    // Only decides which folder the object lands in. An unknown value files it
+    // with announcements rather than failing — where a file is filed is not
+    // worth refusing an upload over.
+    const purpose = UPLOAD_PURPOSES[payload?.purpose] ? payload.purpose : "announcement";
+    const key = uploadKey({ groupKey, extension: described.extension, purpose });
 
     return res.status(200).json({
       ok: true,

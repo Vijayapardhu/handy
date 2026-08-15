@@ -19,6 +19,7 @@ import type { TaskDoc } from "@/types/task";
 import type {
   AnnouncementDoc,
   ClassGroupMemberDoc,
+  ClassNoteDoc,
   ClassRepGrantDoc,
 } from "@/types/announcement";
 
@@ -59,6 +60,7 @@ export const COLLECTIONS = {
   classReps: "classReps",
   announcements: "announcements",
   classGroupMembers: "classGroupMembers",
+  classNotes: "classNotes",
 } as const;
 
 export const studentsCol = () => typedCollection<StudentDoc>(COLLECTIONS.students);
@@ -82,6 +84,7 @@ export const classRepsCol = () => typedCollection<ClassRepGrantDoc>(COLLECTIONS.
 export const announcementsCol = () => typedCollection<AnnouncementDoc>(COLLECTIONS.announcements);
 export const classGroupMembersCol = () =>
   typedCollection<ClassGroupMemberDoc>(COLLECTIONS.classGroupMembers);
+export const classNotesCol = () => typedCollection<ClassNoteDoc>(COLLECTIONS.classNotes);
 
 export const studentDocRef = (studentId: string) =>
   doc(db, COLLECTIONS.students, studentId).withConverter(makeConverter<StudentDoc>());

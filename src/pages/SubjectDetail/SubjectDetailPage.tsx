@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { SubjectAnnouncements } from "@/components/announcements/SubjectAnnouncements";
+import { SubjectNotes } from "@/components/announcements/SubjectNotes";
 import { useSubject } from "@/hooks/useSubjects";
 import { useAttendanceSummaryForSubject } from "@/hooks/useAttendanceSummaryForSubject";
 import { useCollegeConfig } from "@/hooks/useCollegeConfig";
@@ -134,6 +135,7 @@ export function SubjectDetailPage() {
         )}
       </Card>
 
+      <SubjectNotes subjectCode={subject.code} facultyId={subject.facultyId} />
       <SubjectAnnouncements subjectCode={subject.code} facultyId={subject.facultyId} />
     </div>
   );

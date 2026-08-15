@@ -65,6 +65,25 @@ export interface AnnouncementDoc {
   createdAt: string;
 }
 
+/**
+ * Course material for a class — the shelf, where an announcement is the
+ * noticeboard. Deliberately silent: no notification, no push, because nobody
+ * wants an alert for the eleventh slide deck and everybody wants to find it in
+ * week nine.
+ */
+export interface ClassNoteDoc {
+  id: string;
+  groupKey: string;
+  authorUid: string;
+  authorName: string;
+  authorRoll: string;
+  title: string;
+  description: string;
+  media: AnnouncementMedia[];
+  links: AnnouncementLink[];
+  createdAt: string;
+}
+
 /** A class group described for a human, rather than as `6-2501AI06-3202`. */
 export interface ClassRepRoom {
   groupKey: string;
