@@ -37,19 +37,6 @@ function selfNamespace() {
   return 'self-' + request.auth.uid;
 }
 
-// The one door into every collection below, for the admin panel (admin/) —
-// a genuinely separate app and deployment from the one this file otherwise
-// describes. Checked first in every OR so it short-circuits: `get()` is
-// cached per unique path within one rules evaluation, so this costs at most
-// one real document read regardless of how many docs a list query touches.
-//
-// Deliberately a Firestore grant-doc, not a Firebase custom claim: revocation
-// is then instant (no token-refresh propagation delay), and it mirrors the
-// classReps pattern already used for the one other elevated capability in
-// this app. There is no `match /admins/{id}` block granting list access to
-// this collection — only the narrow self-read below, and the `get()` here,
-// which (like every in-rule get/exists call) bypasses the target's own rules.
-//
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -412,6 +399,21 @@ service cloud.firestore {
     // Release/changelog records the admin panel publishes (app version,
     // extension version, download links). Same shape as materials.
     match /appUpdates/{updateId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // First-class semester and faculty records the admin panel manages —
+    // replacing what used to be a free-text semesterId/facultyName typed into
+    // a form each time. Same read/write shape as materials/appUpdates: any
+    // signed-in user may read them (a subject picker needs to resolve a
+    // faculty name; nothing here is sensitive), only the admin backend writes.
+    match /semesters/{semesterId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /faculty/{facultyId} {
       allow read: if isSignedIn();
       allow write: if false;
     }
