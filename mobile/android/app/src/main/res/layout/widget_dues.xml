@@ -9,15 +9,44 @@
     android:gravity="center_vertical"
     android:background="@drawable/widget_background_dark">
 
-    <TextView
-        android:id="@+id/dues_header"
+    <!--
+      Header and a quick-add on one row. The "+" is a separate tap target from
+      the tile body: tapping the widget opens the list, tapping the plus opens
+      the form with the keyboard already up. Writing a deadline down has to be
+      quicker than deciding not to bother.
+    -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:textAllCaps="true"
-        android:letterSpacing="0.06"
-        android:textColor="#94A3B8" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/dues_header"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:letterSpacing="0.06"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#94A3B8" />
+
+        <TextView
+            android:id="@+id/dues_add"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:paddingStart="14dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textColor="#F1F5F9" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/dues_row_0"

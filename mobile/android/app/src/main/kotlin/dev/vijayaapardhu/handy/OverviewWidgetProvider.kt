@@ -201,7 +201,14 @@ class OverviewWidgetProvider : HandyBaseWidget() {
                     val title = data.getString("due${i}Title", "")
                     if (title.isNullOrEmpty()) break
                     views.show(slot.rowRoots[i], true)
-                    row(views, slot, i, look, "", title, data.getString("due${i}When", "") ?: "", bold = false)
+                    val steps = data.getString("due${i}Steps", "") ?: ""
+                    row(
+                        views, slot, i, look,
+                        steps,
+                        title,
+                        data.getString("due${i}When", "") ?: "",
+                        bold = false,
+                    )
                     shown++
                 }
                 if (shown == 0) {

@@ -164,21 +164,38 @@ class ProfileScreen extends StatelessWidget {
                       // The switch is the control and the caption is the state,
                       // so a student can tell what "off" means here — with
                       // System selected it does not mean "light".
-                      SwitchListTile(
-                        value: settings.themeMode == ThemeMode.dark,
-                        onChanged: (on) => settings.setThemeMode(
-                          on ? ThemeMode.dark : ThemeMode.system,
+                      // Three states, not a switch.
+                      //
+                      // This was a Dark Mode toggle whose "off" meant System.
+                      // On a phone already in dark mode that still renders
+                      // dark, so turning it off changed nothing visible and
+                      // the control looked broken — it could not reach Light
+                      // at all. The setting has always had three values; the
+                      // control now says so.
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+                        child: Row(
+                          children: [
+                            AppIcon(HugeIcons.strokeRoundedMoon02, size: 19),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text('Appearance',
+                                  style: Theme.of(context).textTheme.titleMedium),
+                            ),
+                          ],
                         ),
-                        secondary: AppIcon(HugeIcons.strokeRoundedMoon02, size: 19),
-                        title: const Text('Dark Mode',
-                            style: TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(
-                          switch (settings.themeMode) {
-                            ThemeMode.dark => 'On',
-                            ThemeMode.light => 'Off — always light',
-                            ThemeMode.system => 'Off — matches your device by default',
-                          },
-                          style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                        child: SegmentedButton<ThemeMode>(
+                          segments: const [
+                            ButtonSegment(value: ThemeMode.system, label: Text('System')),
+                            ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+                            ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+                          ],
+                          selected: {settings.themeMode},
+                          showSelectedIcon: false,
+                          onSelectionChanged: (s) => settings.setThemeMode(s.first),
                         ),
                       ),
                       const _Rule(),

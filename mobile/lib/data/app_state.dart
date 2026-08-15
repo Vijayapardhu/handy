@@ -301,6 +301,15 @@ class AppState extends ChangeNotifier {
         'due${i}When',
         task == null ? '' : getDeadline(task.dueDate, now, done: task.done).label,
       );
+      // Step progress, so the widget shows how far in something is rather than
+      // only that it exists. Empty when a deadline has no steps — "0 of 0"
+      // would read as no progress rather than as nothing to track.
+      await put(
+        'due${i}Steps',
+        task == null || task.subtasks.isEmpty
+            ? ''
+            : '${task.subtasksDone}/${task.subtasks.length}',
+      );
     }
 
     // Refresh every provider: a student may have any combination placed.

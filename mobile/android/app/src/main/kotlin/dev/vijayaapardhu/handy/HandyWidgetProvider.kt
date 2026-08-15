@@ -6,10 +6,12 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 
 /** The size the launcher has actually given a widget, in dp. */
@@ -84,6 +86,7 @@ abstract class HandyBaseWidget : AppWidgetProvider() {
         // Tapping anywhere opens Handy — a widget that does nothing when
         // touched feels broken regardless of what it shows.
         views.setOnClickPendingIntent(R.id.widget_root, launchIntent(context))
+        deepLink(context, views)
         appWidgetManager.updateAppWidget(widgetId, views)
     }
 
@@ -105,6 +108,24 @@ abstract class HandyBaseWidget : AppWidgetProvider() {
 
     private fun dp(context: Context, value: Int): Int =
         (value * context.resources.displayMetrics.density).toInt()
+
+    /**
+     * Extra tap targets that open Handy somewhere specific.
+     *
+     * Overridden by widgets that have one; the base does nothing, so a widget
+     * without a quick-add costs nothing for having the hook.
+     */
+    protected open fun deepLink(context: Context, views: RemoteViews) {}
+
+    /**
+     * A PendingIntent that opens the app at [uri].
+     *
+     * home_widget's own launch action is used rather than a bare Intent: the
+     * plugin recognises that action and hands the URI to Dart, which is what
+     * lets the app act on which part of the widget was tapped.
+     */
+    protected fun deepLinkIntent(context: Context, uri: String): PendingIntent =
+        HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java, Uri.parse(uri))
 
     private fun launchIntent(context: Context): PendingIntent {
         val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
@@ -298,10 +319,27 @@ class TodayWidgetProvider : HandyBaseWidget() {
 class DuesWidgetProvider : HandyBaseWidget() {
     override val layoutId = R.layout.widget_dues
 
+    /**
+     * The "+" opens the add form directly.
+     *
+     * Writing a deadline down has to be quicker than deciding not to bother,
+     * and the gap between "open app, find tab, find button" and "one tap" is
+     * exactly where a deadline gets forgotten.
+     */
+    override fun deepLink(context: Context, views: RemoteViews) {
+        views.setOnClickPendingIntent(
+            R.id.dues_add,
+            deepLinkIntent(context, "handy://deadline/new"),
+        )
+    }
+
     override fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize) {
         val look = lookOf(data)
         views.setTextViewText(R.id.dues_header, look.secondary(data.getString("tasks", "Nothing due")))
         views.show(R.id.dues_header, size.height >= 66)
+        // The plus needs room to be a target rather than a decoration.
+        views.setTextViewText(R.id.dues_add, look.primary("+"))
+        views.show(R.id.dues_add, size.height >= 66 && size.width >= 130)
 
         val rows = listOf(
             Triple(R.id.dues_row_0, R.id.dues_title_0, R.id.dues_when_0),
@@ -316,7 +354,14 @@ class DuesWidgetProvider : HandyBaseWidget() {
                 views.show(rowId, false)
             } else {
                 views.show(rowId, true)
-                views.setTextViewText(titleId, look.primary(title))
+                // Steps ride with the title rather than taking a column of
+                // their own: most deadlines have none, and an empty column on
+                // every row costs more than it ever shows.
+                val steps = data.getString("due${i}Steps", "") ?: ""
+                views.setTextViewText(
+                    titleId,
+                    look.primary(if (steps.isEmpty()) title else "$title  ·  $steps"),
+                )
                 views.setInt(titleId, "setMaxLines", if (size.width >= 250) 1 else 2)
                 views.setTextViewText(whenId, look.secondary(data.getString("due${i}When", "")))
                 // The countdown is the point of this widget; on a narrow tile

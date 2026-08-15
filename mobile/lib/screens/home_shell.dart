@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:home_widget/home_widget.dart';
 
 import '../data/app_state.dart';
 import '../logic/deadlines.dart';
 import '../main.dart';
+import '../widgets/form_sheet.dart';
 import 'profile_screen.dart';
 import 'subjects_screen.dart';
 import 'deadlines_screen.dart';
@@ -31,12 +34,6 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   final _pages = PageController();
 
-  @override
-  void dispose() {
-    _pages.dispose();
-    super.dispose();
-  }
-
   static final _tabs = [
     (icon: HugeIcons.strokeRoundedCalendar03, active: HugeIcons.strokeRoundedCalendar03, label: 'Today'),
     (icon: HugeIcons.strokeRoundedPieChart, active: HugeIcons.strokeRoundedPieChart, label: 'Subjects'),
@@ -44,6 +41,8 @@ class _HomeShellState extends State<HomeShell> {
     (icon: HugeIcons.strokeRoundedTaskDone01, active: HugeIcons.strokeRoundedTaskDone01, label: 'Deadlines'),
     (icon: HugeIcons.strokeRoundedUser, active: HugeIcons.strokeRoundedUserCircle, label: 'You'),
   ];
+
+  StreamSubscription<Uri?>? _widgetTaps;
 
   @override
   void initState() {
@@ -54,6 +53,38 @@ class _HomeShellState extends State<HomeShell> {
     // Registered here rather than at startup: the token is stored against
     // the student's uid, so there is nowhere to put it until they sign in.
     push.register();
+
+    // Taps on a widget arrive as a URI. Handled here rather than in main()
+    // because acting on one means changing tab and pushing a sheet, and this
+    // is the first place with a tab to change.
+    _widgetTaps = HomeWidget.widgetClicked.listen(_handleWidgetTap);
+    // The launch that *started* the app isn't in that stream — it happened
+    // before anything was listening — so it's asked for separately.
+    HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetTap);
+  }
+
+  @override
+  void dispose() {
+    _widgetTaps?.cancel();
+    _pages.dispose();
+    super.dispose();
+  }
+
+  void _handleWidgetTap(Uri? uri) {
+    if (uri == null || !mounted) return;
+    if (uri.host != 'deadline' || uri.path != '/new') return;
+
+    setState(() => _index = _HandyNavBar.tasksTab);
+    _pages.jumpToPage(_HandyNavBar.tasksTab);
+
+    // After the frame, so the Deadlines tab exists to host the sheet.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showFormSheet<void>(
+        context: context,
+        builder: (_) => TaskForm(subjects: appState.subjects),
+      );
+    });
   }
 
   @override

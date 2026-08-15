@@ -257,7 +257,7 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
   void _openForm(BuildContext context, AppState state) {
     showFormSheet<void>(
       context: context,
-      builder: (_) => _TaskForm(subjects: state.subjects),
+      builder: (_) => TaskForm(subjects: state.subjects),
     );
   }
 }
@@ -1091,15 +1091,15 @@ class _Empty extends StatelessWidget {
 /// student stop and think is a reason not to write the thing down at all —
 /// so the date starts on today, the common dates are one tap, and everything
 /// else is optional and below the fold.
-class _TaskForm extends StatefulWidget {
-  const _TaskForm({required this.subjects});
+class TaskForm extends StatefulWidget {
+  const TaskForm({super.key, required this.subjects});
   final List<Subject> subjects;
 
   @override
-  State<_TaskForm> createState() => _TaskFormState();
+  State<TaskForm> createState() => _TaskFormState();
 }
 
-class _TaskFormState extends State<_TaskForm> {
+class _TaskFormState extends State<TaskForm> {
   final _title = TextEditingController();
   final _notes = TextEditingController();
   TaskKind _kind = TaskKind.assignment;
