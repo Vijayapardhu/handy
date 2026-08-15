@@ -1,12 +1,14 @@
 import type { MutableRefObject } from "react";
 import type Lenis from "lenis";
+import { Link } from "react-router-dom";
 import { ArrowDown01Icon, Download04Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { BrandMark } from "../components/BrandMark";
 import { Icon } from "../components/Icon";
 import { scrollToHash } from "../hooks/useLenis";
 import { delay } from "../reveal";
-import { ANDROID, LINKS } from "@/constants/download";
+import { ANDROID } from "@/constants/download";
+import { ROUTES } from "@/constants/routes";
 
 /**
  * A single centred column, vertically centred in the first screen.
@@ -57,7 +59,7 @@ export function Hero({ lenis }: { lenis: MutableRefObject<Lenis | null> }) {
           </span>
           <span aria-hidden="true">·</span>
           <span>
-            On iPhone? <a href={LINKS.webApp}>Use the web app</a>
+            On iPhone? <Link to={ROUTES.login}>Use the web app</Link>
           </span>
         </p>
       </div>

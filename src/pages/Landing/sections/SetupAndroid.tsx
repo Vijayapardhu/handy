@@ -1,9 +1,11 @@
+import { Link } from "react-router-dom";
 import { Download04Icon, SmartPhone01Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { Icon } from "../components/Icon";
 import { SectionHead } from "../components/SectionHead";
 import { delay } from "../reveal";
 import { ANDROID, LINKS } from "@/constants/download";
+import { ROUTES } from "@/constants/routes";
 
 /**
  * The APK walkthrough. It is not on the Play Store, so this has to talk about
@@ -108,7 +110,7 @@ export function SetupAndroid() {
             <ul className={styles.noteList}>
               <li>
                 There is no iOS build. Open{" "}
-                <a href={LINKS.webApp}>{LINKS.webApp.replace("https://", "")}</a> in Safari, then
+                <Link to={ROUTES.login}>{LINKS.webApp.replace("https://", "")}</Link> in Safari, then
                 Share → Add to Home Screen — it installs as an app and gives you every screen the
                 Android build has.
               </li>

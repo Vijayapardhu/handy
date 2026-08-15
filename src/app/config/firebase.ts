@@ -1,5 +1,5 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import { browserLocalPersistence, getAuth, setPersistence, type Auth } from "firebase/auth";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
@@ -33,6 +33,13 @@ function requireEnv(key: string): string {
 
 export const firebaseApp: FirebaseApp = initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(firebaseApp);
+// Explicit rather than relying on the SDK's default: a signed-in student
+// should stay signed in across browser restarts until they actually tap Log
+// Out (ProfilePage's handleLogout), not until a tab happens to close.
+// `void` — this only has to land before the first sign-in attempt, and
+// AuthProvider's onAuthStateChanged listener picks up whatever session
+// IndexedDB already has regardless of when this promise settles.
+void setPersistence(auth, browserLocalPersistence);
 
 // Offline-friendly cached data (SRS §47-48): Firestore keeps the last-synced
 // documents available across tabs even without a connection.

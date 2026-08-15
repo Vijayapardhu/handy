@@ -1,9 +1,11 @@
+import { Link } from "react-router-dom";
 import { Download04Icon, PuzzleIcon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { Icon } from "../components/Icon";
 import { SectionHead } from "../components/SectionHead";
 import { delay } from "../reveal";
-import { ANDROID, EXTENSION, LINKS } from "@/constants/download";
+import { ANDROID, EXTENSION } from "@/constants/download";
+import { ROUTES } from "@/constants/routes";
 
 /** Last call, for the reader who scrolled the whole way and is now convinced. */
 export function Closer() {
@@ -28,7 +30,7 @@ export function Closer() {
         </div>
         <p className={styles.metaRow} data-reveal style={delay(0.18)}>
           <span>
-            Prefer the browser? <a href={LINKS.webApp}>Open the web app</a>
+            Prefer the browser? <Link to={ROUTES.login}>Open the web app</Link>
           </span>
         </p>
       </div>

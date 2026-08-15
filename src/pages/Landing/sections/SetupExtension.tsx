@@ -1,9 +1,11 @@
+import { Link } from "react-router-dom";
 import { Download04Icon, Idea01Icon, Alert02Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { Icon } from "../components/Icon";
 import { SectionHead } from "../components/SectionHead";
 import { delay } from "../reveal";
 import { EXTENSION, LINKS } from "@/constants/download";
+import { ROUTES } from "@/constants/routes";
 
 /**
  * The fiddliest part of onboarding, written out in full.
@@ -118,7 +120,7 @@ export function SetupExtension() {
                 <h3 className={styles.setupTitle}>Open Handy and sign in</h3>
                 <p className={styles.setupBody}>
                   Your account now exists. Use your roll number on{" "}
-                  <a href={LINKS.webApp}>the web app</a> or in the Android app. Every future visit to
+                  <Link to={ROUTES.login}>the web app</Link> or in the Android app. Every future visit to
                   your profile page refreshes the data on its own — you never have to come back here.
                 </p>
               </div>
