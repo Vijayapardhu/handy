@@ -36,6 +36,17 @@ export default defineConfig({
         // install payload of every student who adds the app to their home
         // screen.
         globIgnores: ["**/firebase-messaging-sw.js", "**/og-image.png"],
+        // Old precache entries are deleted when a new service worker takes
+        // over. Without this they accumulate, and a stale entry can keep
+        // serving an index.html whose chunk hashes no longer exist — the same
+        // "Failed to fetch dynamically imported module" that lazyPage.ts
+        // recovers from, except here it survives the reload.
+        cleanupOutdatedCaches: true,
+        // autoUpdate implies both, but they are the whole reason a deploy
+        // reaches an already-open tab rather than waiting for every client to
+        // close — worth being able to see rather than inferring.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],

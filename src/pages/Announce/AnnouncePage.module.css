@@ -285,3 +285,37 @@
     animation: none;
   }
 }
+
+/* Class list export ------------------------------------------------------ */
+
+.rosterCard {
+  margin-bottom: var(--space-4);
+}
+
+.rosterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rosterText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rosterTitle {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+@media (max-width: 460px) {
+  .rosterRow {
+    flex-wrap: wrap;
+  }
+  .rosterText {
+    flex-basis: calc(100% - 40px);
+  }
+}

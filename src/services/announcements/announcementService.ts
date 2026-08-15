@@ -210,6 +210,51 @@ export async function uploadAttachment(
   return { key, kind, name: file.name, size: file.size };
 }
 
+export interface RosterStudent {
+  rollNumber: string;
+  name: string;
+  section: string;
+  department: string;
+  year: number | string;
+}
+
+export async function getClassRoster(
+  groupKey: string,
+  idToken: string,
+): Promise<RosterStudent[]> {
+  const response = await fetch("/api/class-roster", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ groupKey }),
+  });
+
+  if (!response.ok) throw await readError(response, "Could not load the class list.");
+  const data = (await response.json()) as { students: RosterStudent[] };
+  return data.students;
+}
+
+/**
+ * RFC 4180 quoting.
+ *
+ * Every field is quoted rather than only the ones that need it. Names carry
+ * commas ("RAJU, B"), and a spreadsheet silently splitting one student into two
+ * columns is the kind of error nobody notices until the list is being read out.
+ * Inner quotes are doubled, which is how CSV escapes them.
+ */
+function csvCell(value: unknown): string {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+export function rosterToCsv(students: RosterStudent[]): string {
+  const header = ["Roll Number", "Name", "Section", "Department", "Year"];
+  const rows = students.map((s) =>
+    [s.rollNumber, s.name, s.section, s.department, s.year].map(csvCell).join(","),
+  );
+  // CRLF and a trailing newline: Excel is the program these open in, and it is
+  // the fussiest reader of the format.
+  return [header.map(csvCell).join(","), ...rows].join("\r\n") + "\r\n";
+}
+
 export interface PostAnnouncementInput {
   groupKey: string;
   title: string;

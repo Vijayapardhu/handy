@@ -4,17 +4,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertTriangle,
   CheckCircle2,
+  Download,
   Link2,
   Loader2,
   Megaphone,
   Paperclip,
   Send,
+  Users,
   X,
 } from "lucide-react";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useClassRepRooms, usePostAnnouncement, useUploadAttachment } from "@/hooks/useClassRep";
+import {
+  useClassRepRooms,
+  useExportRoster,
+  usePostAnnouncement,
+  useUploadAttachment,
+} from "@/hooks/useClassRep";
 import {
   ACCEPTED_UPLOAD_TYPES,
   AnnouncementError,
@@ -46,6 +53,7 @@ export function AnnouncePage() {
   const rooms = useClassRepRooms();
   const upload = useUploadAttachment();
   const post = usePostAnnouncement();
+  const exportRoster = useExportRoster();
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [links, setLinks] = useState<LinkRow[]>([]);
@@ -187,6 +195,47 @@ export function AnnouncePage() {
         subtitle="Goes to everyone in the class, on their phone"
         back
       />
+
+      {/* The rep's other job. Kept beside composing rather than on its own
+          screen: both are things you do because you are the rep, and neither
+          is worth a trip through a menu. */}
+      <Card className={styles.rosterCard}>
+        <div className={styles.rosterRow}>
+          <Users size={17} aria-hidden="true" />
+          <div className={styles.rosterText}>
+            <span className={styles.rosterTitle}>Class list</span>
+            <span className={styles.hint}>
+              Everyone in this class, as a spreadsheet — roll number, name, section,
+              department and year.
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            loading={exportRoster.isPending}
+            disabled={!groupKey}
+            onClick={() =>
+              exportRoster.mutate({
+                groupKey,
+                label: list.find((r) => r.groupKey === groupKey)?.subjectName ?? "class-list",
+              })
+            }
+          >
+            <Download size={15} /> CSV
+          </Button>
+        </div>
+        {exportRoster.isError && (
+          <p className={styles.submitError} role="alert">
+            {exportRoster.error instanceof AnnouncementError
+              ? exportRoster.error.message
+              : "Could not download the class list."}
+          </p>
+        )}
+        {exportRoster.isSuccess && (
+          <p className={styles.hint}>Downloaded — {exportRoster.data} students.</p>
+        )}
+      </Card>
 
       {sent && (
         <Card className={styles.sentCard}>

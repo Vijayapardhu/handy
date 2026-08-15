@@ -3,9 +3,11 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import {
   getAnnouncement,
   getClassRepRooms,
+  getClassRoster,
   getGroupAnnouncements,
   getMyClassGroupKeys,
   postAnnouncement,
+  rosterToCsv,
   uploadAttachment,
   type PostAnnouncementInput,
 } from "@/services/announcements/announcementService";
@@ -69,6 +71,36 @@ export function useGroupAnnouncements(groupKey: string | null) {
     queryKey: ["groupAnnouncements", groupKey],
     queryFn: () => getGroupAnnouncements(groupKey as string),
     enabled: Boolean(groupKey),
+  });
+}
+
+/**
+ * Downloads the class list as a CSV.
+ *
+ * The file is built and named here rather than served by the endpoint, so the
+ * download needs no second authenticated request and the name can carry the
+ * subject and the date — an export called `roster.csv` is unfindable a week
+ * later, in a downloads folder with four others.
+ */
+export function useExportRoster() {
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async ({ groupKey, label }: { groupKey: string; label: string }) => {
+      const idToken = await user!.getIdToken();
+      const students = await getClassRoster(groupKey, idToken);
+
+      const blob = new Blob([rosterToCsv(students)], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${label.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}-${
+        new Date().toISOString().slice(0, 10)
+      }.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      return students.length;
+    },
   });
 }
 
