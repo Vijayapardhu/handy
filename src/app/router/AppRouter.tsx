@@ -50,6 +50,9 @@ const NotificationsPage = lazy(() =>
 const AnnouncePage = lazy(() =>
   import("@/pages/Announce/AnnouncePage").then((m) => ({ default: m.AnnouncePage })),
 );
+const AnnouncementPage = lazy(() =>
+  import("@/pages/Announcement/AnnouncementPage").then((m) => ({ default: m.AnnouncementPage })),
+);
 const NotFoundPage = lazy(() => import("@/pages/NotFound/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 const router = createBrowserRouter([
@@ -85,6 +88,7 @@ const router = createBrowserRouter([
               { path: ROUTES.profilePassword, element: <ChangePasswordPage /> },
               { path: ROUTES.notifications, element: <NotificationsPage /> },
               { path: ROUTES.announce, element: <AnnouncePage /> },
+              { path: ROUTES.announcement(), element: <AnnouncementPage /> },
               { path: "*", element: <NotFoundPage /> },
             ],
           },

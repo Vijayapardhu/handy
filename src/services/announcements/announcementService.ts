@@ -1,7 +1,12 @@
-import { getDocs, query, where } from "firebase/firestore";
-import { classRepsCol } from "@/services/firebase/collections";
+import { doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import {
+  announcementsCol,
+  classGroupMembersCol,
+  classRepsCol,
+} from "@/services/firebase/collections";
 import { getActiveSubjects } from "@/services/subjects/subjectService";
 import type {
+  AnnouncementDoc,
   AnnouncementLink,
   AnnouncementMedia,
   ClassRepRoom,
@@ -36,6 +41,75 @@ export async function getClassRepRooms(uid: string, semesterId: string): Promise
       facultyName: subject?.facultyName ?? null,
     };
   });
+}
+
+/**
+ * One announcement, or null when it isn't readable.
+ *
+ * Null covers both "deleted" and "you're not in that class" — the rule refuses
+ * the read either way, and the app has no business telling a student which.
+ */
+export async function getAnnouncement(announcementId: string): Promise<AnnouncementDoc | null> {
+  try {
+    const snapshot = await getDoc(doc(announcementsCol(), announcementId));
+    return snapshot.exists() ? snapshot.data() : null;
+  } catch {
+    // A rules rejection throws rather than returning empty. Same answer.
+    return null;
+  }
+}
+
+/**
+ * Everything posted to one class group, newest first.
+ *
+ * Sorted here rather than in the query so the collection needs no composite
+ * index alongside the groupKey filter — the same trade the notifications inbox
+ * makes, and for the same reason.
+ */
+export async function getGroupAnnouncements(groupKey: string): Promise<AnnouncementDoc[]> {
+  try {
+    const snapshot = await getDocs(query(announcementsCol(), where("groupKey", "==", groupKey)));
+    return snapshot.docs
+      .map((d) => d.data())
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Every class group this student sits in, as written by the server on sync.
+ *
+ * Read once and matched locally rather than reconstructed from a timetable id
+ * the web app does not store. It is also the honest source: these documents are
+ * what `/api/announce` fans out to, so a subject page built on them shows
+ * exactly the room the student would actually be notified in.
+ */
+export async function getMyClassGroupKeys(uid: string): Promise<string[]> {
+  try {
+    const snapshot = await getDocs(query(classGroupMembersCol(), where("uid", "==", uid)));
+    return snapshot.docs.map((d) => d.data().groupKey);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The one of those groups that is this subject, taught by this student's own
+ * lecturer.
+ *
+ * A group key is `<timetableId>-<CODE>-<facultyId>`, and the last two parts are
+ * exactly what separates two rooms taking the same subject — so matching on the
+ * suffix picks the right room for an elective without needing the timetable id.
+ */
+export function matchGroupKey(
+  keys: string[],
+  subjectCode: string,
+  facultyId: string,
+): string | null {
+  const suffix = `-${subjectCode.trim().toUpperCase()}-${facultyId.trim()}`;
+  if (!subjectCode.trim() || !facultyId.trim()) return null;
+  return keys.find((key) => key.toUpperCase().endsWith(suffix.toUpperCase())) ?? null;
 }
 
 /** Mirrors MAX_UPLOAD_BYTES in api/_r2.js — checked here only to fail fast and kindly. */

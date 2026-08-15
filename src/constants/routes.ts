@@ -24,4 +24,7 @@ export const ROUTES = {
   // Reachable by anyone, but useful only to a class rep — the page itself says
   // so rather than the route pretending the capability doesn't exist.
   announce: "/announce",
+  // Where an announcement notification lands. api/announce.js writes this path
+  // into the notification's actionUrl, so the two have to agree.
+  announcement: (id: string = ":announcementId") => `/announcements/${id}`,
 } as const;

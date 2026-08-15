@@ -177,7 +177,10 @@ async function notify(db, { recipients, announcementId, groupKey, title, body, i
         type: "announcement",
         title,
         body: summary,
-        actionUrl: null,
+        // The web reads this to know where a notification goes; the mobile app
+        // routes on announcementId below. Both are written so neither client
+        // needs to know how the other one navigates.
+        actionUrl: `/announcements/${announcementId}`,
         announcementId,
         groupKey,
         read: false,

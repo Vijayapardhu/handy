@@ -9,4 +9,7 @@ export interface NotificationDoc {
   read: boolean;
   actionUrl: string | null;
   createdAt: string;
+  /** Set on announcement notifications (api/announce.js), absent on the rest. */
+  announcementId?: string;
+  groupKey?: string;
 }

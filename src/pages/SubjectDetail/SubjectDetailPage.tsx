@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TrendChart } from "@/components/charts/TrendChart";
+import { SubjectAnnouncements } from "@/components/announcements/SubjectAnnouncements";
 import { useSubject } from "@/hooks/useSubjects";
 import { useAttendanceSummaryForSubject } from "@/hooks/useAttendanceSummaryForSubject";
 import { useCollegeConfig } from "@/hooks/useCollegeConfig";
@@ -132,6 +133,8 @@ export function SubjectDetailPage() {
           <TrendChart points={trendQuery.data} target={target} />
         )}
       </Card>
+
+      <SubjectAnnouncements subjectCode={subject.code} facultyId={subject.facultyId} />
     </div>
   );
 }

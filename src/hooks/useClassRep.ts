@@ -1,7 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers/AuthProvider";
 import {
+  getAnnouncement,
   getClassRepRooms,
+  getGroupAnnouncements,
+  getMyClassGroupKeys,
   postAnnouncement,
   uploadAttachment,
   type PostAnnouncementInput,
@@ -36,6 +39,36 @@ export function useUploadAttachment() {
       const idToken = await user!.getIdToken();
       return uploadAttachment(file, groupKey, idToken);
     },
+  });
+}
+
+export function useAnnouncement(announcementId: string | undefined) {
+  return useQuery({
+    queryKey: ["announcement", announcementId],
+    queryFn: () => getAnnouncement(announcementId as string),
+    enabled: Boolean(announcementId),
+  });
+}
+
+/**
+ * Every group this student is in. Cached per student and shared across subject
+ * pages, so opening five subjects costs one read rather than five.
+ */
+export function useMyClassGroups() {
+  const { student } = useAuth();
+  return useQuery({
+    queryKey: ["myClassGroups", student?.id],
+    queryFn: () => getMyClassGroupKeys(student!.id),
+    enabled: Boolean(student),
+  });
+}
+
+/** Announcements for one class group — used by the subject page. */
+export function useGroupAnnouncements(groupKey: string | null) {
+  return useQuery({
+    queryKey: ["groupAnnouncements", groupKey],
+    queryFn: () => getGroupAnnouncements(groupKey as string),
+    enabled: Boolean(groupKey),
   });
 }
 

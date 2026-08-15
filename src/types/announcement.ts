@@ -19,6 +19,21 @@ export interface ClassRepGrantDoc {
   updatedAt: string;
 }
 
+/**
+ * Which class group a student sits in, written by the server on every sync.
+ *
+ * Server-written only: a student who could add themselves to a group could
+ * read another class's announcements. Membership follows the portal.
+ */
+export interface ClassGroupMemberDoc {
+  /** `<uid>_<groupKey>` */
+  id: string;
+  uid: string;
+  groupKey: string;
+  timetableId: string;
+  joinedAt: string;
+}
+
 export type AnnouncementMediaKind = "image" | "video" | "file";
 
 export interface AnnouncementMedia {
