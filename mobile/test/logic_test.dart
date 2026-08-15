@@ -66,6 +66,7 @@ void main() {
 
   planningTests();
   markTests();
+  leaveTests();
 
   group('timetable', () {
     TimetableEntry entry(int day, int period, String start, String end) => TimetableEntry(
@@ -323,6 +324,132 @@ void markTests() {
       expect(p.attended, 40);
       expect(p.held, 53);
       expect(p.percent, 75.47);
+    });
+  });
+}
+
+/// The leave planner: what a day off actually costs, subject by subject.
+void leaveTests() {
+  TimetableEntry slot(int day, String subjectId, String start) => TimetableEntry(
+        id: '$day-$subjectId-$start',
+        timetableVersionId: 'v1',
+        dayOfWeek: day,
+        startTime: start,
+        endTime: '10:20',
+        subjectId: subjectId,
+        facultyName: 'F',
+        room: 'RB-221',
+        block: 'Ramanujan Bhavan',
+        periodNo: 1,
+        strength: 72,
+        opted: 70,
+        type: 'lecture',
+        active: true,
+      );
+
+  Subject subject(String id) => Subject(
+        id: id,
+        code: id.toUpperCase(),
+        name: id,
+        shortName: id,
+        facultyName: 'F',
+      );
+
+  AttendanceSummary summary(String id, int attended, int held) =>
+      AttendanceSummary(subjectId: id, attended: attended, held: held);
+
+  group('leave cost', () {
+    // Monday: two periods of maths, one of physics. Tuesday: one of physics.
+    final entries = [
+      slot(1, 'maths', '09:30'),
+      slot(1, 'maths', '10:30'),
+      slot(1, 'physics', '11:20'),
+      slot(2, 'physics', '09:30'),
+    ];
+    final subjects = [subject('maths'), subject('physics')];
+
+    test('counts periods missed, not classes', () {
+      // Monday 17 Aug 2026.
+      final costs = leaveCost(
+        entries: entries,
+        subjects: subjects,
+        summaries: [summary('maths', 40, 50), summary('physics', 40, 50)],
+        from: DateTime(2026, 8, 17),
+        to: DateTime(2026, 8, 17),
+      );
+
+      expect(costs.firstWhere((c) => c.subject.id == 'maths').periods, 2);
+      expect(costs.firstWhere((c) => c.subject.id == 'physics').periods, 1);
+    });
+
+    test('missing raises the denominator and leaves attended alone', () {
+      final costs = leaveCost(
+        entries: entries,
+        subjects: subjects,
+        summaries: [summary('maths', 40, 50), summary('physics', 40, 50)],
+        from: DateTime(2026, 8, 17),
+        to: DateTime(2026, 8, 17),
+      );
+
+      final maths = costs.firstWhere((c) => c.subject.id == 'maths');
+      expect(maths.before, 80);
+      // 40/52 — the classes are still held, you simply were not there.
+      expect(maths.after, 76.92);
+    });
+
+    test('flags a subject that crosses below the target', () {
+      final costs = leaveCost(
+        entries: entries,
+        subjects: subjects,
+        // 38/50 is 76%; two more held drops it to 73.08%.
+        summaries: [summary('maths', 38, 50), summary('physics', 45, 50)],
+        from: DateTime(2026, 8, 17),
+        to: DateTime(2026, 8, 17),
+      );
+
+      expect(costs.firstWhere((c) => c.subject.id == 'maths').dropsBelow(75), isTrue);
+      expect(costs.firstWhere((c) => c.subject.id == 'physics').dropsBelow(75), isFalse);
+    });
+
+    test('skips Sunday, so a weekend costs only its taught days', () {
+      // Sat 15th has nothing scheduled, Sun 16th is skipped, Mon 17th costs.
+      final costs = leaveCost(
+        entries: entries,
+        subjects: subjects,
+        summaries: [summary('maths', 40, 50), summary('physics', 40, 50)],
+        from: DateTime(2026, 8, 15),
+        to: DateTime(2026, 8, 17),
+      );
+      expect(costs.firstWhere((c) => c.subject.id == 'maths').periods, 2);
+    });
+
+    test('adds up across a range, and sorts the worst outcome first', () {
+      // Mon + Tue: maths 2, physics 2.
+      final costs = leaveCost(
+        entries: entries,
+        subjects: subjects,
+        summaries: [summary('maths', 45, 50), summary('physics', 30, 50)],
+        from: DateTime(2026, 8, 17),
+        to: DateTime(2026, 8, 18),
+      );
+
+      expect(costs.firstWhere((c) => c.subject.id == 'physics').periods, 2);
+      // Physics ends lowest, so it leads — the subject to warn about is the
+      // one that ends up worst, not the one you miss most of.
+      expect(costs.first.subject.id, 'physics');
+    });
+
+    test('returns nothing for a backwards range', () {
+      expect(
+        leaveCost(
+          entries: entries,
+          subjects: subjects,
+          summaries: const [],
+          from: DateTime(2026, 8, 18),
+          to: DateTime(2026, 8, 17),
+        ),
+        isEmpty,
+      );
     });
   });
 }

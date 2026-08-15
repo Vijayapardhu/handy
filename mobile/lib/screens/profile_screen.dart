@@ -8,6 +8,8 @@ import '../theme.dart';
 import '../widgets/detail_row.dart';
 import '../widgets/student_photo.dart';
 import 'account_screens.dart';
+import 'attendance_history_screen.dart';
+import 'leave_planner_screen.dart';
 import 'settings_screen.dart';
 import 'support_screens.dart';
 import 'subjects_screen.dart';
@@ -118,6 +120,20 @@ class ProfileScreen extends StatelessWidget {
                         label: 'Academic Information',
                         detail: 'Course, Year, Department',
                         onTap: () => _push(context, const AcademicInformationScreen()),
+                      ),
+                      const _Rule(),
+                      _ActionRow(
+                        icon: HugeIcons.strokeRoundedCalendar03,
+                        label: 'Attendance History',
+                        detail: 'Every class you have marked',
+                        onTap: () => _push(context, const AttendanceHistoryScreen()),
+                      ),
+                      const _Rule(),
+                      _ActionRow(
+                        icon: HugeIcons.strokeRoundedCoffee02,
+                        label: 'Leave Planner',
+                        detail: 'What a day off would cost you',
+                        onTap: () => _push(context, const LeavePlannerScreen()),
                       ),
                       const _Rule(),
                       _ActionRow(

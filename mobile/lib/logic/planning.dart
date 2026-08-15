@@ -7,6 +7,7 @@ library;
 
 import '../models/models.dart';
 import '../models/timetable_entry.dart';
+import 'attendance.dart';
 import 'timetable.dart';
 
 /// A free period on a specific date, rather than on an abstract weekday.
@@ -87,6 +88,86 @@ List<int> workloadByDay(List<Task> tasks, DateTime today, {int days = 7}) {
   }
 
   return counts;
+}
+
+/// What a day off would cost, per subject.
+///
+/// The question a student actually asks before missing a day is not "how many
+/// classes are on Tuesday" but "can I afford Tuesday" — and the honest answer
+/// depends on where each subject already stands. A day with one lecture in a
+/// subject sitting at 76% is cheap; the same day is not cheap if that subject
+/// is at 75.4%.
+class LeaveCost {
+  const LeaveCost({
+    required this.subject,
+    required this.periods,
+    required this.before,
+    required this.after,
+  });
+
+  final Subject subject;
+
+  /// Periods missed across the whole range, not classes — a three-period lab
+  /// costs three.
+  final int periods;
+  final double? before;
+  final double? after;
+
+  /// Crossing the line is the outcome that matters; a percentage falling by a
+  /// point is not news unless it lands on the wrong side of the target.
+  bool dropsBelow(double target) =>
+      before != null && after != null && before! >= target && after! < target;
+}
+
+/// The cost of being absent every day from [from] to [to] inclusive.
+///
+/// Sundays are skipped and days with no classes contribute nothing, so a range
+/// spanning a weekend costs only what the taught days in it cost.
+List<LeaveCost> leaveCost({
+  required List<TimetableEntry> entries,
+  required List<Subject> subjects,
+  required List<AttendanceSummary> summaries,
+  required DateTime from,
+  required DateTime to,
+}) {
+  final start = DateTime(from.year, from.month, from.day);
+  final end = DateTime(to.year, to.month, to.day);
+  if (end.isBefore(start)) return const [];
+
+  final missed = <String, int>{};
+  for (var date = start;
+      !date.isAfter(end);
+      date = date.add(const Duration(days: 1))) {
+    if (date.weekday == DateTime.sunday) continue;
+    for (final entry in entriesForDay(entries, date.weekday % 7)) {
+      missed.update(entry.subjectId, (n) => n + 1, ifAbsent: () => 1);
+    }
+  }
+
+  final summaryBySubject = {for (final s in summaries) s.subjectId: s};
+  final costs = <LeaveCost>[];
+
+  for (final entry in missed.entries) {
+    final subject = subjects.where((s) => s.id == entry.key).firstOrNull;
+    if (subject == null) continue;
+
+    final summary = summaryBySubject[entry.key];
+    final attended = summary?.attended ?? 0;
+    final held = summary?.held ?? 0;
+
+    costs.add(LeaveCost(
+      subject: subject,
+      periods: entry.value,
+      before: roundPercentage(calculateAttendance(attended, held)),
+      // Missing raises the denominator only: the classes are still held.
+      after: roundPercentage(calculateAttendance(attended, held + entry.value)),
+    ));
+  }
+
+  // Worst outcome first — the subject a student needs warning about is the one
+  // that ends up lowest, not the one they miss most of.
+  costs.sort((a, b) => (a.after ?? 999).compareTo(b.after ?? 999));
+  return costs;
 }
 
 /// The next exam, if one is close enough to be worth a countdown.

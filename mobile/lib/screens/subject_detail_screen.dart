@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../models/timetable_entry.dart';
 import '../theme.dart';
 import '../widgets/detail_row.dart';
+import 'attendance_history_screen.dart';
 import 'subjects_screen.dart';
 import '../widgets/app_icon.dart';
 
@@ -24,9 +25,12 @@ class SubjectDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = AppStateScope.of(context);
-    final attended = summary?.attended ?? 0;
-    final held = summary?.held ?? 0;
-    final percent = roundPercentage(calculateAttendance(attended, held));
+    // Carried forward by anything marked since the last sync, so this page
+    // agrees with the one that sent you here.
+    final projected = state.projectedFor(subject.id);
+    final attended = projected.attended;
+    final held = projected.held;
+    final percent = projected.percent;
     final colour = statusColour(percent);
     final canSkip = classesCanSkip(attended, held, SubjectsScreen.target);
     final needed = classesNeededForTarget(attended, held, SubjectsScreen.target);
@@ -76,8 +80,22 @@ class SubjectDetailScreen extends StatelessWidget {
                                   fontSize: 18, fontWeight: FontWeight.w700, color: colour)),
                         ),
                       const Spacer(),
-                      Text('$attended / $held',
-                          style: Theme.of(context).textTheme.bodySmall),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('$attended / $held',
+                              style: Theme.of(context).textTheme.bodySmall),
+                          if (projected.isProjected)
+                            Text(
+                              'estimated',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -136,6 +154,48 @@ class SubjectDetailScreen extends StatelessWidget {
                     ),
                   ],
                 ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          Card(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => AttendanceHistoryScreen(subjectId: subject.id),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Row(
+                  children: [
+                    AppIcon(
+                      HugeIcons.strokeRoundedCalendar03,
+                      size: 19,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Attendance history',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          Text(
+                            state.marks.where((m) => m.subjectId == subject.id).isEmpty
+                                ? 'Nothing marked yet'
+                                : '${state.marks.where((m) => m.subjectId == subject.id).length} '
+                                    'marked',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    AppIcon(HugeIcons.strokeRoundedArrowRight01, size: 18),
+                  ],
+                ),
               ),
             ),
           ),
