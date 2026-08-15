@@ -100,6 +100,10 @@ Future<void> refreshWidgetData(Repository repository) async {
       block == null ? '' : (subjectsById[block.first.subjectId]?.name ?? 'Class'),
     );
     await put(
+      'sched${i}Short',
+      block == null ? '' : (subjectsById[block.first.subjectId]?.shortName ?? ''),
+    );
+    await put(
       'sched${i}Venue',
       block == null
           ? ''

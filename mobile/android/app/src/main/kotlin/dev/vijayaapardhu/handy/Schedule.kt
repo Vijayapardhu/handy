@@ -19,11 +19,16 @@ data class ClassSlot(
     val start: String,
     val end: String,
     val subject: String,
+    val short: String,
     val venue: String,
     val faculty: String,
 ) {
     val startMinutes get() = minutesOf(start)
     val endMinutes get() = minutesOf(end)
+
+    /// The short name when the portal gave one, else the full name. Widgets
+    /// are narrow and "ADSAA" says as much as the full title at a glance.
+    val label get() = short.ifEmpty { subject }
 }
 
 /** "09:30" -> 570. Returns -1 for anything unparseable, which sorts first. */
@@ -38,11 +43,26 @@ fun minutesOf(hhmm: String): Int {
 class Schedule(private val slots: List<ClassSlot>, private val nowMinutes: Int) {
 
     val count get() = slots.size
-    val finished get() = slots.count { it.endMinutes in 0 until nowMinutes }
+    val finished get() = slots.count { it.endMinutes in 0..nowMinutes }
     val remaining get() = count - finished
 
-    /** The class you are in, or the next one you are heading to. */
-    val next: ClassSlot? get() = slots.firstOrNull { it.endMinutes >= nowMinutes }
+    /**
+     * The class you are in, or the next one you are heading to.
+     *
+     * Strictly greater than, not greater-or-equal: a class ending at exactly
+     * this minute is over. With `>=` it stayed selected for its final minute
+     * and, since the running test is exclusive at the end, the countdown fell
+     * through to the not-yet-started branch and announced that a class which
+     * had just finished was "starting now".
+     */
+    val next: ClassSlot? get() = slots.firstOrNull { it.endMinutes > nowMinutes }
+
+    /** What follows the current one, so a running class can name what's after it. */
+    val after: ClassSlot?
+        get() {
+            val current = next ?: return null
+            return slots.firstOrNull { it.startMinutes >= current.endMinutes }
+        }
 
     val isRunning: Boolean
         get() = next?.let { nowMinutes in it.startMinutes until it.endMinutes } ?: false
@@ -58,7 +78,7 @@ class Schedule(private val slots: List<ClassSlot>, private val nowMinutes: Int) 
     fun countdown(): String {
         val slot = next ?: return if (count == 0) "" else "DONE FOR TODAY"
         if (nowMinutes in slot.startMinutes until slot.endMinutes) {
-            return "NOW · ENDS ${slot.end}"
+            return "ONGOING · ENDS ${slot.end}"
         }
         val away = slot.startMinutes - nowMinutes
         return when {
@@ -90,6 +110,7 @@ class Schedule(private val slots: List<ClassSlot>, private val nowMinutes: Int) 
                     start = start,
                     end = end,
                     subject = data.getString("sched${i}Subject", "") ?: "",
+                    short = data.getString("sched${i}Short", "") ?: "",
                     venue = data.getString("sched${i}Venue", "") ?: "",
                     faculty = data.getString("sched${i}Faculty", "") ?: "",
                 )

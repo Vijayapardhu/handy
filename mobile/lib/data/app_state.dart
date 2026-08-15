@@ -196,7 +196,8 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     final nowHm = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final today = classBlocksForDay(entries, now.weekday % 7);
-    final next = today.where((b) => b.endTime.compareTo(nowHm) >= 0).firstOrNull;
+    // Strictly after: a class ending at exactly this minute is over.
+    final next = today.where((b) => b.endTime.compareTo(nowHm) > 0).firstOrNull;
     final percent = overallPercent;
 
     Future<void> put(String key, String value) => HomeWidget.saveWidgetData<String>(key, value);
@@ -270,6 +271,12 @@ class AppState extends ChangeNotifier {
       await put(
         'sched${i}Subject',
         block == null ? '' : (subjectsById[block.first.subjectId]?.name ?? 'Class'),
+      );
+      // The short name too: a widget naming what comes *after* the current
+      // class has room for "ADSAA" and not for the full title.
+      await put(
+        'sched${i}Short',
+        block == null ? '' : (subjectsById[block.first.subjectId]?.shortName ?? ''),
       );
       await put(
         'sched${i}Venue',

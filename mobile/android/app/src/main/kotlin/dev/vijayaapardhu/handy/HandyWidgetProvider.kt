@@ -191,11 +191,20 @@ class HandyWidgetProvider : HandyBaseWidget() {
         // One line at a squeeze, two once there's room for them to land.
         views.setInt(R.id.next_subject, "setMaxLines", if (size.height >= 90) 2 else 1)
 
+        // While a class is running, the time line carries what comes after it
+        // as well. "Ongoing" answers where you are; "then ADSAA at 13:00"
+        // answers the question you are actually asking during a lecture, which
+        // is whether you can go anywhere when it ends.
+        val afterwards = if (schedule.isRunning) schedule.after else null
         views.line(
             R.id.next_time,
-            next?.let { "${it.start} – ${it.end}" } ?: "",
+            next?.let {
+                val span = "${it.start} – ${it.end}"
+                if (afterwards == null) span else "$span  ·  then ${afterwards.label} at ${afterwards.start}"
+            } ?: "",
             size.height >= 72,
             look,
+            wrap = if (wide) 1 else 2,
         )
         // Room and building wrap on a narrow tile instead of ellipsising, and
         // faculty names are long enough to need the same.

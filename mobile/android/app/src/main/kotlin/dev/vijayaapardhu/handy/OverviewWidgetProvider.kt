@@ -174,6 +174,7 @@ class OverviewWidgetProvider : HandyBaseWidget() {
 
             "next" -> {
                 val next = schedule.next
+                val afterwards = if (schedule.isRunning) schedule.after else null
                 header(views, slot, schedule.countdown().ifEmpty { "Next class" }, look)
                 stat(
                     views, slot, look,
@@ -181,6 +182,8 @@ class OverviewWidgetProvider : HandyBaseWidget() {
                     sub = listOfNotNull(
                         next?.let { "${it.start} – ${it.end}" },
                         next?.venue?.takeIf { it.isNotEmpty() },
+                        // During a class, what follows is the useful half.
+                        afterwards?.let { "then ${it.label} at ${it.start}" },
                     ).joinToString(" · "),
                     size = size,
                     // A subject name is words, not a figure, so it takes the

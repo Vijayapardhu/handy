@@ -63,7 +63,12 @@ class _TodayScreenState extends State<TodayScreen> {
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final blocks = classBlocksForDay(state.entries, now.weekday % 7);
     final next = blocks
-        .where((b) => b.endTime.compareTo(nowHm) >= 0)
+        // Strictly after, not on: a class ending at exactly this minute is
+        // over. With >= it stayed selected for its final minute, and since the
+        // running test is exclusive at the end, the card fell through to the
+        // not-yet-started branch and announced that a class which had just
+        // finished "starts in less than a minute".
+        .where((b) => b.endTime.compareTo(nowHm) > 0)
         .firstOrNull;
     final done = blocks.where((b) => b.endTime.compareTo(nowHm) < 0).length;
     final free = freePeriods(state.entries, now.weekday % 7);
@@ -135,6 +140,17 @@ class _TodayScreenState extends State<TodayScreen> {
                       _NextClassCard(
                         block: next,
                         subject: state.subjectsById[next.first.subjectId],
+                        // What follows, so a student sitting in a lecture can
+                        // see whether they are free when it ends — which is
+                        // the question they are actually asking at the time.
+                        after: blocks
+                            .where((b) => b.startTime.compareTo(next.endTime) >= 0)
+                            .firstOrNull,
+                        afterSubject: state.subjectsById[blocks
+                            .where((b) => b.startTime.compareTo(next.endTime) >= 0)
+                            .firstOrNull
+                            ?.first
+                            .subjectId],
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -361,10 +377,19 @@ class _AttendanceHero extends StatelessWidget {
 /// Next class with a live countdown — the one thing on this screen that
 /// changes while you're looking at it.
 class _NextClassCard extends StatelessWidget {
-  const _NextClassCard({required this.block, this.subject});
+  const _NextClassCard({
+    required this.block,
+    this.subject,
+    this.after,
+    this.afterSubject,
+  });
 
   final ClassBlock block;
   final Subject? subject;
+
+  /// The class after this one, shown only while this one is running.
+  final ClassBlock? after;
+  final Subject? afterSubject;
 
   @override
   Widget build(BuildContext context) {
@@ -375,7 +400,7 @@ class _NextClassCard extends StatelessWidget {
     final minutes = start.difference(now).inMinutes;
 
     final label = running
-        ? 'Now · ends ${_relative(end.difference(now))}'
+        ? 'Ongoing · ends in ${_relative(end.difference(now))}'
         : 'Starts in ${_relative(start.difference(now))}';
 
     final place = [
@@ -485,6 +510,35 @@ class _NextClassCard extends StatelessWidget {
                 ),
             ],
           ),
+          // What follows, while this one is still going. A student in a
+          // lecture is deciding what to do at the end of it, and "then ADSAA
+          // at 13:00" answers that without opening the timetable.
+          if (running && after != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                AppIcon(
+                  HugeIcons.strokeRoundedArrowRight01,
+                  size: 13,
+                  color: Colors.white70,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Then ${_shortName(afterSubject)} at ${after!.startTime}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
           // While a class is running, how much of it is left is the live fact.
           // A countdown to the end says it in words; the bar says it without
           // reading.
@@ -504,6 +558,13 @@ class _NextClassCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// The short name when the portal gave one — this line is squeezed beside a
+  /// time, and "ADSAA" says as much here as the full title.
+  static String _shortName(Subject? subject) {
+    if (subject == null) return 'your next class';
+    return subject.shortName.isNotEmpty ? subject.shortName : subject.name;
   }
 
   static DateTime _todayAt(String hhmm) {
