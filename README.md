@@ -3,6 +3,9 @@
 React + TypeScript + Vite frontend, Firebase (Auth, Firestore) backend. Built against the SRS
 in this repo's project brief: student-facing app only in this pass (no admin panel yet).
 
+Free software under the [GNU AGPL v3](LICENSE). The browser extension installs
+unpacked — see [extension/tool/INSTALL.md](extension/tool/INSTALL.md).
+
 ## 1. Setup
 
 ```bash
@@ -223,3 +226,38 @@ npm run typecheck && npm run lint && npm test && npm run build
 ```
 
 and send me anything that fails — I'd rather fix a real error against real output than guess.
+
+## Licence
+
+Handy is free software: you can redistribute it and/or modify it under the
+terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+Handy is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
+
+Copyright (C) 2026 Vijaya Pardhu
+
+### What the AGPL means here, in practice
+
+The AGPL was chosen over the plain GPL deliberately, because most of Handy is a
+service rather than something people download. Section 13 is the difference:
+
+- **Run it unmodified?** Nothing is owed. Use it, install the extension, deploy
+  it for your own college.
+- **Modify it and run it as a service others use over a network?** Those users
+  must be offered your modified source. Not just people you hand a copy to —
+  anyone using your instance. That is the loophole the plain GPL leaves open
+  and this one closes.
+- **Fork it?** Fine, under the same licence. It cannot be closed up, folded
+  into proprietary software, or relicensed.
+
+Note that this cuts both ways: it binds a hosted Handy to publishing its
+source. That is the intent — this exists so students can see exactly what reads
+their attendance — but it is worth understanding before building anything
+commercial on top of it.
