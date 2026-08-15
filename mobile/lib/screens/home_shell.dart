@@ -8,7 +8,7 @@ import '../logic/deadlines.dart';
 import '../main.dart';
 import 'profile_screen.dart';
 import 'subjects_screen.dart';
-import 'tasks_screen.dart';
+import 'deadlines_screen.dart';
 import 'timetable_screen.dart';
 import 'today_screen.dart';
 
@@ -33,7 +33,7 @@ class _HomeShellState extends State<HomeShell> {
     (icon: Icons.today_outlined, active: Icons.today, label: 'Today'),
     (icon: Icons.donut_small_outlined, active: Icons.donut_small, label: 'Subjects'),
     (icon: Icons.calendar_month_outlined, active: Icons.calendar_month, label: 'Timetable'),
-    (icon: Icons.checklist_outlined, active: Icons.checklist, label: 'Tasks'),
+    (icon: Icons.checklist_outlined, active: Icons.checklist, label: 'Deadlines'),
     (icon: Icons.person_outline, active: Icons.person, label: 'You'),
   ];
 
@@ -59,7 +59,7 @@ class _HomeShellState extends State<HomeShell> {
           TodayScreen(),
           SubjectsScreen(),
           TimetableScreen(),
-          TasksScreen(),
+          DeadlinesScreen(),
           ProfileScreen(),
         ],
       ),

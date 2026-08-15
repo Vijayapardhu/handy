@@ -5,6 +5,8 @@ import '../data/app_state.dart';
 import '../logic/deadlines.dart';
 import '../main.dart';
 import '../models/models.dart';
+import '../theme.dart';
+import 'deadline_detail_screen.dart';
 import '../widgets/form_sheet.dart';
 import '../widgets/skeleton.dart';
 
@@ -15,20 +17,30 @@ import '../widgets/skeleton.dart';
 /// read to answer "what do I have to deal with now", and a single column of
 /// twelve items answers that only after you've read all twelve. The counts
 /// along the top are the same question asked faster, and double as filters.
-class TasksScreen extends StatefulWidget {
-  const TasksScreen({super.key});
+class DeadlinesScreen extends StatefulWidget {
+  const DeadlinesScreen({super.key});
 
   @override
-  State<TasksScreen> createState() => _TasksScreenState();
+  State<DeadlinesScreen> createState() => _DeadlinesScreenState();
 }
 
 /// Which slice of the list is on screen. Not persisted — a filter you set on
 /// Tuesday should not still be hiding things on Friday.
 enum _Filter { all, overdue, today, week }
 
-class _TasksScreenState extends State<TasksScreen> {
+/// Upcoming answers "what's next", Calendar answers "when is everything", and
+/// Done is the record. Three questions, three views, one screen — a single
+/// list trying to serve all three ends up serving none.
+enum _View { upcoming, calendar, done }
+
+class _DeadlinesScreenState extends State<DeadlinesScreen> {
   _Filter _filter = _Filter.all;
-  bool _showDone = false;
+  final bool _showDone = false;
+  _View _view = _View.upcoming;
+
+  /// Day selected in the calendar view; null means the whole month.
+  DateTime? _selectedDay;
+  late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +48,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
     if (state.loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Tasks')),
+        appBar: AppBar(title: const Text('Deadlines')),
         body: const ListSkeleton(rows: 4, height: 84),
       );
     }
@@ -73,16 +85,24 @@ class _TasksScreenState extends State<TasksScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar.large(
-            title: const Text('Tasks'),
-            expandedHeight: 120,
-            actions: [
-              if (done.isNotEmpty)
-                IconButton(
-                  onPressed: () => setState(() => _showDone = !_showDone),
-                  icon: Icon(_showDone ? Icons.visibility_off_outlined : Icons.history),
-                  tooltip: _showDone ? 'Hide completed' : 'Show completed',
-                ),
-            ],
+            title: const Text('Deadlines'),
+            expandedHeight: 118,
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              child: SegmentedButton<_View>(
+                segments: const [
+                  ButtonSegment(value: _View.upcoming, label: Text('Upcoming')),
+                  ButtonSegment(value: _View.calendar, label: Text('Calendar')),
+                  ButtonSegment(value: _View.done, label: Text('Done')),
+                ],
+                selected: {_view},
+                showSelectedIcon: false,
+                onSelectionChanged: (s) => setState(() => _view = s.first),
+              ),
+            ),
           ),
 
           if (state.tasks.isEmpty)
@@ -90,7 +110,33 @@ class _TasksScreenState extends State<TasksScreen> {
               hasScrollBody: false,
               child: _Empty(onAdd: () => _openForm(context, state)),
             )
-          else ...[
+          else if (_view == _View.done) ...[
+            if (done.isEmpty)
+              SliverToBoxAdapter(child: _Note('Nothing completed yet.'))
+            else
+              SliverList.builder(
+                itemCount: done.length,
+                itemBuilder: (context, i) => _TaskCard(task: done[i], state: state),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 96)),
+          ] else if (_view == _View.calendar) ...[
+            SliverToBoxAdapter(
+              child: _MonthGrid(
+                month: _month,
+                selected: _selectedDay,
+                tasks: open,
+                onStep: (delta) => setState(() {
+                  _month = DateTime(_month.year, _month.month + delta);
+                  _selectedDay = null;
+                }),
+                onPick: (day) => setState(
+                  () => _selectedDay = _sameDay(_selectedDay, day) ? null : day,
+                ),
+              ),
+            ),
+            ..._calendarSlivers(open, state),
+            const SliverToBoxAdapter(child: SizedBox(height: 96)),
+          ] else ...[
             SliverToBoxAdapter(
               child: _Summary(
                 overdue: overdue,
@@ -103,18 +149,12 @@ class _TasksScreenState extends State<TasksScreen> {
 
             if (visible.isEmpty)
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
-                  child: Text(
-                    switch (_filter) {
-                      _Filter.overdue => 'Nothing overdue. Good.',
-                      _Filter.today => 'Nothing due today.',
-                      _Filter.week => 'Nothing due this week.',
-                      _Filter.all => 'Everything here is done.',
-                    },
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
+                child: _Note(switch (_filter) {
+                  _Filter.overdue => 'Nothing overdue. Good.',
+                  _Filter.today => 'Nothing due today.',
+                  _Filter.week => 'Nothing due this week.',
+                  _Filter.all => 'Everything here is done.',
+                }),
               ),
 
             for (final group in groups) ...[
@@ -139,6 +179,44 @@ class _TasksScreenState extends State<TasksScreen> {
       ),
     );
   }
+
+  /// What sits under the month grid: the picked day, or the whole month when
+  /// nothing is picked, so the view is never just a grid with dead space.
+  List<Widget> _calendarSlivers(List<Task> open, AppState state) {
+    final day = _selectedDay;
+    final shown = open.where((t) {
+      if (day != null) return _sameDay(t.dueDate, day);
+      return t.dueDate.year == _month.year && t.dueDate.month == _month.month;
+    }).toList();
+
+    if (shown.isEmpty) {
+      return [
+        SliverToBoxAdapter(
+          child: _Note(day == null
+              ? 'Nothing due in ${_monthNames[_month.month - 1]}.'
+              : 'Nothing due on ${day.day} ${_monthNames[day.month - 1]}.'),
+        ),
+      ];
+    }
+
+    return [
+      SliverToBoxAdapter(
+        child: _GroupHeader(
+          day == null
+              ? _monthNames[_month.month - 1]
+              : '${day.day} ${_monthNames[day.month - 1]}',
+          shown.length,
+        ),
+      ),
+      SliverList.builder(
+        itemCount: shown.length,
+        itemBuilder: (context, i) => _TaskCard(task: shown[i], state: state),
+      ),
+    ];
+  }
+
+  static bool _sameDay(DateTime? a, DateTime? b) =>
+      a != null && b != null && a.year == b.year && a.month == b.month && a.day == b.day;
 
   /// Buckets in the order a student worries about them. Empty buckets are
   /// dropped rather than shown empty — a heading with nothing under it reads
@@ -296,6 +374,185 @@ class _Stat extends StatelessWidget {
   }
 }
 
+const _monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/// A month at a glance, with a dot on every day that owes something.
+///
+/// The list answers "what's next"; this answers "when is everything", which is
+/// the question you ask when deciding whether next week is survivable. The
+/// dots carry urgency colour so a bad week is visible before you read a word.
+class _MonthGrid extends StatelessWidget {
+  const _MonthGrid({
+    required this.month,
+    required this.selected,
+    required this.tasks,
+    required this.onStep,
+    required this.onPick,
+  });
+
+  final DateTime month;
+  final DateTime? selected;
+  final List<Task> tasks;
+  final ValueChanged<int> onStep;
+  final ValueChanged<DateTime> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = Theme.of(context).textTheme.bodySmall?.color;
+    final now = DateTime.now();
+
+    final first = DateTime(month.year, month.month);
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    // Monday-first, matching the timetable: the college week starts there.
+    final leading = (first.weekday - 1) % 7;
+
+    final byDay = <int, List<Task>>{};
+    for (final task in tasks) {
+      if (task.dueDate.year == month.year && task.dueDate.month == month.month) {
+        byDay.putIfAbsent(task.dueDate.day, () => []).add(task);
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 12, 10, 14),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => onStep(-1),
+                    icon: const Icon(Icons.chevron_left),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  Expanded(
+                    child: Text(
+                      '${_monthNames[month.month - 1]} ${month.year}',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => onStep(1),
+                    icon: const Icon(Icons.chevron_right),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                    .map((d) => Expanded(
+                          child: Text(
+                            d,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: muted),
+                          ),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 6),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: 1,
+                ),
+                itemCount: leading + daysInMonth,
+                itemBuilder: (context, i) {
+                  if (i < leading) return const SizedBox.shrink();
+
+                  final day = i - leading + 1;
+                  final date = DateTime(month.year, month.month, day);
+                  final due = byDay[day] ?? const [];
+                  final isToday = date.year == now.year &&
+                      date.month == now.month &&
+                      date.day == now.day;
+                  final isSelected = selected != null &&
+                      selected!.year == date.year &&
+                      selected!.month == date.month &&
+                      selected!.day == date.day;
+
+                  // Worst urgency on the day decides the dot's colour: a day
+                  // holding one overdue item and two calm ones is a bad day.
+                  final worst = due.fold<int>(999, (best, t) {
+                    final d = getDeadline(t.dueDate, now).daysLeft;
+                    return d < best ? d : best;
+                  });
+                  final dotColour = due.isEmpty
+                      ? Colors.transparent
+                      : worst < 0
+                          ? HandyColors.bad
+                          : worst == 0
+                              ? HandyColors.warn
+                              : scheme.primary;
+
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => onPick(date),
+                    child: Container(
+                      margin: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: isSelected ? scheme.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        border: isToday && !isSelected
+                            ? Border.all(color: scheme.primary, width: 1.4)
+                            : null,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$day',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isToday || isSelected ? FontWeight.w800 : FontWeight.w500,
+                              color: isSelected ? scheme.onPrimary : null,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Container(
+                            width: due.length > 1 ? 12 : 5,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isSelected && due.isNotEmpty
+                                  ? scheme.onPrimary
+                                  : dotColour,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Note extends StatelessWidget {
+  const _Note(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+      );
+}
+
 class _GroupHeader extends StatelessWidget {
   const _GroupHeader(this.label, this.count);
   final String label;
@@ -365,7 +622,7 @@ class _TaskCard extends StatelessWidget {
           if (direction == DismissDirection.startToEnd) {
             // Ticking off isn't a removal — the row stays and redraws struck
             // through, so it must not animate away.
-            await repository.setTaskDone(task.id, !task.done);
+            await repository.setTaskDone(task.id, !task.done, task: task);
             return false;
           }
           return true;
@@ -373,71 +630,99 @@ class _TaskCard extends StatelessWidget {
         onDismissed: (_) => _deleteWithUndo(context),
         child: Card(
           clipBehavior: Clip.antiAlias,
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Urgency reads before any text does.
-                Container(width: 4, color: task.done ? Colors.transparent : colour),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 12, 12, 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _Tick(
-                          done: task.done,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            repository.setTaskDone(task.id, !task.done);
-                          },
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                task.title,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  decoration: task.done ? TextDecoration.lineThrough : null,
-                                  color: task.done
-                                      ? Theme.of(context).textTheme.bodySmall?.color
-                                      : null,
-                                ),
-                              ),
-                              if (meta.isNotEmpty) ...[
-                                const SizedBox(height: 3),
-                                Text(meta, style: Theme.of(context).textTheme.bodySmall),
-                              ],
-                              if (task.notes.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  task.notes,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ],
+          child: InkWell(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => DeadlineDetailScreen(taskId: task.id),
+              ),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Urgency reads before any text does.
+                  Container(width: 4, color: task.done ? Colors.transparent : colour),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 12, 12, 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _Tick(
+                            done: task.done,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              repository.setTaskDone(task.id, !task.done, task: task);
+                            },
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          deadline.label,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: colour,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        task.title,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          decoration:
+                                              task.done ? TextDecoration.lineThrough : null,
+                                          color: task.done
+                                              ? Theme.of(context).textTheme.bodySmall?.color
+                                              : null,
+                                        ),
+                                      ),
+                                    ),
+                                    if (task.repeat != TaskRepeat.none) ...[
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        Icons.repeat,
+                                        size: 13,
+                                        color: Theme.of(context).textTheme.bodySmall?.color,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                if (meta.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Text(meta, style: Theme.of(context).textTheme.bodySmall),
+                                ],
+                                // Steps replace the notes preview when there
+                                // are any: "2 of 4 done" is progress, and a
+                                // truncated note is neither.
+                                if (task.subtasks.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _StepBar(task: task),
+                                ] else if (task.notes.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    task.notes,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 10),
+                          Text(
+                            deadline.label,
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: colour,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -475,6 +760,37 @@ class _TaskCard extends StatelessWidget {
 
 /// Round tick rather than a Material checkbox: a square box in a rounded card
 /// reads as a form field, and this is the primary action on the row.
+/// Step progress on the card: a bar plus a count, because "2 of 4" is the
+/// fact and the bar is how fast it reads.
+class _StepBar extends StatelessWidget {
+  const _StepBar({required this.task});
+  final Task task;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = task.subtasksDone;
+    final total = task.subtasks.length;
+    return Row(
+      children: [
+        SizedBox(
+          width: 74,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: total == 0 ? 0 : done / total,
+              minHeight: 4,
+              backgroundColor: Theme.of(context).dividerColor,
+              valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text('$done of $total steps', style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
 class _Tick extends StatelessWidget {
   const _Tick({required this.done, required this.onTap});
 

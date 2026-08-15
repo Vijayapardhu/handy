@@ -89,16 +89,18 @@ class Repository {
         return tasks;
       });
 
-  Future<void> addTask({
+  Future<String> addTask({
     required String title,
     required String notes,
     required TaskKind kind,
     required DateTime dueDate,
     String? dueTime,
     String? subjectId,
+    List<Subtask> subtasks = const [],
+    TaskRepeat repeat = TaskRepeat.none,
   }) async {
     final now = DateTime.now().toIso8601String();
-    await _db.collection('tasks').add({
+    final doc = await _db.collection('tasks').add({
       'studentId': _uid,
       'title': title.trim(),
       'notes': notes.trim(),
@@ -107,21 +109,83 @@ class Repository {
       'dueDate': dueDate.toIso8601String().substring(0, 10),
       'dueTime': dueTime,
       'subjectId': subjectId,
+      'subtasks': subtasks.map((s) => s.toMap()).toList(),
+      'repeat': repeat.name,
       'done': false,
       'completedAt': null,
       'createdAt': now,
       'updatedAt': now,
     });
+    return doc.id;
   }
 
-  Future<void> setTaskDone(String taskId, bool done) async {
+  /// Edits an existing deadline. Only the fields passed are written, so this
+  /// can serve both the detail screen's full edit and a single subtask tick.
+  Future<void> updateTask(
+    String taskId, {
+    String? title,
+    String? notes,
+    TaskKind? kind,
+    DateTime? dueDate,
+    String? dueTime,
+    bool clearDueTime = false,
+    String? subjectId,
+    bool clearSubject = false,
+    List<Subtask>? subtasks,
+    TaskRepeat? repeat,
+  }) async {
+    await _db.collection('tasks').doc(taskId).update({
+      if (title != null) 'title': title.trim(),
+      if (notes != null) 'notes': notes.trim(),
+      if (kind != null) 'kind': kind.name,
+      if (dueDate != null) 'dueDate': dueDate.toIso8601String().substring(0, 10),
+      // Null is a legitimate value for these two, so clearing needs its own
+      // flag — an absent argument means "leave it alone".
+      if (clearDueTime) 'dueTime': null else if (dueTime != null) 'dueTime': dueTime,
+      if (clearSubject) 'subjectId': null else if (subjectId != null) 'subjectId': subjectId,
+      if (subtasks != null) 'subtasks': subtasks.map((s) => s.toMap()).toList(),
+      if (repeat != null) 'repeat': repeat.name,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Marks a deadline done, and rolls a repeating one forward.
+  ///
+  /// The completed copy stays as history rather than being mutated into the
+  /// next occurrence — "did I hand in last week's record" is a question worth
+  /// being able to answer. Subtasks come back unticked, since the next
+  /// occurrence has to be done again from the start.
+  Future<void> setTaskDone(String taskId, bool done, {Task? task}) async {
     final now = DateTime.now().toIso8601String();
     await _db.collection('tasks').doc(taskId).update({
       'done': done,
       'completedAt': done ? now : null,
       'updatedAt': now,
     });
+
+    if (!done || task == null || task.repeat == TaskRepeat.none) return;
+
+    await addTask(
+      title: task.title,
+      notes: task.notes,
+      kind: task.kind,
+      dueDate: nextOccurrence(task.dueDate, task.repeat),
+      dueTime: task.dueTime,
+      subjectId: task.subjectId,
+      subtasks: task.subtasks.map((s) => s.copyWith(done: false)).toList(),
+      repeat: task.repeat,
+    );
   }
+
+  /// Months are added by calendar rather than by 30 days, so "every month on
+  /// the 5th" stays on the 5th.
+  static DateTime nextOccurrence(DateTime from, TaskRepeat repeat) => switch (repeat) {
+        TaskRepeat.daily => from.add(const Duration(days: 1)),
+        TaskRepeat.weekly => from.add(const Duration(days: 7)),
+        TaskRepeat.fortnightly => from.add(const Duration(days: 14)),
+        TaskRepeat.monthly => DateTime(from.year, from.month + 1, from.day),
+        TaskRepeat.none => from,
+      };
 
   Future<void> deleteTask(String taskId) => _db.collection('tasks').doc(taskId).delete();
 }

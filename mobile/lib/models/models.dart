@@ -96,6 +96,40 @@ const taskKindLabels = {
   TaskKind.other: 'Reminder',
 };
 
+/// How often a deadline comes back. Weekly lab records and daily reading are
+/// the two that actually recur in a semester; the rest is padding.
+enum TaskRepeat { none, daily, weekly, fortnightly, monthly }
+
+const taskRepeatLabels = {
+  TaskRepeat.none: 'Does not repeat',
+  TaskRepeat.daily: 'Every day',
+  TaskRepeat.weekly: 'Every week',
+  TaskRepeat.fortnightly: 'Every two weeks',
+  TaskRepeat.monthly: 'Every month',
+};
+
+/// One step inside a deadline.
+///
+/// "Lab record" is never one action — it is write it up, print it, get it
+/// signed — and a single checkbox for the lot means it stays unticked until
+/// the last minute, which is exactly when it stops being useful.
+class Subtask {
+  const Subtask({required this.title, required this.done});
+
+  final String title;
+  final bool done;
+
+  Subtask copyWith({String? title, bool? done}) =>
+      Subtask(title: title ?? this.title, done: done ?? this.done);
+
+  Map<String, dynamic> toMap() => {'title': title, 'done': done};
+
+  factory Subtask.fromMap(Map<String, dynamic> d) => Subtask(
+        title: d['title'] as String? ?? '',
+        done: d['done'] as bool? ?? false,
+      );
+}
+
 /// The one thing the student authors rather than the portal.
 class Task {
   const Task({
@@ -107,6 +141,8 @@ class Task {
     required this.dueTime,
     required this.subjectId,
     required this.done,
+    this.subtasks = const [],
+    this.repeat = TaskRepeat.none,
   });
 
   final String id;
@@ -117,6 +153,10 @@ class Task {
   final String? dueTime;
   final String? subjectId;
   final bool done;
+  final List<Subtask> subtasks;
+  final TaskRepeat repeat;
+
+  int get subtasksDone => subtasks.where((s) => s.done).length;
 
   factory Task.fromMap(String id, Map<String, dynamic> d) => Task(
         id: id,
@@ -130,5 +170,14 @@ class Task {
         dueTime: d['dueTime'] as String?,
         subjectId: d['subjectId'] as String?,
         done: d['done'] as bool? ?? false,
+        // Both are additive: documents written before these existed, and
+        // documents written by the web app, simply have neither.
+        subtasks: ((d['subtasks'] as List<dynamic>?) ?? [])
+            .map((s) => Subtask.fromMap(Map<String, dynamic>.from(s as Map)))
+            .toList(),
+        repeat: TaskRepeat.values.firstWhere(
+          (r) => r.name == d['repeat'],
+          orElse: () => TaskRepeat.none,
+        ),
       );
 }
