@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/app_state.dart';
@@ -329,9 +330,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
+  static const _website = 'https://handy.vijayaapardhu.dev';
   static const _github = 'https://github.com/Vijayapardhu';
   static const _portfolio = 'https://vijayaapardhu.dev';
-  static const _repo = 'https://github.com/Vijayapardhu/handy';
 
   @override
   Widget build(BuildContext context) {
@@ -428,6 +429,13 @@ class AboutScreen extends StatelessWidget {
             child: Column(
               children: [
                 _LinkRow(
+                  icon: Icons.language,
+                  label: 'handy.vijayaapardhu.dev',
+                  detail: 'Handy on the web',
+                  url: _website,
+                ),
+                Divider(height: 1, color: Theme.of(context).dividerColor),
+                _LinkRow(
                   icon: Icons.public,
                   label: 'vijayaapardhu.dev',
                   detail: 'Portfolio',
@@ -439,13 +447,6 @@ class AboutScreen extends StatelessWidget {
                   label: 'github.com/Vijayapardhu',
                   detail: 'GitHub',
                   url: _github,
-                ),
-                Divider(height: 1, color: Theme.of(context).dividerColor),
-                _LinkRow(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Vijayapardhu/handy',
-                  detail: 'This project',
-                  url: _repo,
                 ),
               ],
             ),
@@ -477,17 +478,39 @@ class _LinkRow extends StatelessWidget {
   final String detail;
   final String url;
 
+  /// Opens the link, and says so when it can't.
+  ///
+  /// This used to be gated on `canLaunchUrl` and do nothing when it returned
+  /// false, which is the worst of both: on Android 11+ that call answers false
+  /// unless the manifest declares an https `intent` in `queries`, so the links
+  /// were dead *and* silent about it. The manifest is fixed; this no longer
+  /// asks permission before trying, and a genuine failure now reports itself
+  /// with the address, so the link can at least be copied out.
+  Future<void> _open(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!launched) throw Exception('no handler');
+    } catch (_) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Could not open $url'),
+          action: SnackBarAction(
+            label: 'Copy',
+            onPressed: () => Clipboard.setData(ClipboardData(text: url)),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () async {
-        final uri = Uri.parse(url);
-        // Fails silently rather than throwing: a device with no browser is
-        // not a reason to crash an About screen.
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        }
-      },
+      onTap: () => _open(context),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(

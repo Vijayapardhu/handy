@@ -407,7 +407,15 @@ class _NextClassCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
+          // Wrap rather than Row: the room and building together run past the
+          // width of the card ("AGBI-2.1 · Aditya Global Business Incubator"),
+          // and a building truncated to "Incubat…" is not a place you can find.
+          // Short venues still sit beside the time; long ones drop to their own
+          // line and wrap there.
+          Wrap(
+            spacing: 10,
+            runSpacing: 3,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 '${block.startTime} – ${block.endTime}',
@@ -419,30 +427,32 @@ class _NextClassCard extends StatelessWidget {
                       : Theme.of(context).textTheme.bodySmall?.color,
                 ),
               ),
-              if (place.isNotEmpty) ...[
-                const SizedBox(width: 10),
-                Icon(
-                  Icons.place_outlined,
-                  size: 13,
-                  color: running
-                      ? Colors.white70
-                      : Theme.of(context).textTheme.bodySmall?.color,
-                ),
-                const SizedBox(width: 3),
-                Expanded(
-                  child: Text(
-                    place,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
+              if (place.isNotEmpty)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.place_outlined,
+                      size: 13,
                       color: running
                           ? Colors.white70
                           : Theme.of(context).textTheme.bodySmall?.color,
                     ),
-                  ),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        place,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.3,
+                          color: running
+                              ? Colors.white70
+                              : Theme.of(context).textTheme.bodySmall?.color,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
             ],
           ),
           // While a class is running, how much of it is left is the live fact.
@@ -799,15 +809,28 @@ class _TimelineRow extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          if (place.isNotEmpty || entry.facultyName.isNotEmpty) ...[
+                          // Room, building and a faculty name never fit on one
+                          // line, and the faculty name is the half that gets
+                          // cut — so they go on separate lines rather than
+                          // being joined into one that has to be truncated.
+                          if (place.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
-                              [place, entry.facultyName]
-                                  .where((s) => s.isNotEmpty)
-                                  .join(' · '),
-                              maxLines: 1,
+                              place,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(height: 1.3),
+                            ),
+                          ],
+                          if (entry.facultyName.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              entry.facultyName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(height: 1.3),
                             ),
                           ],
                         ],

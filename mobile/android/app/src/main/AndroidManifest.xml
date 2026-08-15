@@ -109,5 +109,20 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+
+        <!-- Opening a link needs this from Android 11 onwards.
+             Package visibility is filtered by default, so without a matching
+             <intent> here the system reports that nothing on the device can
+             handle an https URL — canLaunchUrl returns false and launchUrl
+             throws, on a phone with three browsers installed. This is why the
+             links on the About screen did nothing. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="mailto"/>
+        </intent>
     </queries>
 </manifest>
