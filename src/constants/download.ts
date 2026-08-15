@@ -9,31 +9,31 @@
 
 const REPO = "https://github.com/Vijayapardhu/handy";
 
-/** Tag of the release the download buttons currently point at. */
-const RELEASE_TAG = "v1.0.0";
-
+/**
+ * Both downloads use GitHub's `/releases/latest/download/<name>` alias
+ * rather than a pinned tag. A pinned tag (what this used to do) goes stale
+ * the moment a new release ships under a different tag — which is exactly
+ * how both links ended up 404ing at once, silently, until this was
+ * next checked by hand. `latest` always resolves to whatever the newest
+ * non-draft, non-prerelease release actually is, so it can't drift out of
+ * step the way a hardcoded tag can. The two filenames below (`handy.apk`,
+ * `handy-unpacked.zip`) are the one thing that still has to stay correct:
+ * whatever release process cuts the next one has to attach the asset under
+ * that exact stable name, not a versioned one.
+ */
 export const ANDROID = {
-  /** Release APK asset on the GitHub release. */
-  url: `${REPO}/releases/download/${RELEASE_TAG}/handy-${RELEASE_TAG}.apk`,
-  version: "1.0.0",
+  url: `${REPO}/releases/latest/download/handy.apk`,
+  version: "1.0.1",
   /** Shown next to the button so nobody starts a download blind. */
   size: "24 MB",
   minAndroid: "Android 6.0",
   releasedOn: "August 2026",
 } as const;
 
-/** Tag of the release the extension zip currently lives on — cut separately from the app's own RELEASE_TAG. */
-const EXTENSION_RELEASE_TAG = "v1.0.0";
-
 export const EXTENSION = {
-  /**
-   * extension/tool/pack.mjs always names its output `handy-unpacked.zip`
-   * regardless of version — the file to attach to a release, per that
-   * script's own instructions. Templating a version into this filename (as
-   * this used to do) points at an asset that was never actually uploaded.
-   */
-  url: `${REPO}/releases/download/${EXTENSION_RELEASE_TAG}/handy-unpacked.zip`,
-  version: "1.0.0",
+  /** extension/tool/pack.mjs always names its output `handy-unpacked.zip`, regardless of version — the file to attach to a release. */
+  url: `${REPO}/releases/latest/download/handy-unpacked.zip`,
+  version: "1.0.1",
   /** Pinned in extension/manifest.json via an embedded public key. */
   id: "ledmfeohpnfmepdbncmcidoaflhijmkn",
 } as const;
