@@ -141,8 +141,8 @@ class _TodayScreenState extends State<TodayScreen> {
                     const SizedBox(height: 8),
                     if (blocks.isEmpty)
                       _Quiet(
-                        'No classes scheduled today.' +
-                            (free.isEmpty ? '' : ' The whole day is yours.'),
+                        'No classes scheduled today.'
+                        '${free.isEmpty ? '' : ' The whole day is yours.'}',
                       )
                     else
                       ...blocks.map(

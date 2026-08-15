@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  The only widget that genuinely wants two rows to start with, since a day
+  with one class in it is rare. Still resizes down to a single row.
+-->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="240dp"
-    android:minHeight="120dp"
-    android:targetCellWidth="4"
+    android:minWidth="180dp"
+    android:minHeight="86dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:targetCellWidth="3"
     android:targetCellHeight="2"
     android:initialLayout="@layout/widget_today"
     android:resizeMode="horizontal|vertical"

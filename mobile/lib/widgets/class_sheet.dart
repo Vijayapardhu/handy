@@ -7,6 +7,7 @@ import '../logic/timetable.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
+import 'detail_row.dart';
 
 /// Everything the portal told us about one class, plus the student's own notes.
 ///
@@ -103,12 +104,12 @@ class _ClassSheet extends StatelessWidget {
               child: Column(
                 children: [
                   // Everything the timetable response carries for this slot.
-                  _Row(label: 'Subject code', value: subject?.code),
-                  _Row(label: 'Short name', value: subject?.shortName),
-                  _Row(label: 'Faculty', value: entry.facultyName),
-                  _Row(label: 'Room', value: entry.room),
-                  _Row(label: 'Building', value: entry.block),
-                  _Row(
+                  DetailRow(label: 'Subject code', value: subject?.code),
+                  DetailRow(label: 'Short name', value: subject?.shortName),
+                  DetailRow(label: 'Faculty', value: entry.facultyName),
+                  DetailRow(label: 'Room', value: entry.room),
+                  DetailRow(label: 'Building', value: entry.block),
+                  DetailRow(
                     label: 'Type',
                     value: switch (entry.type) {
                       'lab' => 'Lab',
@@ -117,11 +118,11 @@ class _ClassSheet extends StatelessWidget {
                       _ => 'Lecture',
                     },
                   ),
-                  _Row(
+                  DetailRow(
                     label: 'Class strength',
                     value: entry.strength == null ? null : '${entry.strength} students',
                   ),
-                  _Row(
+                  DetailRow(
                     label: 'Opted',
                     value: entry.opted == null
                         ? null
@@ -130,7 +131,7 @@ class _ClassSheet extends StatelessWidget {
                         // different for those slots.
                         : '${entry.opted} students',
                   ),
-                  _Row(
+                  DetailRow(
                     label: 'Periods',
                     value: '${block.periods} × ${_minutes(block)} min',
                     last: true,
@@ -337,61 +338,6 @@ class _NoteFormState extends State<_NoteForm> {
           FilledButton(
             onPressed: _busy ? null : _save,
             child: const Text('Save note'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.value, this.last = false});
-
-  final String label;
-  final String? value;
-  final bool last;
-
-  @override
-  Widget build(BuildContext context) {
-    // Rows with nothing to show are dropped rather than printed as "—": an
-    // empty field is noise in a list this dense.
-    if (value == null || value!.isEmpty) return const SizedBox.shrink();
-
-    // A fixed label column, so every value starts at the same x.
-    //
-    // These used to be right-aligned, which is fine until a value wraps: a
-    // two-line right-aligned block has a ragged *left* edge, and against the
-    // single-line rows above and below it reads as broken rather than as one
-    // value on two lines. Faculty names and building names both wrap here
-    // routinely ("SURAMPUDI NAGENDRA GANAPATHI", "Aditya Global Business
-    // Incubator"), so this is the common case, not the edge case.
-    //
-    // Scales with the reader's text size so long labels aren't clipped when
-    // the system font is turned up.
-    final labelWidth = (118 * MediaQuery.textScalerOf(context).scale(1)).clamp(118.0, 200.0);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 13),
-      decoration: last
-          ? null
-          : BoxDecoration(
-              border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
-            ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: labelWidth,
-            child: Text(label, style: Theme.of(context).textTheme.bodySmall),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value!,
-              // Wrapped values need the extra leading — two lines set solid
-              // look like two separate rows.
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.3),
-            ),
           ),
         ],
       ),

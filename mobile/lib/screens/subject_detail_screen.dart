@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import '../data/app_state.dart';
 import '../logic/attendance.dart';
 import '../logic/deadlines.dart';
+import '../logic/timetable.dart';
 import '../models/models.dart';
+import '../models/timetable_entry.dart';
 import '../theme.dart';
+import '../widgets/detail_row.dart';
 import 'subjects_screen.dart';
 
 const _dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -163,33 +166,77 @@ class SubjectDetailScreen extends StatelessWidget {
 
           if (classes.isNotEmpty) ...[
             const SizedBox(height: 22),
+            const _Label('From the timetable'),
+            const SizedBox(height: 10),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    // Everything the portal sends for this subject. Taken from
+                    // the first slot: room, faculty and cohort are properties
+                    // of the subject, not of the individual period.
+                    DetailRow(label: 'Subject code', value: subject.code),
+                    DetailRow(label: 'Short name', value: subject.shortName),
+                    DetailRow(label: 'Faculty', value: classes.first.facultyName),
+                    DetailRow(label: 'Room', value: classes.first.room),
+                    DetailRow(label: 'Building', value: classes.first.block),
+                    DetailRow(label: 'Type', value: _typeLabel(classes.first.type)),
+                    DetailRow(
+                      label: 'Class strength',
+                      value: classes.first.strength == null
+                          ? null
+                          : '${classes.first.strength} students',
+                    ),
+                    DetailRow(
+                      label: 'Opted',
+                      // A cohort of 145 with 109 opted is two sections
+                      // combined, which is why those slots sit in a different
+                      // room from the rest.
+                      value:
+                          classes.first.opted == null ? null : '${classes.first.opted} students',
+                    ),
+                    DetailRow(
+                      label: 'Weekly load',
+                      value: '${classes.length} period${classes.length == 1 ? '' : 's'} · '
+                          '${_weeklyHours(classes)}',
+                      last: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 22),
             const _Label('When it meets'),
             const SizedBox(height: 10),
             Card(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: Column(
-                  children: classes.map((entry) {
-                    final place = [entry.room, entry.block]
-                        .whereType<String>()
-                        .where((p) => p.isNotEmpty)
-                        .join(' · ');
+                  // Merged into blocks rather than listed period by period: a
+                  // three-period lab is one session a student attends once,
+                  // and listing it as three identical rows reads as three.
+                  children: _meetings(classes).map((block) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
                             width: 84,
-                            child: Text(_dayNames[entry.dayOfWeek].substring(0, 3),
+                            child: Text(_dayNames[block.first.dayOfWeek].substring(0, 3),
                                 style: Theme.of(context).textTheme.titleMedium),
                           ),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${entry.startTime} – ${entry.endTime}'),
-                                if (place.isNotEmpty)
-                                  Text(place, style: Theme.of(context).textTheme.bodySmall),
+                                Text('${block.startTime} – ${block.endTime}'),
+                                Text(
+                                  _periodLabel(block),
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                               ],
                             ),
                           ),
@@ -204,6 +251,43 @@ class SubjectDetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Every day's classes merged into blocks, in week order.
+  static List<ClassBlock> _meetings(List<TimetableEntry> classes) {
+    final days = classes.map((e) => e.dayOfWeek).toSet().toList()..sort();
+    return [for (final day in days) ...classBlocksForDay(classes, day)];
+  }
+
+  /// Period numbers when we have them, a plain count when we don't — syncs
+  /// from before the portal's period numbers were captured have none.
+  static String _periodLabel(ClassBlock block) {
+    final first = block.first.periodNo;
+    final last = block.entries.last.periodNo;
+    if (first == null) return '${block.periods} period${block.periods == 1 ? '' : 's'}';
+    if (block.isMerged && last != null && last != first) return 'Periods $first–$last';
+    return 'Period $first';
+  }
+
+  static String _typeLabel(String type) => switch (type) {
+        'lab' => 'Lab',
+        'technical' => 'Technical',
+        'activity' => 'Activity',
+        _ => 'Lecture',
+      };
+
+  /// Total scheduled time across the week, as "6h 10m".
+  static String _weeklyHours(List<TimetableEntry> classes) {
+    int mins(String hhmm) {
+      final parts = hhmm.split(':');
+      return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    }
+
+    final total = classes.fold<int>(0, (sum, e) => sum + mins(e.endTime) - mins(e.startTime));
+    final hours = total ~/ 60;
+    final rest = total % 60;
+    if (hours == 0) return '${rest}m';
+    return rest == 0 ? '${hours}h' : '${hours}h ${rest}m';
   }
 }
 

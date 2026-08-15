@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -77,18 +79,23 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-/// Custom bar rather than Material's NavigationBar.
+/// Custom bar rather than Material's NavigationBar, with a snake indicator.
 ///
 /// The default indicator fades in on the tab you land on, which tells you
-/// nothing about where you came from. Here a single pill *travels* — it slides
-/// from the old tab to the new one, so the movement itself says which way you
-/// went. The icon it lands on overshoots slightly and settles, and the labels
-/// only carry weight and colour on the selected tab so the rest stay quiet.
+/// nothing about where you came from. Here a single pill *travels*, and it
+/// travels like a snake: the leading edge leaves first and the trailing edge
+/// catches up, so the pill stretches across the gap in flight and contracts
+/// when it lands. Two tabs apart stretches further than one, which is the
+/// whole point — the motion carries both the direction and the distance.
+///
+/// Built here rather than pulled in: flutter_snake_navigationbar, the package
+/// this is modelled on, was last published in 2021 and pins
+/// `sdk: ">=2.12.0 <3.0.0"`, so it cannot resolve against Dart 3.
 ///
 /// Tasks also carries a live count of what's overdue or due today, because a
 /// nav bar that can tell you there's something waiting is worth more than one
 /// that only routes.
-class _HandyNavBar extends StatelessWidget {
+class _HandyNavBar extends StatefulWidget {
   const _HandyNavBar({required this.index, required this.tabs, required this.onSelect});
 
   final int index;
@@ -96,7 +103,45 @@ class _HandyNavBar extends StatelessWidget {
   final ValueChanged<int> onSelect;
 
   /// Index of the Tasks tab, which is the only one that carries a badge.
-  static const _tasksTab = 3;
+  static const tasksTab = 3;
+
+  @override
+  State<_HandyNavBar> createState() => _HandyNavBarState();
+}
+
+class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderStateMixin {
+  static const _barHeight = 76.0;
+  static const _pillWidth = 58.0;
+  static const _pillHeight = 36.0;
+
+  late final AnimationController _travel = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 430),
+  );
+
+  /// Where the pill is coming from and going to. Equal when it's at rest.
+  late int _from = widget.index;
+  late int _to = widget.index;
+
+  /// The two edges move on different schedules — that gap *is* the stretch.
+  static const _lead = Interval(0, 0.72, curve: Curves.easeOutCubic);
+  static const _tail = Interval(0.26, 1, curve: Curves.easeInOutCubic);
+
+  @override
+  void didUpdateWidget(covariant _HandyNavBar old) {
+    super.didUpdateWidget(old);
+    if (old.index != widget.index) {
+      _from = old.index;
+      _to = widget.index;
+      _travel.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _travel.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,49 +166,48 @@ class _HandyNavBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 64,
+          height: _barHeight,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final slot = constraints.maxWidth / tabs.length;
-              const pillWidth = 56.0;
-              const pillHeight = 32.0;
+              final slot = constraints.maxWidth / widget.tabs.length;
 
               return Stack(
                 children: [
-                  // The travelling pill, drawn under the icons. Positioned by
-                  // slot rather than by index so it stays put if the bar is
-                  // ever resized mid-animation.
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 340),
-                    curve: Curves.easeOutCubic,
-                    left: slot * index + (slot - pillWidth) / 2,
-                    top: 6,
-                    width: pillWidth,
-                    height: pillHeight,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: scheme.primary,
-                        borderRadius: BorderRadius.circular(999),
-                        boxShadow: [
-                          BoxShadow(
-                            color: scheme.primary.withValues(alpha: 0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
+                  AnimatedBuilder(
+                    animation: _travel,
+                    builder: (context, _) {
+                      final (left, width) = _pill(slot);
+                      return Positioned(
+                        left: left,
+                        top: 8,
+                        width: width,
+                        height: _pillHeight,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: [
+                              BoxShadow(
+                                color: scheme.primary.withValues(alpha: 0.35),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                   Row(
-                    children: List.generate(tabs.length, (i) {
+                    children: List.generate(widget.tabs.length, (i) {
                       return Expanded(
                         child: _NavTab(
-                          tab: tabs[i],
-                          selected: i == index,
-                          onTap: () => onSelect(i),
+                          tab: widget.tabs[i],
+                          selected: i == widget.index,
+                          onTap: () => widget.onSelect(i),
                           muted: muted,
                           onPill: scheme.onPrimary,
-                          badge: i == _tasksTab ? pending : 0,
+                          badge: i == _HandyNavBar.tasksTab ? pending : 0,
                         ),
                       );
                     }),
@@ -175,6 +219,26 @@ class _HandyNavBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Left edge and width of the pill for the current frame.
+  ///
+  /// Each edge interpolates on its own curve, and which one leads depends on
+  /// the direction of travel — the edge nearest the destination always goes
+  /// first, or the pill would appear to walk backwards before setting off.
+  (double, double) _pill(double slot) {
+    final t = _travel.value;
+    final fromCentre = slot * _from + slot / 2;
+    final toCentre = slot * _to + slot / 2;
+    const half = _pillWidth / 2;
+
+    final lead = _lead.transform(t);
+    final tail = _tail.transform(t);
+    final forward = _to >= _from;
+
+    final left = lerpDouble(fromCentre - half, toCentre - half, forward ? tail : lead)!;
+    final right = lerpDouble(fromCentre + half, toCentre + half, forward ? lead : tail)!;
+    return (left, right - left);
   }
 }
 
@@ -195,13 +259,17 @@ class _NavTab extends StatelessWidget {
   final Color onPill;
   final int badge;
 
+  /// Vertical band the pill occupies, so the icon can be centred inside it.
+  /// Matches _HandyNavBarState's pill top (8) + height (36).
+  static const pillBand = 44.0;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
     return InkResponse(
       onTap: onTap,
-      radius: 44,
+      radius: 46,
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: selected ? 1 : 0),
         // easeOutBack overshoots past 1, which is where the settle comes
@@ -210,18 +278,21 @@ class _NavTab extends StatelessWidget {
         curve: Curves.easeOutBack,
         builder: (context, t, _) {
           final clamped = t.clamp(0.0, 1.0);
+          // Laid out from the top so the icon sits centred on the pill, which
+          // is positioned from the top too — centring both independently
+          // leaves the icon riding a few pixels low.
           return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               SizedBox(
-                height: 32,
+                height: _NavTab.pillBand,
                 child: Center(
                   child: Transform.scale(
                     scale: 1 + 0.12 * t,
                     child: _iconWithBadge(
                       icon: Icon(
                         selected ? tab.active : tab.icon,
-                        size: 22,
+                        size: 23,
                         color: Color.lerp(muted, onPill, clamped),
                       ),
                       scheme: scheme,
@@ -229,13 +300,13 @@ class _NavTab extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 tab.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: FontWeight.lerp(FontWeight.w500, FontWeight.w700, clamped),
                   color: Color.lerp(muted, scheme.primary, clamped),
                 ),

@@ -4,9 +4,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:gravity="center_vertical"
+    android:padding="14dp"
     android:background="@drawable/widget_background">
 
+    <!--
+      Vertically centred, because the provider hides lines that don't fit and
+      top-aligned content would then sit above a blank half-tile. Text sizes
+      here are only the starting point; the provider sets them per size.
+    -->
     <TextView
         android:id="@+id/next_countdown"
         android:layout_width="wrap_content"

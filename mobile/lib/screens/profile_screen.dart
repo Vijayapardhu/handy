@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../data/app_state.dart';
-import '../data/repository.dart';
 import '../main.dart';
 import '../theme.dart';
 import '../widgets/student_photo.dart';

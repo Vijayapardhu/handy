@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Starts at one due item and grows to three. A list widget that opens at its
+  maximum height is mostly blank for the student who owes nothing.
+-->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="180dp"
-    android:minHeight="120dp"
-    android:targetCellWidth="3"
-    android:targetCellHeight="2"
+    android:minWidth="130dp"
+    android:minHeight="57dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
     android:initialLayout="@layout/widget_dues"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
