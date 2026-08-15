@@ -14,6 +14,7 @@ import 'data/repository.dart';
 import 'firebase_options.dart';
 import 'screens/home_shell.dart';
 import 'screens/sign_in_screen.dart';
+import 'screens/timetable_changes_screen.dart';
 import 'theme.dart';
 
 late final Repository repository;
@@ -25,6 +26,11 @@ final settings = AppSettings();
 /// InheritedWidget inside HomeShell is *below* the Navigator, so a pushed
 /// screen sits outside its subtree and the lookup returns null.
 final appState = AppState();
+
+/// Lets a tapped notification push a screen. Notifications arrive with no
+/// BuildContext — often before any route is on screen — so the navigator has
+/// to be reachable from outside the tree.
+final navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +54,21 @@ Future<void> main() async {
   await reminders.init();
   await settings.load();
 
+  // A timetable push exists to answer "what moved", so tapping it opens the
+  // diff. Wired here rather than inside Push because that class is built
+  // before there is a navigator to hand it.
+  push.onOpenTimetableChanges = (timetableId, version, section) {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute<void>(
+        builder: (_) => TimetableChangesScreen(
+          timetableId: timetableId,
+          version: version,
+          section: section,
+        ),
+      ),
+    );
+  };
+
   runApp(const HandyApp());
 }
 
@@ -67,6 +88,7 @@ class HandyApp extends StatelessWidget {
   Widget _app() {
     return MaterialApp(
       title: 'Handy',
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: handyTheme(Brightness.light, settings.accent.colour),
       darkTheme: handyTheme(Brightness.dark, settings.accent.colour),

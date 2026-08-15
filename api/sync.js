@@ -23,6 +23,7 @@ import { getApps, initializeApp, cert, applicationDefault } from "firebase-admin
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
+import { publishSharedTimetable } from "./_sharedTimetable.js";
 import {
   buildImportDocs,
   buildStudentStub,
@@ -84,12 +85,26 @@ export default async function handler(req, res) {
 
     const uid = await ensureAuthUser(rollNumber);
     const written = await writeSnapshot(db, uid, rollNumber, snapshot);
-    // Tell the student's phone straight away. Best-effort and after the write,
-    // so a push failure can never cost them a sync.
-    await notifyDevices(db, uid, written).catch((error) =>
+
+    // Everything past this point is best-effort and happens after the write,
+    // so no messaging failure can cost a student their sync.
+    let shared = null;
+    if (snapshot.timetable) {
+      shared = await publishSharedTimetable(db, {
+        timetable: snapshot.timetable,
+        section: snapshot.timetable.name,
+        syncedBy: uid,
+      }).catch((error) => {
+        console.error("[sync] shared timetable failed for", rollNumber, error);
+        return null;
+      });
+    }
+
+    await notifyDevices(db, uid, { ...written, shared }).catch((error) =>
       console.error("[sync] push failed for", rollNumber, error),
     );
-    return res.status(200).json({ ok: true, uid, ...written });
+
+    return res.status(200).json({ ok: true, uid, ...written, shared });
   } catch (error) {
     console.error("[sync] failed for", rollNumber, error);
     return res.status(500).json({ ok: false, error: String(error?.message ?? error) });
@@ -97,16 +112,20 @@ export default async function handler(req, res) {
 }
 
 /**
- * Pushes "new data" to the student's devices after a successful sync.
+ * Pushes to the student's own devices after a successful sync.
  *
- * Two jobs in one message. The notification half tells them something changed;
- * the data half (`type: "sync"`) is what the phone acts on — its background
+ * Attendance and the timetable get *separate* notifications on separate
+ * channels. They are different things that change at different times for
+ * different reasons: attendance moves every week and is worth glancing at,
+ * a timetable moves rarely and means rearranging your day. One combined
+ * "something changed" made both easy to ignore, and gave a student no way to
+ * silence the noisy one while keeping the important one.
+ *
+ * Every message carries a data payload the phone acts on: its background
  * handler refreshes the home-screen widgets without the app being opened,
- * which is the only way a widget can be current for a student who syncs on a
- * laptop and never launches Handy.
- *
- * `priority: high` and `contentAvailable` are what get the message delivered
- * to a dozing device rather than held until the next time it wakes on its own.
+ * which is the only way a widget can be current for someone who syncs on a
+ * laptop and never launches Handy. `priority: high` is what gets that
+ * delivered to a dozing device rather than held until it next wakes.
  */
 async function notifyDevices(db, uid, written) {
   const student = await db.doc(`students/${uid}`).get();
@@ -114,20 +133,64 @@ async function notifyDevices(db, uid, written) {
   if (tokens.length === 0) return;
 
   const subjects = written?.subjectCount ?? 0;
-  const body = subjects > 0
-    ? `Attendance updated across ${subjects} subject${subjects === 1 ? "" : "s"}.`
-    : "Your latest figures are in.";
+  const messages = [];
 
-  const result = await getMessaging().sendEachForMulticast({
-    tokens,
-    notification: { title: "New data in Handy", body },
-    data: { type: "sync", subjects: String(subjects) },
-    android: {
-      priority: "high",
-      notification: { channelId: "handy_push", icon: "ic_notification", color: "#F97316" },
-    },
-    apns: { payload: { aps: { "content-available": 1 } } },
-  });
+  if (subjects > 0) {
+    messages.push({
+      channel: "handy_attendance",
+      type: "attendance",
+      title: "Attendance updated",
+      body: `Across ${subjects} subject${subjects === 1 ? "" : "s"}.`,
+      // Replaces the previous attendance notification rather than stacking a
+      // fresh one on every sync.
+      tag: "attendance",
+    });
+  }
+
+  // Only for the student who synced, and only when it actually moved —
+  // everyone else on this timetable is told by publishSharedTimetable.
+  if (written?.shared?.changed) {
+    messages.push({
+      channel: "handy_timetable",
+      type: "timetable",
+      title: "Your timetable changed",
+      body: `Version ${written.shared.version}. ${written.shared.changes.length} slot${
+        written.shared.changes.length === 1 ? "" : "s"
+      } moved.`,
+      tag: `timetable-${written.shared.version}`,
+    });
+  }
+
+  if (messages.length === 0) {
+    // Nothing worth interrupting for, but the widgets still need the new
+    // figures — so a silent data-only message goes out instead.
+    messages.push({ channel: null, type: "sync", title: null, body: null, tag: null });
+  }
+
+  let result;
+  for (const message of messages) {
+    result = await getMessaging().sendEachForMulticast({
+      tokens,
+      ...(message.title
+        ? { notification: { title: message.title, body: message.body } }
+        : {}),
+      data: { type: message.type, subjects: String(subjects) },
+      android: {
+        priority: "high",
+        ...(message.channel
+          ? {
+              notification: {
+                channelId: message.channel,
+                icon: "ic_notification",
+                color: "#F97316",
+                tag: message.tag,
+              },
+            }
+          : {}),
+      },
+      apns: { payload: { aps: { "content-available": 1 } } },
+    });
+  }
 
   // Uninstalled apps and restored devices leave tokens that will never deliver
   // again; keeping them means every future send reports failures.

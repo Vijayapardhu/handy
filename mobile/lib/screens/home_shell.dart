@@ -29,6 +29,13 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
+  final _pages = PageController();
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
 
   static final _tabs = [
     (icon: HugeIcons.strokeRoundedCalendar03, active: HugeIcons.strokeRoundedCalendar03, label: 'Today'),
@@ -54,14 +61,20 @@ class _HomeShellState extends State<HomeShell> {
     // The scope itself lives above the Navigator (see main.dart), so pushed
     // routes can read app state too.
     return Scaffold(
-      body: IndexedStack(
-        index: _index,
+      // A PageView rather than an IndexedStack: switching tabs used to be an
+      // instant cut, which is the one transition that always feels abrupt
+      // because nothing tells you which way you moved. Pages slide now, and
+      // they can be swiped between, which is faster than aiming at the bar.
+      // Each is kept alive so scroll position survives the trip.
+      body: PageView(
+        controller: _pages,
+        onPageChanged: (i) => setState(() => _index = i),
         children: const [
-          TodayScreen(),
-          SubjectsScreen(),
-          TimetableScreen(),
-          DeadlinesScreen(),
-          ProfileScreen(),
+          _KeepAlive(child: TodayScreen()),
+          _KeepAlive(child: SubjectsScreen()),
+          _KeepAlive(child: TimetableScreen()),
+          _KeepAlive(child: DeadlinesScreen()),
+          _KeepAlive(child: ProfileScreen()),
         ],
       ),
       bottomNavigationBar: _HandyNavBar(
@@ -73,29 +86,60 @@ class _HomeShellState extends State<HomeShell> {
           // a tick under the thumb is what makes it feel like a device rather
           // than a page.
           HapticFeedback.selectionClick();
-          setState(() => _index = i);
+          // Neighbouring tabs slide; distant ones would tear through three
+          // screens at speed, so they jump and let the bar's own indicator
+          // carry the movement.
+          if ((i - _index).abs() == 1) {
+            _pages.animateToPage(
+              i,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+            );
+          } else {
+            _pages.jumpToPage(i);
+          }
         },
       ),
     );
   }
 }
 
-/// Custom bar rather than Material's NavigationBar, with a snake indicator.
+/// Keeps a tab's state — and its scroll position — while another is on screen.
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive({required this.child});
+  final Widget child;
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+
+/// Minimal bottom nav: icons, labels, and a hairline that slides.
 ///
-/// The default indicator fades in on the tab you land on, which tells you
-/// nothing about where you came from. Here a single pill *travels*, and it
-/// travels like a snake: the leading edge leaves first and the trailing edge
-/// catches up, so the pill stretches across the gap in flight and contracts
-/// when it lands. Two tabs apart stretches further than one, which is the
-/// whole point — the motion carries both the direction and the distance.
+/// This carried a filled pill with a glow behind the selected icon, which is a
+/// lot of furniture for a control that is only ever answering "which tab". At
+/// the bottom of every screen it competed with the content above it. The
+/// indicator is now a short rule along the top edge — enough to say where you
+/// are and to move when you move, and nothing else.
 ///
-/// Built here rather than pulled in: flutter_snake_navigationbar, the package
-/// this is modelled on, was last published in 2021 and pins
-/// `sdk: ">=2.12.0 <3.0.0"`, so it cannot resolve against Dart 3.
+/// It still travels rather than fading, and still stretches while travelling:
+/// the leading edge leaves before the trailing edge catches up, so two tabs
+/// apart stretches further than one and the motion carries the distance. That
+/// part was never the problem; the pill was.
 ///
-/// Tasks also carries a live count of what's overdue or due today, because a
-/// nav bar that can tell you there's something waiting is worth more than one
-/// that only routes.
+/// Deadlines carries a live count of what's overdue or due today, because a
+/// nav bar that can tell you something is waiting is worth more than one that
+/// only routes.
 class _HandyNavBar extends StatefulWidget {
   const _HandyNavBar({required this.index, required this.tabs, required this.onSelect});
 
@@ -111,9 +155,9 @@ class _HandyNavBar extends StatefulWidget {
 }
 
 class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderStateMixin {
-  static const _barHeight = 76.0;
-  static const _pillWidth = 58.0;
-  static const _pillHeight = 36.0;
+  static const _barHeight = 68.0;
+  static const _markWidth = 26.0;
+  static const _markHeight = 3.0;
 
   late final AnimationController _travel = AnimationController(
     vsync: this,
@@ -177,23 +221,16 @@ class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderSta
                   AnimatedBuilder(
                     animation: _travel,
                     builder: (context, _) {
-                      final (left, width) = _pill(slot);
+                      final (left, width) = _mark(slot);
                       return Positioned(
                         left: left,
-                        top: 8,
+                        top: 0,
                         width: width,
-                        height: _pillHeight,
+                        height: _markHeight,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: scheme.primary,
                             borderRadius: BorderRadius.circular(999),
-                            boxShadow: [
-                              BoxShadow(
-                                color: scheme.primary.withValues(alpha: 0.35),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
                           ),
                         ),
                       );
@@ -207,7 +244,7 @@ class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderSta
                           selected: i == widget.index,
                           onTap: () => widget.onSelect(i),
                           muted: muted,
-                          onPill: scheme.onPrimary,
+                          onPill: scheme.primary,
                           badge: i == _HandyNavBar.tasksTab ? pending : 0,
                         ),
                       );
@@ -222,16 +259,16 @@ class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderSta
     );
   }
 
-  /// Left edge and width of the pill for the current frame.
+  /// Left edge and width of the indicator for the current frame.
   ///
   /// Each edge interpolates on its own curve, and which one leads depends on
   /// the direction of travel — the edge nearest the destination always goes
   /// first, or the pill would appear to walk backwards before setting off.
-  (double, double) _pill(double slot) {
+  (double, double) _mark(double slot) {
     final t = _travel.value;
     final fromCentre = slot * _from + slot / 2;
     final toCentre = slot * _to + slot / 2;
-    const half = _pillWidth / 2;
+    const half = _markWidth / 2;
 
     final lead = _lead.transform(t);
     final tail = _tail.transform(t);
@@ -260,9 +297,8 @@ class _NavTab extends StatelessWidget {
   final Color onPill;
   final int badge;
 
-  /// Vertical band the pill occupies, so the icon can be centred inside it.
-  /// Matches _HandyNavBarState's pill top (8) + height (36).
-  static const pillBand = 44.0;
+  /// Vertical band the icon sits in, below the indicator rule.
+  static const pillBand = 38.0;
 
   @override
   Widget build(BuildContext context) {
@@ -285,11 +321,12 @@ class _NavTab extends StatelessWidget {
           return Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              const SizedBox(height: 6),
               SizedBox(
                 height: _NavTab.pillBand,
                 child: Center(
                   child: Transform.scale(
-                    scale: 1 + 0.12 * t,
+                    scale: 1 + 0.08 * t,
                     child: _iconWithBadge(
                       icon: AppIcon(
                         selected ? tab.active : tab.icon,

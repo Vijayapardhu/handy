@@ -65,14 +65,26 @@ class Reminders {
         ?.requestNotificationsPermission();
   }
 
-  /// Rebuilds the whole schedule. Cancelling first is what stops a changed
+  /// Rebuilds the whole schedule. Clearing first is what stops a changed
   /// timetable from leaving last week's reminders behind.
+  ///
+  /// Deliberately *not* `cancelAll()`. That call goes through to Android's
+  /// `NotificationManager.cancelAll()`, which clears every notification the
+  /// app has posted — including ones delivered by Firebase Messaging that this
+  /// plugin never created. Since a sync push is immediately followed by a
+  /// reschedule, the "new data" notification was being wiped out of the shade
+  /// a moment after arriving: it appeared, then vanished on its own.
+  ///
+  /// Only *pending* (scheduled, not yet fired) reminders are cancelled here,
+  /// which is all this method ever meant to clear.
   Future<void> reschedule({
     required List<TimetableEntry> entries,
     required List<Task> tasks,
     required Map<String, Subject> subjectsById,
   }) async {
-    await _plugin.cancelAll();
+    for (final pending in await _plugin.pendingNotificationRequests()) {
+      await _plugin.cancel(id: pending.id);
+    }
     await _scheduleClasses(entries, subjectsById);
     await _scheduleTasks(tasks);
   }

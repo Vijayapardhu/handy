@@ -82,7 +82,7 @@ class _TodayScreenState extends State<TodayScreen> {
         // the greeting scrolls up under the status bar.
         bottom: false,
         child: RefreshIndicator(
-          onRefresh: () async => state.load(),
+          onRefresh: state.refresh,
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(

@@ -48,6 +48,13 @@ class AppState extends ChangeNotifier {
 
   Future<void> load() async {
     try {
+      // Cancelled first: load() is called on every HomeShell mount, and
+      // without this each one stacked another pair of listeners on the same
+      // documents — every subsequent snapshot then ran the whole refresh
+      // chain once per stale subscription.
+      await _studentSub?.cancel();
+      await _tasksSub?.cancel();
+
       _studentSub = repository.watchStudent().listen((s) async {
         student = s;
         if (s != null && s.semesterId.isNotEmpty) {
@@ -77,6 +84,33 @@ class AppState extends ChangeNotifier {
       loading = false;
       notifyListeners();
     }
+  }
+
+  /// Re-fetches everything and completes when it has.
+  ///
+  /// Pull-to-refresh needs a Future that finishes when the work does. It used
+  /// to call load(), which only attaches stream listeners — so it returned
+  /// immediately, the spinner snapped away, and nothing had actually been
+  /// re-read. Worse, it attached a *second* set of listeners each time.
+  ///
+  /// The student document and tasks are already live over snapshots; what
+  /// genuinely needs pulling is the rest, which is fetched once and does not
+  /// change under us.
+  Future<void> refresh() async {
+    final s = student;
+    if (s == null || s.semesterId.isEmpty) return;
+
+    final results = await Future.wait([
+      repository.subjects(s.semesterId),
+      repository.summaries(),
+      repository.timetableEntries(s.semesterId),
+    ]);
+    subjects = results[0] as List<Subject>;
+    summaries = results[1] as List<AttendanceSummary>;
+    entries = results[2] as List<TimetableEntry>;
+
+    await _afterDataChanged();
+    notifyListeners();
   }
 
   /// Reminders and the home-screen widget both derive from the same data, so

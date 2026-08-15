@@ -200,6 +200,26 @@ service cloud.firestore {
      * including delete, which is denied everywhere else because those
      * documents are records of what the college reported.
      */
+    // Timetables shared by a whole section.
+    //
+    // A timetable belongs to a section, not a person — fifty students sit in
+    // T6(CA3) — so one student's sync tells the rest. Readable by anyone
+    // signed in, because a student needs to see the version they were pushed
+    // about and the one before it to know what moved.
+    //
+    // Writes are Admin-SDK only (api/_sharedTimetable.js). A client that could
+    // write here could republish a whole section's timetable and push fifty
+    // people a notification about it.
+    match /sharedTimetables/{timetableId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+
+      match /versions/{version} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+    }
+
     // Help content, written by whoever runs Handy and read by everyone signed
     // in. No client write at all: an FAQ a student can edit is a notice board.
     match /faqs/{faqId} {
