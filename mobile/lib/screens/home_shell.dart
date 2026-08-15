@@ -124,13 +124,17 @@ class _KeepAliveState extends State<_KeepAlive> with AutomaticKeepAliveClientMix
   }
 }
 
-/// Minimal bottom nav: icons, labels, and a hairline that slides.
+/// Minimal bottom nav: icons and a hairline that slides.
 ///
 /// This carried a filled pill with a glow behind the selected icon, which is a
 /// lot of furniture for a control that is only ever answering "which tab". At
 /// the bottom of every screen it competed with the content above it. The
 /// indicator is now a short rule along the top edge — enough to say where you
-/// are and to move when you move, and nothing else.
+/// are and to move when you move, and nothing else. The labels are gone too:
+/// five words across the bottom of every screen is a caption on icons that
+/// already say what they are, and it is the same five words every time.
+/// They survive as tooltips and as semantic labels, so a long-press still
+/// names a tab and a screen reader still reads one.
 ///
 /// It still travels rather than fading, and still stretches while travelling:
 /// the leading edge leaves before the trailing edge catches up, so two tabs
@@ -155,7 +159,7 @@ class _HandyNavBar extends StatefulWidget {
 }
 
 class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderStateMixin {
-  static const _barHeight = 68.0;
+  static const _barHeight = 58.0;
   static const _markWidth = 26.0;
   static const _markHeight = 3.0;
 
@@ -297,61 +301,48 @@ class _NavTab extends StatelessWidget {
   final Color onPill;
   final int badge;
 
-  /// Vertical band the icon sits in, below the indicator rule.
-  static const pillBand = 38.0;
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return InkResponse(
-      onTap: onTap,
-      radius: 46,
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: selected ? 1 : 0),
-        // easeOutBack overshoots past 1, which is where the settle comes
-        // from. Colours clamp it; only the scale gets to overshoot.
-        duration: const Duration(milliseconds: 340),
-        curve: Curves.easeOutBack,
-        builder: (context, t, _) {
-          final clamped = t.clamp(0.0, 1.0);
-          // Laid out from the top so the icon sits centred on the pill, which
-          // is positioned from the top too — centring both independently
-          // leaves the icon riding a few pixels low.
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const SizedBox(height: 6),
-              SizedBox(
-                height: _NavTab.pillBand,
-                child: Center(
-                  child: Transform.scale(
-                    scale: 1 + 0.08 * t,
-                    child: _iconWithBadge(
-                      icon: AppIcon(
-                        selected ? tab.active : tab.icon,
-                        size: 23,
-                        color: Color.lerp(muted, onPill, clamped),
-                      ),
-                      scheme: scheme,
+    return Tooltip(
+      message: tab.label,
+      child: Semantics(
+        label: tab.label,
+        selected: selected,
+        button: true,
+        child: InkResponse(
+          onTap: onTap,
+          radius: 42,
+child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: selected ? 1 : 0),
+            // easeOutBack overshoots past 1, which is where the settle comes
+            // from. Colours clamp it; only the scale gets to overshoot.
+            duration: const Duration(milliseconds: 340),
+            curve: Curves.easeOutBack,
+            builder: (context, t, _) {
+              final clamped = t.clamp(0.0, 1.0);
+              // Laid out from the top so the icon sits centred on the pill, which
+              // is positioned from the top too — centring both independently
+              // leaves the icon riding a few pixels low.
+              // The icon is the whole tab now, so it grows a little and centres
+              // in the bar rather than sitting above a caption.
+              return Center(
+                child: Transform.scale(
+                  scale: 1 + 0.1 * t,
+                  child: _iconWithBadge(
+                    icon: AppIcon(
+                      selected ? tab.active : tab.icon,
+                      size: 25,
+                      color: Color.lerp(muted, onPill, clamped),
                     ),
+                    scheme: scheme,
                   ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                tab.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.lerp(FontWeight.w500, FontWeight.w700, clamped),
-                  color: Color.lerp(muted, scheme.primary, clamped),
-                ),
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
