@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import '../data/app_state.dart';
 import '../data/repository.dart';
 import '../logic/deadlines.dart';
+import '../logic/planning.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
+import '../widgets/app_icon.dart';
 
 /// One deadline in full, and the only place it can be changed after it's
 /// written.
@@ -56,7 +58,7 @@ class DeadlineDetailScreen extends StatelessWidget {
           IconButton(
             tooltip: 'Delete',
             onPressed: () => _confirmDelete(context, task),
-            icon: const Icon(Icons.delete_outline),
+            icon: AppIcon(HugeIcons.strokeRoundedDelete02),
           ),
         ],
       ),
@@ -77,7 +79,7 @@ class DeadlineDetailScreen extends StatelessWidget {
               IconButton(
                 tooltip: 'Rename',
                 onPressed: () => _editTitle(context, task),
-                icon: const Icon(Icons.edit_outlined, size: 20),
+                icon: AppIcon(HugeIcons.strokeRoundedEdit02, size: 20),
               ),
             ],
           ),
@@ -113,7 +115,7 @@ class DeadlineDetailScreen extends StatelessWidget {
                 );
               }
             },
-            icon: Icon(task.done ? Icons.undo : Icons.check_circle_outline, size: 18),
+            icon: AppIcon(task.done ? HugeIcons.strokeRoundedArrowTurnBackward : HugeIcons.strokeRoundedCheckmarkCircle01, size: 18),
             label: Text(task.done ? 'Mark as not done' : 'Mark as done'),
           ),
 
@@ -122,7 +124,7 @@ class DeadlineDetailScreen extends StatelessWidget {
             title: 'Steps',
             trailing: TextButton.icon(
               onPressed: () => _addSubtask(context, task),
-              icon: const Icon(Icons.add, size: 17),
+              icon: AppIcon(HugeIcons.strokeRoundedAdd01, size: 17),
               label: const Text('Add step'),
             ),
           ),
@@ -150,7 +152,7 @@ class DeadlineDetailScreen extends StatelessWidget {
                     color: HandyColors.bad,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.delete_outline, color: Colors.white, size: 18),
+                  child: AppIcon(HugeIcons.strokeRoundedDelete02, color: Colors.white, size: 18),
                 ),
                 onDismissed: (_) {
                   final next = [...task.subtasks]..removeAt(i);
@@ -180,12 +182,15 @@ class DeadlineDetailScreen extends StatelessWidget {
           ],
 
           const SizedBox(height: 22),
+          _PlanSection(task: task, state: state),
+
+          const SizedBox(height: 22),
           const _Section(title: 'Details'),
           Card(
             child: Column(
               children: [
                 _EditRow(
-                  icon: Icons.event,
+                  icon: HugeIcons.strokeRoundedCalendar02,
                   label: 'Due',
                   value: _longDate(task.dueDate),
                   onTap: () async {
@@ -199,7 +204,7 @@ class DeadlineDetailScreen extends StatelessWidget {
                   },
                 ),
                 _EditRow(
-                  icon: Icons.schedule,
+                  icon: HugeIcons.strokeRoundedClock01,
                   label: 'Time',
                   value: task.dueTime ?? 'No time set',
                   onTap: () async {
@@ -220,13 +225,13 @@ class DeadlineDetailScreen extends StatelessWidget {
                       : () => repository.updateTask(task.id, clearDueTime: true),
                 ),
                 _EditRow(
-                  icon: Icons.category_outlined,
+                  icon: HugeIcons.strokeRoundedLayers01,
                   label: 'Kind',
                   value: taskKindLabels[task.kind]!,
                   onTap: () => _pickKind(context, task),
                 ),
                 _EditRow(
-                  icon: Icons.menu_book_outlined,
+                  icon: HugeIcons.strokeRoundedBookOpen01,
                   label: 'Subject',
                   value: subject?.name ?? 'Not tied to a subject',
                   onTap: () => _pickSubject(context, task, state),
@@ -235,7 +240,7 @@ class DeadlineDetailScreen extends StatelessWidget {
                       : () => repository.updateTask(task.id, clearSubject: true),
                 ),
                 _EditRow(
-                  icon: Icons.repeat,
+                  icon: HugeIcons.strokeRoundedRepeat,
                   label: 'Repeat',
                   value: taskRepeatLabels[task.repeat]!,
                   onTap: () => _pickRepeat(context, task),
@@ -250,7 +255,7 @@ class DeadlineDetailScreen extends StatelessWidget {
             title: 'Notes',
             trailing: TextButton.icon(
               onPressed: () => _editNotes(context, task),
-              icon: const Icon(Icons.edit_outlined, size: 16),
+              icon: AppIcon(HugeIcons.strokeRoundedEdit02, size: 16),
               label: Text(task.notes.isEmpty ? 'Add' : 'Edit'),
             ),
           ),
@@ -454,6 +459,131 @@ class DeadlineDetailScreen extends StatelessWidget {
   }
 }
 
+/// "When are you actually going to do this?"
+///
+/// The gap nothing else can fill: Handy knows both when the work is due and
+/// when the student is free, and joining them turns a deadline from a fact
+/// into a plan. Picking a slot also schedules the one reminder that arrives
+/// while they can act on it — the two-days-out and evening-before nudges land
+/// when the day is already over.
+class _PlanSection extends StatelessWidget {
+  const _PlanSection({required this.task, required this.state});
+
+  final Task task;
+  final AppState state;
+
+  static const _days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    if (task.isAttached) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _Section(title: 'Planned for'),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: AppIcon(HugeIcons.strokeRoundedCoffee02, size: 20, color: scheme.primary),
+              title: Text(
+                '${_days[task.attachDay!]} at ${task.attachTime}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                'A free period. You will be reminded when it starts.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              trailing: IconButton(
+                tooltip: 'Unplan',
+                onPressed: () => repository.updateTask(task.id, clearAttachment: true),
+                icon: const AppIcon(HugeIcons.strokeRoundedCancel01, size: 18),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final slots = plannableSlots(state.entries, task.dueDate, DateTime.now());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _Section(title: 'When will you do it?'),
+        const SizedBox(height: 8),
+        if (slots.isEmpty)
+          Text(
+            state.entries.isEmpty
+                ? 'Handy needs your timetable before it can suggest a time.'
+                : 'No free periods between now and the deadline.',
+            style: Theme.of(context).textTheme.bodySmall,
+          )
+        else ...[
+          Text(
+            'Free periods before this is due. Pick one and it becomes a plan.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 84,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: slots.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final slot = slots[i];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    repository.updateTask(
+                      task.id,
+                      attachDay: slot.dayOfWeek,
+                      attachTime: slot.startTime,
+                    );
+                  },
+                  child: Container(
+                    width: 116,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${_days[slot.dayOfWeek].substring(0, 3)} ${slot.date.day}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          slot.startTime,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          'Period ${slot.periodNo}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _SubtaskProgress extends StatelessWidget {
   const _SubtaskProgress({required this.task});
   final Task task;
@@ -509,7 +639,7 @@ class _EditRow extends StatelessWidget {
     this.last = false,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final String label;
   final String value;
   final VoidCallback onTap;
@@ -532,7 +662,7 @@ class _EditRow extends StatelessWidget {
               ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: Theme.of(context).textTheme.bodySmall?.color),
+            AppIcon(icon, size: 18, color: Theme.of(context).textTheme.bodySmall?.color),
             const SizedBox(width: 14),
             SizedBox(
               width: 74,
@@ -551,7 +681,7 @@ class _EditRow extends StatelessWidget {
               IconButton(
                 visualDensity: VisualDensity.compact,
                 onPressed: onClear,
-                icon: const Icon(Icons.close, size: 16),
+                icon: AppIcon(HugeIcons.strokeRoundedCancel01, size: 16),
                 tooltip: 'Clear',
               ),
           ],

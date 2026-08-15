@@ -5,6 +5,7 @@ import '../logic/timetable.dart';
 import '../models/models.dart';
 import '../widgets/class_sheet.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/app_icon.dart';
 
 /// Indexed 0..6 to match DateTime.weekday % 7, so a date maps straight to a
 /// name with no lookup table of its own.
@@ -149,7 +150,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   ),
                   IconButton(
                     onPressed: _pickDate,
-                    icon: const Icon(Icons.calendar_month_outlined, size: 22),
+                    icon: AppIcon(HugeIcons.strokeRoundedCalendar01, size: 22),
                     tooltip: 'Jump to a date',
                   ),
                 ],
@@ -236,7 +237,7 @@ class _DayStrip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
-              _Arrow(icon: Icons.chevron_left, onTap: onPrevious, tooltip: 'Previous day'),
+              _Arrow(icon: HugeIcons.strokeRoundedArrowLeft01, onTap: onPrevious, tooltip: 'Previous day'),
               Expanded(
                 child: Row(
                   children: List.generate(6, (i) {
@@ -322,7 +323,7 @@ class _DayStrip extends StatelessWidget {
                   }),
                 ),
               ),
-              _Arrow(icon: Icons.chevron_right, onTap: onNext, tooltip: 'Next day'),
+              _Arrow(icon: HugeIcons.strokeRoundedArrowRight01, onTap: onNext, tooltip: 'Next day'),
             ],
           ),
         ),
@@ -346,7 +347,7 @@ class _DayStrip extends StatelessWidget {
 class _Arrow extends StatelessWidget {
   const _Arrow({required this.icon, required this.onTap, required this.tooltip});
 
-  final IconData icon;
+  final AppIconData icon;
   final VoidCallback onTap;
   final String tooltip;
 
@@ -354,7 +355,7 @@ class _Arrow extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       onPressed: onTap,
-      icon: Icon(icon, size: 22),
+      icon: AppIcon(icon, size: 22),
       tooltip: tooltip,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
@@ -472,12 +473,12 @@ class _ClassRow extends StatelessWidget {
                 spacing: 14,
                 runSpacing: 6,
                 children: [
-                  if (subject?.code.isNotEmpty == true) _Fact(icon: Icons.tag, text: subject!.code),
-                  if (place.isNotEmpty) _Fact(icon: Icons.place_outlined, text: place),
+                  if (subject?.code.isNotEmpty == true) _Fact(icon: HugeIcons.strokeRoundedHashtag, text: subject!.code),
+                  if (place.isNotEmpty) _Fact(icon: HugeIcons.strokeRoundedLocation01, text: place),
                   if (entry.facultyName.isNotEmpty)
-                    _Fact(icon: Icons.person_outline, text: entry.facultyName),
+                    _Fact(icon: HugeIcons.strokeRoundedUser, text: entry.facultyName),
                   if (entry.opted != null && entry.strength != null)
-                    _Fact(icon: Icons.groups_outlined, text: '${entry.opted} of ${entry.strength}'),
+                    _Fact(icon: HugeIcons.strokeRoundedUserGroup, text: '${entry.opted} of ${entry.strength}'),
                 ],
               ),
               if (notes.isNotEmpty) ...[
@@ -487,7 +488,7 @@ class _ClassRow extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 4),
                         child: Row(
                           children: [
-                            Icon(Icons.sticky_note_2_outlined, size: 13, color: scheme.primary),
+                            AppIcon(HugeIcons.strokeRoundedNote01, size: 13, color: scheme.primary),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -517,7 +518,7 @@ class _ClassRow extends StatelessWidget {
 class _Fact extends StatelessWidget {
   const _Fact({required this.icon, required this.text});
 
-  final IconData icon;
+  final AppIconData icon;
   final String text;
 
   @override
@@ -526,7 +527,7 @@ class _Fact extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: muted),
+        AppIcon(icon, size: 13, color: muted),
         const SizedBox(width: 4),
         // Flexible, because faculty names run long ("SURAMPUDI NAGENDRA
         // GANAPATHI") and an unconstrained Text inside a Wrap overflows its
@@ -598,7 +599,7 @@ class _FreeRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          Icon(Icons.free_breakfast_outlined, size: 15, color: muted),
+          AppIcon(HugeIcons.strokeRoundedCoffee02, size: 15, color: muted),
           const SizedBox(width: 8),
           Text('Free period',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: muted)),

@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../theme.dart';
 import 'detail_row.dart';
 import 'form_sheet.dart';
+import 'app_icon.dart';
 
 /// Everything the portal told us about one class, plus the student's own notes.
 ///
@@ -149,7 +150,7 @@ class _ClassSheet extends StatelessWidget {
               const Spacer(),
               TextButton.icon(
                 onPressed: () => _addNote(context),
-                icon: const Icon(Icons.add, size: 17),
+                icon: AppIcon(HugeIcons.strokeRoundedAdd01, size: 17),
                 label: const Text('Add'),
               ),
             ],
@@ -321,7 +322,7 @@ class _NoteFormState extends State<_NoteForm> {
               );
               if (picked != null) setState(() => _due = picked);
             },
-            icon: const Icon(Icons.event, size: 18),
+            icon: AppIcon(HugeIcons.strokeRoundedCalendar02, size: 18),
             label: Text('For ${_due.day}/${_due.month}/${_due.year}'),
           ),
           const SizedBox(height: 12),

@@ -6,6 +6,7 @@ import '../data/app_state.dart';
 import '../main.dart';
 import '../logic/attendance.dart';
 import '../logic/deadlines.dart';
+import '../logic/planning.dart';
 import '../logic/timetable.dart';
 import '../models/models.dart';
 import '../theme.dart';
@@ -14,6 +15,7 @@ import '../widgets/skeleton.dart';
 import '../widgets/student_photo.dart';
 import 'subject_detail_screen.dart';
 import 'subjects_screen.dart';
+import '../widgets/app_icon.dart';
 
 /// The screen that answers "what do I need to do today?".
 ///
@@ -143,6 +145,11 @@ class _TodayScreenState extends State<TodayScreen> {
                         free: free.length,
                         due: dueSoon.length,
                       ),
+                      const SizedBox(height: 20),
+                    ],
+
+                    if (nextExam(state.tasks, now) case final exam?) ...[
+                      _ExamCountdown(exam: exam, state: state),
                       const SizedBox(height: 20),
                     ],
 
@@ -289,12 +296,12 @@ class _AttendanceHero extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(
+                AppIcon(
                   held == 0
-                      ? Icons.info_outline
+                      ? HugeIcons.strokeRoundedInformationCircle
                       : (canSkip > 0
-                            ? Icons.check_circle_outline
-                            : Icons.priority_high),
+                            ? HugeIcons.strokeRoundedCheckmarkCircle01
+                            : HugeIcons.strokeRoundedAlert02),
                   size: 16,
                   color: held == 0
                       ? Theme.of(context).textTheme.bodySmall?.color
@@ -379,8 +386,8 @@ class _NextClassCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                running ? Icons.play_circle_fill : Icons.schedule,
+              AppIcon(
+                running ? HugeIcons.strokeRoundedPlayCircle : HugeIcons.strokeRoundedClock01,
                 size: 15,
                 color: running ? Colors.white : HandyColors.orange,
               ),
@@ -431,8 +438,8 @@ class _NextClassCard extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.place_outlined,
+                    AppIcon(
+                      HugeIcons.strokeRoundedLocation01,
                       size: 13,
                       color: running
                           ? Colors.white70
@@ -499,6 +506,81 @@ class _NextClassCard extends StatelessWidget {
   }
 }
 
+/// The nearest exam, counted down.
+///
+/// Exams are the one deadline where the number of days *is* the useful thing —
+/// nobody needs reminding what an exam is, they need to know how long is left.
+/// So it gets promoted out of the list rather than sitting in it as one more
+/// row that reads like an assignment.
+class _ExamCountdown extends StatelessWidget {
+  const _ExamCountdown({required this.exam, required this.state});
+
+  final Task exam;
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final deadline = getDeadline(exam.dueDate, DateTime.now());
+    final days = deadline.daysLeft;
+    final subject = exam.subjectId == null ? null : state.subjectsById[exam.subjectId];
+    // Under a week is the point at which it stops being a date and starts
+    // being a countdown.
+    final urgent = days <= 7;
+    final colour = urgent ? HandyColors.bad : Theme.of(context).colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colour.withValues(alpha: 0.5), width: 1.4),
+        color: colour.withValues(alpha: 0.07),
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                days == 0 ? 'TODAY' : '$days',
+                style: TextStyle(
+                  fontSize: days == 0 ? 22 : 38,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.5,
+                  height: 1,
+                  color: colour,
+                ),
+              ),
+              if (days > 0)
+                Text(
+                  days == 1 ? 'day' : 'days',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('EXAM', style: Theme.of(context).textTheme.labelSmall),
+                const SizedBox(height: 4),
+                Text(
+                  exam.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                if (subject != null)
+                  Text(subject.name, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// How far through the day you are, and what's left of it — context the class
 /// list can't give at a glance.
 class _DayProgress extends StatelessWidget {
@@ -535,14 +617,14 @@ class _DayProgress extends StatelessWidget {
         Row(
           children: [
             _Chip(
-              icon: Icons.schedule,
+              icon: HugeIcons.strokeRoundedClock01,
               value: left == 0 ? 'Done' : '$left',
               label: left == 0 ? 'for today' : 'left today',
             ),
             const SizedBox(width: 8),
-            _Chip(icon: Icons.free_breakfast_outlined, value: '$free', label: 'free'),
+            _Chip(icon: HugeIcons.strokeRoundedCoffee02, value: '$free', label: 'free'),
             const SizedBox(width: 8),
-            _Chip(icon: Icons.flag_outlined, value: '$due', label: 'due soon'),
+            _Chip(icon: HugeIcons.strokeRoundedFlag02, value: '$due', label: 'due soon'),
           ],
         ),
       ],
@@ -553,7 +635,7 @@ class _DayProgress extends StatelessWidget {
 class _Chip extends StatelessWidget {
   const _Chip({required this.icon, required this.value, required this.label});
 
-  final IconData icon;
+  final AppIconData icon;
   final String value;
   final String label;
 
@@ -569,7 +651,7 @@ class _Chip extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: muted),
+            AppIcon(icon, size: 14, color: muted),
             const SizedBox(width: 7),
             Flexible(
               child: RichText(
@@ -966,8 +1048,8 @@ class _FreeTimeNote extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.free_breakfast_outlined,
+          AppIcon(
+            HugeIcons.strokeRoundedCoffee02,
             size: 16,
             color: Theme.of(context).textTheme.bodySmall?.color,
           ),

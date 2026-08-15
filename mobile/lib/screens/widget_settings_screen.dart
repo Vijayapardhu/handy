@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/settings.dart';
 import '../main.dart';
+import '../widgets/app_icon.dart';
 
 /// Everything about how the home-screen widgets look and what they say.
 ///
@@ -66,8 +67,8 @@ class WidgetSettingsScreen extends StatelessWidget {
                               ),
                             ),
                             child: selected
-                                ? Icon(
-                                    Icons.check,
+                                ? AppIcon(
+                                    HugeIcons.strokeRoundedTick02,
                                     size: 20,
                                     // Light swatches need a dark tick; the
                                     // same white tick on white is invisible.
@@ -256,7 +257,7 @@ class _BlockOrder extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 leading: ReorderableDragStartListener(
                   index: i,
-                  child: const Icon(Icons.drag_handle, size: 20),
+                  child: AppIcon(HugeIcons.strokeRoundedDragDropVertical, size: 20),
                 ),
                 title: Text(chosen[i].label, style: const TextStyle(fontSize: 14.5)),
                 subtitle: Text(chosen[i].detail,
@@ -268,7 +269,7 @@ class _BlockOrder extends StatelessWidget {
                   onPressed: chosen.length == 1
                       ? null
                       : () => onChanged([...chosen]..removeAt(i)),
-                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  icon: AppIcon(HugeIcons.strokeRoundedMinusSign, size: 20),
                 ),
               ),
           ],
@@ -282,7 +283,7 @@ class _BlockOrder extends StatelessWidget {
             runSpacing: 8,
             children: rest
                 .map((block) => ActionChip(
-                      avatar: const Icon(Icons.add, size: 16),
+                      avatar: AppIcon(HugeIcons.strokeRoundedAdd01, size: 16),
                       label: Text(block.label),
                       onPressed: () => onChanged([...chosen, block]),
                     ))

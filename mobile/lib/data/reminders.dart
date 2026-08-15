@@ -113,6 +113,37 @@ class Reminders {
     var id = 5000;
     final now = tz.TZDateTime.now(tz.local);
 
+    // A deadline pinned to a free period gets a reminder when that period
+    // starts. This is the one reminder that arrives while a student is
+    // actually able to act on it — the other two arrive at six in the evening
+    // and are only ever a note to self.
+    for (final task in tasks.where((t) => !t.done && t.isAttached)) {
+      final when = _nextOccurrence(task.attachDay!, task.attachTime!);
+      final due = tz.TZDateTime(
+        tz.local,
+        task.dueDate.year,
+        task.dueDate.month,
+        task.dueDate.day,
+        23,
+        59,
+      );
+      // Only if that slot still falls before the deadline; a weekly repeat
+      // past the due date would nag about something already late.
+      if (when.isAfter(due) || when.isBefore(now)) continue;
+
+      await _plugin.zonedSchedule(
+        id: id++,
+        title: 'Free period — ${task.title}',
+        body: 'You planned this for now. ${taskKindLabels[task.kind] ?? ''}'.trim(),
+        scheduledDate: when,
+        notificationDetails: const NotificationDetails(
+          android: _taskChannel,
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
+
     for (final task in tasks.where((t) => !t.done)) {
       // Two nudges: two days out to start it, the evening before to finish it.
       for (final daysBefore in [2, 1]) {

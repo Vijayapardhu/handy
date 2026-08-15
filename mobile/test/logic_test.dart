@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:handy/logic/attendance.dart';
 import 'package:handy/logic/deadlines.dart';
+import 'package:handy/logic/planning.dart';
+import 'package:handy/models/models.dart';
 import 'package:handy/logic/timetable.dart';
 import 'package:handy/models/timetable_entry.dart';
 
@@ -61,6 +63,8 @@ void main() {
       expect(getDeadline(DateTime.utc(2026, 9, 1), DateTime.utc(2026, 8, 30)).daysLeft, 2);
     });
   });
+
+  planningTests();
 
   group('timetable', () {
     TimetableEntry entry(int day, int period, String start, String end) => TimetableEntry(
@@ -131,3 +135,98 @@ void main() {
   });
 }
 
+
+/// Phase 2 of the Deadlines module: joining what is due to when you are free.
+void planningTests() {
+  TimetableEntry slot(int day, int period, String start, String end) => TimetableEntry(
+        id: 'd${day}p$period',
+        timetableVersionId: 'v1',
+        dayOfWeek: day,
+        startTime: start,
+        endTime: end,
+        subjectId: 's1',
+        facultyName: 'F',
+        room: 'RB-221',
+        block: 'Ramanujan Bhavan',
+        periodNo: period,
+        strength: 72,
+        opted: 70,
+        type: 'lecture',
+        active: true,
+      );
+
+  Task task(String id, DateTime due, {bool done = false, TaskKind kind = TaskKind.assignment}) =>
+      Task(
+        id: id,
+        title: id,
+        notes: '',
+        kind: kind,
+        dueDate: due,
+        dueTime: null,
+        subjectId: null,
+        done: done,
+      );
+
+  group('planning', () {
+    // Monday is full; Tuesday is missing period 2.
+    final week = [
+      slot(1, 1, '09:30', '10:20'),
+      slot(1, 2, '10:30', '11:20'),
+      slot(1, 3, '11:20', '12:10'),
+      slot(2, 1, '09:30', '10:20'),
+      slot(2, 3, '11:20', '12:10'),
+    ];
+
+    test('offers the gap before the deadline, and never today', () {
+      // Saturday 15 Aug 2026, due the following Wednesday.
+      final slots = plannableSlots(week, DateTime(2026, 8, 19), DateTime(2026, 8, 15));
+      expect(slots, isNotEmpty);
+      expect(slots.every((s) => s.date.isAfter(DateTime(2026, 8, 15))), isTrue);
+      expect(slots.every((s) => !s.date.isAfter(DateTime(2026, 8, 19))), isTrue);
+      // Sunday the 16th is never offered.
+      expect(slots.any((s) => s.date.weekday == DateTime.sunday), isFalse);
+    });
+
+    test('finds Tuesday period 2, which is the only real gap', () {
+      final slots = plannableSlots(week, DateTime(2026, 8, 18), DateTime(2026, 8, 15));
+      final tuesday = slots.where((s) => s.dayOfWeek == 2).toList();
+      expect(tuesday.map((s) => s.periodNo), contains(2));
+      expect(tuesday.map((s) => s.startTime), contains('10:30'));
+    });
+
+    test('offers nothing when the deadline is tomorrow and tomorrow is full', () {
+      // Sunday 16th is skipped and Monday 17th has no gaps.
+      expect(plannableSlots(week, DateTime(2026, 8, 17), DateTime(2026, 8, 16)), isEmpty);
+    });
+
+    test('counts the week ahead, folding overdue onto today', () {
+      final today = DateTime(2026, 8, 15);
+      final counts = workloadByDay([
+        task('late', DateTime(2026, 8, 10)),
+        task('today', DateTime(2026, 8, 15)),
+        task('thu', DateTime(2026, 8, 20)),
+        task('also-thu', DateTime(2026, 8, 20)),
+        task('far', DateTime(2026, 9, 30)),
+        task('done', DateTime(2026, 8, 20), done: true),
+      ], today);
+
+      expect(counts.length, 7);
+      expect(counts[0], 2); // overdue + due today
+      expect(counts[5], 2); // the 20th
+      expect(counts.reduce((a, b) => a + b), 4); // 'far' and 'done' excluded
+    });
+
+    test('promotes the nearest exam, ignoring distant ones and other kinds', () {
+      final today = DateTime(2026, 8, 15);
+      expect(
+        nextExam([
+          task('assignment', DateTime(2026, 8, 18)),
+          task('far-exam', DateTime(2026, 12, 1), kind: TaskKind.exam),
+          task('near-exam', DateTime(2026, 8, 25), kind: TaskKind.exam),
+        ], today)?.id,
+        'near-exam',
+      );
+      expect(nextExam([task('a', DateTime(2026, 8, 18))], today), isNull);
+    });
+  });
+}

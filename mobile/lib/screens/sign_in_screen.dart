@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../data/repository.dart';
 import '../main.dart';
 import '../theme.dart';
+import '../widgets/app_icon.dart';
 
 /// Roll number only.
 ///
@@ -133,8 +134,8 @@ class _SignInScreenState extends State<SignInScreen> {
                         labelText: 'Password',
                         suffixIcon: IconButton(
                           onPressed: () => setState(() => _obscure = !_obscure),
-                          icon: Icon(
-                            _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          icon: AppIcon(
+                            _obscure ? HugeIcons.strokeRoundedView : HugeIcons.strokeRoundedViewOff,
                             size: 20,
                           ),
                           tooltip: _obscure ? 'Show password' : 'Hide password',

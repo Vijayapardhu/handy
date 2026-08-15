@@ -7,6 +7,7 @@ import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/app_icon.dart';
 
 /// Version shown in About and attached to every piece of feedback.
 ///
@@ -70,11 +71,11 @@ class _FaqScreenState extends State<FaqScreen> {
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
                   hintText: 'Search help',
-                  prefixIcon: const Icon(Icons.search, size: 20),
+                  prefixIcon: AppIcon(HugeIcons.strokeRoundedSearch01, size: 20),
                   suffixIcon: _query.isEmpty
                       ? null
                       : IconButton(
-                          icon: const Icon(Icons.close, size: 18),
+                          icon: AppIcon(HugeIcons.strokeRoundedCancel01, size: 18),
                           onPressed: () => setState(() => _query = ''),
                         ),
                 ),
@@ -97,7 +98,7 @@ class _FaqScreenState extends State<FaqScreen> {
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(builder: (_) => const FeedbackScreen()),
                         ),
-                        icon: const Icon(Icons.mail_outline, size: 18),
+                        icon: AppIcon(HugeIcons.strokeRoundedMail01, size: 18),
                         label: const Text('Ask us instead'),
                       ),
                     ],
@@ -138,7 +139,7 @@ class _FaqScreenState extends State<FaqScreen> {
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(builder: (_) => const FeedbackScreen()),
                     ),
-                    icon: const Icon(Icons.mail_outline, size: 18),
+                    icon: AppIcon(HugeIcons.strokeRoundedMail01, size: 18),
                     label: const Text("Didn't find it? Send us a message"),
                   ),
                 ),
@@ -221,7 +222,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.check_circle, color: HandyColors.good, size: 22),
+                      AppIcon(HugeIcons.strokeRoundedCheckmarkCircle02, color: HandyColors.good, size: 22),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -429,21 +430,21 @@ class AboutScreen extends StatelessWidget {
             child: Column(
               children: [
                 _LinkRow(
-                  icon: Icons.language,
+                  icon: HugeIcons.strokeRoundedGlobe02,
                   label: 'handy.vijayaapardhu.dev',
                   detail: 'Handy on the web',
                   url: _website,
                 ),
                 Divider(height: 1, color: Theme.of(context).dividerColor),
                 _LinkRow(
-                  icon: Icons.public,
+                  icon: HugeIcons.strokeRoundedGlobe02,
                   label: 'vijayaapardhu.dev',
                   detail: 'Portfolio',
                   url: _portfolio,
                 ),
                 Divider(height: 1, color: Theme.of(context).dividerColor),
                 _LinkRow(
-                  icon: Icons.code,
+                  icon: HugeIcons.strokeRoundedSourceCode,
                   label: 'github.com/Vijayapardhu',
                   detail: 'GitHub',
                   url: _github,
@@ -473,7 +474,7 @@ class _LinkRow extends StatelessWidget {
     required this.url,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final String label;
   final String detail;
   final String url;
@@ -515,7 +516,7 @@ class _LinkRow extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Icon(icon, size: 19, color: Theme.of(context).colorScheme.primary),
+            AppIcon(icon, size: 19, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -526,7 +527,7 @@ class _LinkRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.open_in_new, size: 16),
+            AppIcon(HugeIcons.strokeRoundedLinkSquare01, size: 16),
           ],
         ),
       ),

@@ -11,6 +11,7 @@ import 'account_screens.dart';
 import 'settings_screen.dart';
 import 'support_screens.dart';
 import 'subjects_screen.dart';
+import '../widgets/app_icon.dart';
 
 /// Identity and account.
 ///
@@ -106,28 +107,28 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       _ActionRow(
-                        icon: Icons.person_outline,
+                        icon: HugeIcons.strokeRoundedUser,
                         label: 'Personal Information',
                         detail: 'View and edit your details',
                         onTap: () => _push(context, const PersonalInformationScreen()),
                       ),
                       const _Rule(),
                       _ActionRow(
-                        icon: Icons.school_outlined,
+                        icon: HugeIcons.strokeRoundedMortarboard01,
                         label: 'Academic Information',
                         detail: 'Course, Year, Department',
                         onTap: () => _push(context, const AcademicInformationScreen()),
                       ),
                       const _Rule(),
                       _ActionRow(
-                        icon: Icons.notifications_none,
+                        icon: HugeIcons.strokeRoundedNotification01,
                         label: 'Notifications',
                         detail: 'Manage notification preferences',
                         onTap: () => _push(context, const NotificationSettingsScreen()),
                       ),
                       const _Rule(),
                       _ActionRow(
-                        icon: Icons.lock_outline,
+                        icon: HugeIcons.strokeRoundedSquareLock01,
                         label: 'Change Password',
                         detail: 'Handy has no reset email — change it here',
                         onTap: () => _push(context, const ChangePasswordScreen()),
@@ -151,7 +152,7 @@ class ProfileScreen extends StatelessWidget {
                         onChanged: (on) => settings.setThemeMode(
                           on ? ThemeMode.dark : ThemeMode.system,
                         ),
-                        secondary: const Icon(Icons.dark_mode_outlined, size: 19),
+                        secondary: AppIcon(HugeIcons.strokeRoundedMoon02, size: 19),
                         title: const Text('Dark Mode',
                             style: TextStyle(fontWeight: FontWeight.w600)),
                         subtitle: Text(
@@ -165,7 +166,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const _Rule(),
                       _ActionRow(
-                        icon: Icons.tune,
+                        icon: HugeIcons.strokeRoundedSettings02,
                         label: 'All settings',
                         detail: 'Accent colour, theme, widgets',
                         onTap: () => _push(context, const SettingsScreen()),
@@ -182,21 +183,21 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       _ActionRow(
-                        icon: Icons.help_outline,
+                        icon: HugeIcons.strokeRoundedHelpCircle,
                         label: 'Help & FAQ',
                         detail: 'Get help and find answers',
                         onTap: () => _push(context, const FaqScreen()),
                       ),
                       const _Rule(),
                       _ActionRow(
-                        icon: Icons.mail_outline,
+                        icon: HugeIcons.strokeRoundedMail01,
                         label: 'Feedback',
                         detail: 'Share your feedback with us',
                         onTap: () => _push(context, const FeedbackScreen()),
                       ),
                       const _Rule(),
                       _ActionRow(
-                        icon: Icons.info_outline,
+                        icon: HugeIcons.strokeRoundedInformationCircle,
                         label: 'About Handy',
                         detail: 'Version $handyVersion',
                         onTap: () => _push(context, const AboutScreen()),
@@ -209,7 +210,7 @@ class ProfileScreen extends StatelessWidget {
                 Card(
                   clipBehavior: Clip.antiAlias,
                   child: _ActionRow(
-                    icon: Icons.logout,
+                    icon: HugeIcons.strokeRoundedLogout01,
                     label: 'Log Out',
                     colour: HandyColors.bad,
                     onTap: () => _confirmSignOut(context),
@@ -408,7 +409,7 @@ class _ActionRow extends StatelessWidget {
     this.colour,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final String label;
   final String? detail;
   final Color? colour;
@@ -422,7 +423,7 @@ class _ActionRow extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         child: Row(
           children: [
-            Icon(icon, size: 19, color: colour),
+            AppIcon(icon, size: 19, color: colour),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -439,7 +440,7 @@ class _ActionRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (colour == null) const Icon(Icons.chevron_right, size: 20),
+            if (colour == null) AppIcon(HugeIcons.strokeRoundedArrowRight01, size: 20),
           ],
         ),
       ),

@@ -11,6 +11,7 @@ import 'subjects_screen.dart';
 import 'deadlines_screen.dart';
 import 'timetable_screen.dart';
 import 'today_screen.dart';
+import '../widgets/app_icon.dart';
 
 /// Bottom-nav shell, ordered by the questions a student actually asks:
 /// what's happening now, where do I stand, what's on this week, what do I owe,
@@ -29,12 +30,12 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  static const _tabs = [
-    (icon: Icons.today_outlined, active: Icons.today, label: 'Today'),
-    (icon: Icons.donut_small_outlined, active: Icons.donut_small, label: 'Subjects'),
-    (icon: Icons.calendar_month_outlined, active: Icons.calendar_month, label: 'Timetable'),
-    (icon: Icons.checklist_outlined, active: Icons.checklist, label: 'Deadlines'),
-    (icon: Icons.person_outline, active: Icons.person, label: 'You'),
+  static final _tabs = [
+    (icon: HugeIcons.strokeRoundedCalendar03, active: HugeIcons.strokeRoundedCalendar03, label: 'Today'),
+    (icon: HugeIcons.strokeRoundedPieChart, active: HugeIcons.strokeRoundedPieChart, label: 'Subjects'),
+    (icon: HugeIcons.strokeRoundedCalendar01, active: HugeIcons.strokeRoundedCalendar01, label: 'Timetable'),
+    (icon: HugeIcons.strokeRoundedTaskDone01, active: HugeIcons.strokeRoundedTaskDone01, label: 'Deadlines'),
+    (icon: HugeIcons.strokeRoundedUser, active: HugeIcons.strokeRoundedUserCircle, label: 'You'),
   ];
 
   @override
@@ -99,7 +100,7 @@ class _HandyNavBar extends StatefulWidget {
   const _HandyNavBar({required this.index, required this.tabs, required this.onSelect});
 
   final int index;
-  final List<({IconData icon, IconData active, String label})> tabs;
+  final List<({AppIconData icon, AppIconData active, String label})> tabs;
   final ValueChanged<int> onSelect;
 
   /// Index of the Tasks tab, which is the only one that carries a badge.
@@ -252,7 +253,7 @@ class _NavTab extends StatelessWidget {
     required this.badge,
   });
 
-  final ({IconData icon, IconData active, String label}) tab;
+  final ({AppIconData icon, AppIconData active, String label}) tab;
   final bool selected;
   final VoidCallback onTap;
   final Color? muted;
@@ -290,7 +291,7 @@ class _NavTab extends StatelessWidget {
                   child: Transform.scale(
                     scale: 1 + 0.12 * t,
                     child: _iconWithBadge(
-                      icon: Icon(
+                      icon: AppIcon(
                         selected ? tab.active : tab.icon,
                         size: 23,
                         color: Color.lerp(muted, onPill, clamped),
@@ -320,7 +321,7 @@ class _NavTab extends StatelessWidget {
 
   /// The count sits on the icon rather than beside the label, so it survives
   /// the pill sliding underneath and reads at a glance without being counted.
-  Widget _iconWithBadge({required Icon icon, required ColorScheme scheme}) {
+  Widget _iconWithBadge({required Widget icon, required ColorScheme scheme}) {
     if (badge == 0) return icon;
     return Stack(
       clipBehavior: Clip.none,

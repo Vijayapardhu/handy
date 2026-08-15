@@ -6,6 +6,7 @@ import '../data/settings.dart';
 import '../main.dart';
 import '../theme.dart';
 import 'widget_settings_screen.dart';
+import '../widgets/app_icon.dart';
 
 /// Appearance and account. The two things a student can actually change —
 /// everything else in Handy comes from the college's record.
@@ -83,7 +84,7 @@ class SettingsScreen extends StatelessWidget {
                               ),
                             ),
                             child: selected
-                                ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                ? AppIcon(HugeIcons.strokeRoundedTick02, color: Colors.white, size: 20)
                                 : null,
                           ),
                           const SizedBox(height: 6),
@@ -109,13 +110,13 @@ class SettingsScreen extends StatelessWidget {
                   padding: EdgeInsets.all(18),
                   child: Row(
                     children: [
-                      Icon(Icons.widgets_outlined, size: 19),
+                      AppIcon(HugeIcons.strokeRoundedDashboardSquare01, size: 19),
                       SizedBox(width: 12),
                       Expanded(
                         child: Text('Home-screen widgets',
                             style: TextStyle(fontWeight: FontWeight.w600)),
                       ),
-                      Icon(Icons.chevron_right, size: 20),
+                      AppIcon(HugeIcons.strokeRoundedArrowRight01, size: 20),
                     ],
                   ),
                 ),
@@ -135,7 +136,7 @@ class SettingsScreen extends StatelessWidget {
                   padding: EdgeInsets.all(18),
                   child: Row(
                     children: [
-                      Icon(Icons.lock_outline, size: 20),
+                      AppIcon(HugeIcons.strokeRoundedSquareLock01, size: 20),
                       SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -149,7 +150,7 @@ class SettingsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.chevron_right, size: 20),
+                      AppIcon(HugeIcons.strokeRoundedArrowRight01, size: 20),
                     ],
                   ),
                 ),
@@ -264,7 +265,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.check_circle, color: HandyColors.good, size: 22),
+                      AppIcon(HugeIcons.strokeRoundedCheckmarkCircle02, color: HandyColors.good, size: 22),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -316,8 +317,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       labelText: 'New password',
                       suffixIcon: IconButton(
                         onPressed: () => setState(() => _obscure = !_obscure),
-                        icon: Icon(
-                          _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        icon: AppIcon(
+                          _obscure ? HugeIcons.strokeRoundedView : HugeIcons.strokeRoundedViewOff,
                           size: 20,
                         ),
                       ),

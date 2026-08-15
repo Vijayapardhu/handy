@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../logic/timetable.dart';
 import '../models/models.dart';
 import '../theme.dart';
+import 'app_icon.dart';
 
 /// One class — or one *session*, when the portal split it across consecutive
 /// periods. A three-hour lab arrives as three rows; showing it as three
@@ -76,7 +77,7 @@ class ClassTile extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 6),
                       child: Row(
                         children: [
-                          Icon(Icons.place_outlined, size: 14, color: muted),
+                          AppIcon(HugeIcons.strokeRoundedLocation01, size: 14, color: muted),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(

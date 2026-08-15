@@ -143,6 +143,8 @@ class Task {
     required this.done,
     this.subtasks = const [],
     this.repeat = TaskRepeat.none,
+    this.attachDay,
+    this.attachTime,
   });
 
   final String id;
@@ -155,6 +157,18 @@ class Task {
   final bool done;
   final List<Subtask> subtasks;
   final TaskRepeat repeat;
+
+  /// The timetable slot this is pinned to, as a weekday (0=Sunday, matching
+  /// DateTime.weekday % 7) and a start time.
+  ///
+  /// Stored as day-and-time rather than as a timetable entry id on purpose:
+  /// entry ids are rebuilt on every sync and change when the published version
+  /// does, so a pinned deadline would quietly come unpinned the next time the
+  /// college republished the timetable. A day and a clock time survive that.
+  final int? attachDay;
+  final String? attachTime;
+
+  bool get isAttached => attachDay != null && attachTime != null;
 
   int get subtasksDone => subtasks.where((s) => s.done).length;
 
@@ -179,6 +193,8 @@ class Task {
           (r) => r.name == d['repeat'],
           orElse: () => TaskRepeat.none,
         ),
+        attachDay: (d['attachDay'] as num?)?.toInt(),
+        attachTime: d['attachTime'] as String?,
       );
 }
 

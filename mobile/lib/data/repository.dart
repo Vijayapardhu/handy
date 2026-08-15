@@ -98,6 +98,8 @@ class Repository {
     String? subjectId,
     List<Subtask> subtasks = const [],
     TaskRepeat repeat = TaskRepeat.none,
+    int? attachDay,
+    String? attachTime,
   }) async {
     final now = DateTime.now().toIso8601String();
     final doc = await _db.collection('tasks').add({
@@ -111,6 +113,8 @@ class Repository {
       'subjectId': subjectId,
       'subtasks': subtasks.map((s) => s.toMap()).toList(),
       'repeat': repeat.name,
+      'attachDay': attachDay,
+      'attachTime': attachTime,
       'done': false,
       'completedAt': null,
       'createdAt': now,
@@ -133,6 +137,9 @@ class Repository {
     bool clearSubject = false,
     List<Subtask>? subtasks,
     TaskRepeat? repeat,
+    int? attachDay,
+    String? attachTime,
+    bool clearAttachment = false,
   }) async {
     await _db.collection('tasks').doc(taskId).update({
       if (title != null) 'title': title.trim(),
@@ -145,6 +152,12 @@ class Repository {
       if (clearSubject) 'subjectId': null else if (subjectId != null) 'subjectId': subjectId,
       if (subtasks != null) 'subtasks': subtasks.map((s) => s.toMap()).toList(),
       if (repeat != null) 'repeat': repeat.name,
+      // Both halves move together — a day without a time pins nothing.
+      if (clearAttachment) ...{'attachDay': null, 'attachTime': null}
+      else if (attachDay != null && attachTime != null) ...{
+        'attachDay': attachDay,
+        'attachTime': attachTime,
+      },
       'updatedAt': DateTime.now().toIso8601String(),
     });
   }
@@ -174,6 +187,8 @@ class Repository {
       subjectId: task.subjectId,
       subtasks: task.subtasks.map((s) => s.copyWith(done: false)).toList(),
       repeat: task.repeat,
+      attachDay: task.attachDay,
+      attachTime: task.attachTime,
     );
   }
 

@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 
 import '../data/app_state.dart';
 import '../logic/deadlines.dart';
+import '../logic/planning.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import 'deadline_detail_screen.dart';
 import '../widgets/form_sheet.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/app_icon.dart';
 
 /// What the student has to remember and the portal doesn't know: assignments,
 /// presentations, lab records. The only screen in the app that writes.
@@ -79,7 +81,7 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(context, state),
-        icon: const Icon(Icons.add),
+        icon: AppIcon(HugeIcons.strokeRoundedAdd01),
         label: const Text('Add'),
       ),
       body: CustomScrollView(
@@ -146,6 +148,8 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
                 onFilter: (f) => setState(() => _filter = _filter == f ? _Filter.all : f),
               ),
             ),
+
+            SliverToBoxAdapter(child: _Workload(tasks: open)),
 
             if (visible.isEmpty)
               SliverToBoxAdapter(
@@ -428,7 +432,7 @@ class _MonthGrid extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: () => onStep(-1),
-                    icon: const Icon(Icons.chevron_left),
+                    icon: AppIcon(HugeIcons.strokeRoundedArrowLeft01),
                     visualDensity: VisualDensity.compact,
                   ),
                   Expanded(
@@ -440,7 +444,7 @@ class _MonthGrid extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => onStep(1),
-                    icon: const Icon(Icons.chevron_right),
+                    icon: AppIcon(HugeIcons.strokeRoundedArrowRight01),
                     visualDensity: VisualDensity.compact,
                   ),
                 ],
@@ -553,6 +557,108 @@ class _Note extends StatelessWidget {
       );
 }
 
+/// The week ahead as seven bars.
+///
+/// A list tells you what is due; this tells you when the pile-up is. Four
+/// things landing on Thursday is a problem you can solve on Monday and cannot
+/// solve on Thursday — but only if something draws it before then.
+class _Workload extends StatelessWidget {
+  const _Workload({required this.tasks});
+
+  final List<Task> tasks;
+
+  static const _initials = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final counts = workloadByDay(tasks, now);
+    final busiest = counts.fold<int>(0, (best, c) => c > best ? c : best);
+    if (busiest == 0) return const SizedBox.shrink();
+
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('THE WEEK AHEAD', style: Theme.of(context).textTheme.labelSmall),
+                  const Spacer(),
+                  Text(
+                    '${counts.reduce((a, b) => a + b)} due',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 62,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(counts.length, (i) {
+                    final date = now.add(Duration(days: i));
+                    final count = counts[i];
+                    // Heights are relative to the worst day rather than
+                    // absolute: the shape of the week is the information, and
+                    // a fixed scale would flatten a light week into nothing.
+                    final height = count == 0 ? 4.0 : 8 + (count / busiest) * 34;
+                    return Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (count > 0)
+                            Text(
+                              '$count',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: scheme.primary,
+                              ),
+                            ),
+                          const SizedBox(height: 3),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            height: height,
+                            decoration: BoxDecoration(
+                              color: count == 0
+                                  ? Theme.of(context).dividerColor
+                                  : scheme.primary.withValues(
+                                      alpha: 0.45 + 0.55 * (count / busiest),
+                                    ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _initials[date.weekday % 7],
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: i == 0 ? FontWeight.w800 : FontWeight.w500,
+                              color: i == 0
+                                  ? scheme.primary
+                                  : Theme.of(context).textTheme.bodySmall?.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GroupHeader extends StatelessWidget {
   const _GroupHeader(this.label, this.count);
   final String label;
@@ -606,13 +712,13 @@ class _TaskCard extends StatelessWidget {
       child: Dismissible(
         key: ValueKey(task.id),
         background: _SwipeHint(
-          icon: task.done ? Icons.undo : Icons.check_circle,
+          icon: task.done ? HugeIcons.strokeRoundedArrowTurnBackward : HugeIcons.strokeRoundedCheckmarkCircle02,
           label: task.done ? 'Reopen' : 'Done',
           colour: const Color(0xFF16A34A),
           alignment: Alignment.centerLeft,
         ),
         secondaryBackground: const _SwipeHint(
-          icon: Icons.delete_outline,
+          icon: HugeIcons.strokeRoundedDelete02,
           label: 'Delete',
           colour: Color(0xFFDC2626),
           alignment: Alignment.centerRight,
@@ -677,8 +783,8 @@ class _TaskCard extends StatelessWidget {
                                     ),
                                     if (task.repeat != TaskRepeat.none) ...[
                                       const SizedBox(width: 6),
-                                      Icon(
-                                        Icons.repeat,
+                                      AppIcon(
+                                        HugeIcons.strokeRoundedRepeat,
                                         size: 13,
                                         color: Theme.of(context).textTheme.bodySmall?.color,
                                       ),
@@ -819,7 +925,7 @@ class _Tick extends StatelessWidget {
             ),
           ),
           child: done
-              ? const Icon(Icons.check, size: 14, color: Colors.white)
+              ? AppIcon(HugeIcons.strokeRoundedTick02, size: 14, color: Colors.white)
               : const SizedBox.shrink(),
         ),
       ),
@@ -835,7 +941,7 @@ class _SwipeHint extends StatelessWidget {
     required this.alignment,
   });
 
-  final IconData icon;
+  final AppIconData icon;
   final String label;
   final Color colour;
   final Alignment alignment;
@@ -849,7 +955,7 @@ class _SwipeHint extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 20),
+          AppIcon(icon, color: Colors.white, size: 20),
           const SizedBox(width: 8),
           Text(
             label,
@@ -873,8 +979,8 @@ class _Empty extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.checklist_rtl,
+            AppIcon(
+              HugeIcons.strokeRoundedTaskDone02,
               size: 44,
               color: Theme.of(context).textTheme.bodySmall?.color,
             ),
@@ -890,7 +996,7 @@ class _Empty extends StatelessWidget {
             const SizedBox(height: 18),
             FilledButton.tonalIcon(
               onPressed: onAdd,
-              icon: const Icon(Icons.add, size: 18),
+              icon: AppIcon(HugeIcons.strokeRoundedAdd01, size: 18),
               label: const Text('Add your first task'),
             ),
           ],
@@ -1006,7 +1112,7 @@ class _TaskFormState extends State<_TaskForm> {
                       setState(() => _due = DateTime.now().add(const Duration(days: 7))),
                 ),
                 ActionChip(
-                  avatar: const Icon(Icons.event, size: 16),
+                  avatar: AppIcon(HugeIcons.strokeRoundedCalendar02, size: 16),
                   label: Text('${_due.day}/${_due.month}'),
                   onPressed: () async {
                     final picked = await showDatePicker(
@@ -1019,7 +1125,7 @@ class _TaskFormState extends State<_TaskForm> {
                   },
                 ),
                 ActionChip(
-                  avatar: const Icon(Icons.schedule, size: 16),
+                  avatar: AppIcon(HugeIcons.strokeRoundedClock01, size: 16),
                   label: Text(_time == null ? 'Add time' : _time!.format(context)),
                   onPressed: () async {
                     final picked = await showTimePicker(
@@ -1037,7 +1143,7 @@ class _TaskFormState extends State<_TaskForm> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 onPressed: () => setState(() => _more = !_more),
-                icon: Icon(_more ? Icons.expand_less : Icons.expand_more, size: 18),
+                icon: AppIcon(_more ? HugeIcons.strokeRoundedArrowUp01 : HugeIcons.strokeRoundedArrowDown01, size: 18),
                 label: Text(_more ? 'Less' : 'Subject and notes'),
               ),
             ),

@@ -9,6 +9,7 @@ import '../models/timetable_entry.dart';
 import '../theme.dart';
 import '../widgets/detail_row.dart';
 import 'subjects_screen.dart';
+import '../widgets/app_icon.dart';
 
 const _dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -110,26 +111,26 @@ class SubjectDetailScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodyMedium)
                   else if (canSkip > 0) ...[
                     _Fact(
-                      icon: Icons.event_available_outlined,
+                      icon: HugeIcons.strokeRoundedCalendarCheckIn01,
                       text: 'You can miss $canSkip more class${canSkip == 1 ? '' : 'es'} '
                           'and stay above ${SubjectsScreen.target.toInt()}%.',
                     ),
                     const SizedBox(height: 8),
                     _Fact(
-                      icon: Icons.trending_down,
+                      icon: HugeIcons.strokeRoundedChartDown,
                       text: 'Missing the next one takes you to '
                           '${roundPercentage(calculateAttendance(attended, held + 1))!.toStringAsFixed(2)}%.',
                     ),
                   ] else ...[
                     _Fact(
-                      icon: Icons.priority_high,
+                      icon: HugeIcons.strokeRoundedAlert02,
                       text: 'Below ${SubjectsScreen.target.toInt()}%. '
                           'Attend the next $needed in a row to get back above it.',
                       colour: colour,
                     ),
                     const SizedBox(height: 8),
                     _Fact(
-                      icon: Icons.trending_up,
+                      icon: HugeIcons.strokeRoundedChartUp,
                       text: 'Attending the next one takes you to '
                           '${roundPercentage(calculateAttendance(attended + 1, held + 1))!.toStringAsFixed(2)}%.',
                     ),
@@ -303,7 +304,7 @@ class _Label extends StatelessWidget {
 class _Fact extends StatelessWidget {
   const _Fact({required this.icon, required this.text, this.colour});
 
-  final IconData icon;
+  final AppIconData icon;
   final String text;
   final Color? colour;
 
@@ -312,7 +313,7 @@ class _Fact extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 17, color: colour ?? Theme.of(context).textTheme.bodySmall?.color),
+        AppIcon(icon, size: 17, color: colour ?? Theme.of(context).textTheme.bodySmall?.color),
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
       ],
