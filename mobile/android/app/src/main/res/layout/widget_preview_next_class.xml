@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Preview only. Pointed at by android:previewLayout so the widget picker shows
+  what the tile actually looks like instead of an app icon on a grey square.
+  The sample content is hardcoded on purpose: the picker renders this with no
+  provider running, so anything read from preferences would come out blank —
+  which is exactly why there was no preview before.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:padding="14dp"
+    android:background="@drawable/widget_bg_accent">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="IN 41 MIN"
+        android:textSize="10sp"
+        android:textColor="#FFE7D5"
+        android:textStyle="bold"
+        android:textAllCaps="true"
+        android:letterSpacing="0.06"
+         />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Technical Hour"
+        android:textSize="17sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+         />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="09:30 – 12:10"
+        android:textSize="12sp"
+        android:textColor="#FFFFFF"
+         />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AGBI-2.1 · Aditya Global"
+        android:textSize="11sp"
+        android:textColor="#FFE7D5"
+         />
+</LinearLayout>

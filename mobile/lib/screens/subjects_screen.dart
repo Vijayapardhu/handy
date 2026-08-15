@@ -350,7 +350,16 @@ class _SubjectCard extends StatelessWidget {
   }
 }
 
-/// Progress bar with the 75% line marked on it.
+/// Progress bar with the target line marked on it.
+///
+/// Positioned with Align rather than LayoutBuilder, which is not a style
+/// preference: this sits inside an IntrinsicHeight (the card's full-height
+/// status rail needs one), and LayoutBuilder cannot report intrinsic
+/// dimensions. Using one here threw during layout and took the whole Subjects
+/// screen blank with it — no red error box, just nothing.
+///
+/// Align maps a fraction of the width to x = 2f - 1, so the marker lands at
+/// the target without anyone needing to measure.
 class _TargetBar extends StatelessWidget {
   const _TargetBar({required this.percent, required this.colour});
 
@@ -359,34 +368,31 @@ class _TargetBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        return SizedBox(
-          height: 6,
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  value: (percent ?? 0) / 100,
-                  minHeight: 6,
-                  backgroundColor: Theme.of(context).dividerColor,
-                  valueColor: AlwaysStoppedAnimation(colour),
-                ),
-              ),
-              Positioned(
-                left: width * SubjectsScreen.target / 100 - 1,
-                child: Container(
-                  width: 2,
-                  height: 6,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
-                ),
-              ),
-            ],
+    return SizedBox(
+      height: 6,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: (percent ?? 0) / 100,
+              minHeight: 6,
+              backgroundColor: Theme.of(context).dividerColor,
+              valueColor: AlwaysStoppedAnimation(colour),
+            ),
           ),
-        );
-      },
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment(2 * SubjectsScreen.target / 100 - 1, 0),
+              child: Container(
+                width: 2,
+                height: 6,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

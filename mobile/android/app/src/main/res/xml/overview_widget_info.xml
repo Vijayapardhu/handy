@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The only widget that genuinely wants two rows to start with, since a day
-  with one class in it is rare. Still resizes down to a single row.
+  Starts at two blocks tall because that is the point of it — one block is
+  what the single-purpose widgets already do better. Drags up to four.
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="180dp"
-    android:minHeight="86dp"
+    android:minHeight="110dp"
     android:minResizeWidth="110dp"
-    android:minResizeHeight="40dp"
+    android:minResizeHeight="57dp"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
-    android:initialLayout="@layout/widget_today"
-    android:previewLayout="@layout/widget_preview_today"
+    android:initialLayout="@layout/widget_overview"
+    android:previewLayout="@layout/widget_preview_overview"
     android:previewImage="@mipmap/ic_launcher"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:description="@string/widget_today_description"
+    android:description="@string/widget_overview_description"
     android:updatePeriodMillis="1800000" />

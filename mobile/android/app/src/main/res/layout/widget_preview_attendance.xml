@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Preview only. Pointed at by android:previewLayout so the widget picker shows
+  what the tile actually looks like instead of an app icon on a grey square.
+  The sample content is hardcoded on purpose: the picker renders this with no
+  provider running, so anything read from preferences would come out blank —
+  which is exactly why there was no preview before.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="10dp"
+    android:background="@drawable/widget_bg_accent">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="70.38%"
+        android:textSize="22sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+         />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="183 / 260"
+        android:textSize="10sp"
+        android:textColor="#FFE7D5"
+         />
+</LinearLayout>

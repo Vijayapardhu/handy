@@ -12,6 +12,8 @@
     android:targetCellWidth="2"
     android:targetCellHeight="1"
     android:initialLayout="@layout/widget_next_class"
+    android:previewLayout="@layout/widget_preview_next_class"
+    android:previewImage="@mipmap/ic_launcher"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_next_class_description"

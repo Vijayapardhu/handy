@@ -111,14 +111,19 @@ class AppState extends ChangeNotifier {
     await put('widgetStyle', settings.widgetStyle.name);
     await put('widgetShowFaculty', settings.widgetShowFaculty ? '1' : '0');
     await put('widgetRows', '${settings.widgetRows}');
+    await put('widgetFont', settings.widgetFont.key);
+    await put('widgetTextColour', settings.widgetTextColour);
+    await put('overviewBlocks', settings.widgetBlocks.map((b) => b.name).join(','));
 
     // Attendance
+    final attended = summaries.fold<int>(0, (s, x) => s + x.attended);
+    final held = summaries.fold<int>(0, (s, x) => s + x.held);
     await put('attendance', percent == null ? '—' : '${percent.toStringAsFixed(2)}%');
-    await put(
-      'attendanceMeta',
-      '${summaries.fold<int>(0, (s, x) => s + x.attended)} / '
-          '${summaries.fold<int>(0, (s, x) => s + x.held)} classes',
-    );
+    await put('attendanceMeta', '$attended / $held classes');
+    // The Overview widget's "classes held" table compares three numbers, so it
+    // wants them as numbers rather than as the sentence above.
+    await HomeWidget.saveWidgetData<int>('attendedCount', attended);
+    await HomeWidget.saveWidgetData<int>('heldCount', held);
 
     // Next class — subject, time, venue, faculty and a ready-made countdown.
     final subject = next == null ? null : subjectsById[next.first.subjectId];
@@ -170,6 +175,7 @@ class AppState extends ChangeNotifier {
       'AttendanceWidgetProvider',
       'TodayWidgetProvider',
       'DuesWidgetProvider',
+      'OverviewWidgetProvider',
     ]) {
       await HomeWidget.updateWidget(androidName: provider);
     }

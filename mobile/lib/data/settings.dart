@@ -27,6 +27,9 @@ class AppSettings extends ChangeNotifier {
   static const _widgetStyleKey = 'handy.widgetStyle';
   static const _widgetFacultyKey = 'handy.widgetFaculty';
   static const _widgetRowsKey = 'handy.widgetRows';
+  static const _widgetFontKey = 'handy.widgetFont';
+  static const _widgetTextColourKey = 'handy.widgetTextColour';
+  static const _widgetBlocksKey = 'handy.widgetBlocks';
 
   ThemeMode themeMode = ThemeMode.system;
   AccentChoice accent = AccentChoice.orange;
@@ -48,6 +51,17 @@ class AppSettings extends ChangeNotifier {
 
   /// How many rows the list widgets draw. Fewer rows, bigger text.
   int widgetRows = 4;
+
+  WidgetFont widgetFont = WidgetFont.system;
+
+  /// Empty means "whatever the palette says", which is the right default —
+  /// each palette already pairs a background with text that stays legible on
+  /// it, and picking the two independently is how people get white on white.
+  String widgetTextColour = '';
+
+  /// Which blocks the Overview widget shows, in order. This is the whole
+  /// point of that widget, so it is a list rather than a set of switches.
+  List<WidgetBlock> widgetBlocks = const [WidgetBlock.attendance, WidgetBlock.today];
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -72,6 +86,20 @@ class AppSettings extends ChangeNotifier {
     );
     widgetShowFaculty = prefs.getBool(_widgetFacultyKey) ?? true;
     widgetRows = prefs.getInt(_widgetRowsKey) ?? 4;
+
+    widgetFont = WidgetFont.values.firstWhere(
+      (f) => f.name == prefs.getString(_widgetFontKey),
+      orElse: () => WidgetFont.system,
+    );
+    widgetTextColour = prefs.getString(_widgetTextColourKey) ?? '';
+
+    final blocks = prefs.getStringList(_widgetBlocksKey);
+    if (blocks != null && blocks.isNotEmpty) {
+      widgetBlocks = blocks
+          .map((b) => WidgetBlock.values.where((v) => v.name == b).firstOrNull)
+          .whereType<WidgetBlock>()
+          .toList();
+    }
 
     notifyListeners();
   }
@@ -127,16 +155,92 @@ class AppSettings extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_widgetRowsKey, rows);
   }
+
+  Future<void> setWidgetFont(WidgetFont font) async {
+    widgetFont = font;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_widgetFontKey, font.name);
+  }
+
+  /// Empty string restores the palette's own text colour.
+  Future<void> setWidgetTextColour(String hex) async {
+    widgetTextColour = hex;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_widgetTextColourKey, hex);
+  }
+
+  Future<void> setWidgetBlocks(List<WidgetBlock> blocks) async {
+    widgetBlocks = blocks;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_widgetBlocksKey, blocks.map((b) => b.name).toList());
+  }
+}
+
+/// Typefaces the Android side can apply to a widget.
+///
+/// Restricted to families TypefaceSpan resolves on every version we support —
+/// a bundled font would need a real Typeface, which RemoteViews cannot carry.
+enum WidgetFont {
+  system('System', 'default'),
+  medium('Medium', 'medium'),
+  light('Light', 'light'),
+  condensed('Condensed', 'condensed'),
+  serif('Serif', 'serif'),
+  mono('Mono', 'mono');
+
+  const WidgetFont(this.label, this.key);
+  final String label;
+
+  /// What the Kotlin side looks up; kept separate so labels can be reworded
+  /// without invalidating everyone's saved preference.
+  final String key;
+}
+
+/// A block on the Overview widget.
+enum WidgetBlock {
+  attendance('Attendance', 'The overall percentage and the count under it'),
+  held('Classes held', 'Attended, held and missed, as a table'),
+  today("Today's classes", 'Time, subject and room, lined up in columns'),
+  next('Next class', 'What is coming and how long you have'),
+  dues('Deadlines', 'What is due, soonest first');
+
+  const WidgetBlock(this.label, this.detail);
+  final String label;
+  final String detail;
 }
 
 /// How the home-screen widgets are painted.
+///
+/// Each entry pairs a background with the text colours that stay legible on
+/// it — see WidgetStyle.kt, which holds the matching half. Adding one here
+/// without adding it there leaves the widget on the accent default rather
+/// than crashing, which is the failure worth having.
 enum WidgetStyle {
-  /// Filled with the app's accent — loud, reads at a glance.
-  accent('Colour'),
+  accent('Sunset', Color(0xFFF97316)),
+  dark('Dark', Color(0xFF0F172A)),
+  light('Light', Color(0xFFFFFFFF)),
+  midnight('Midnight', Color(0xFF0B1020)),
+  forest('Forest', Color(0xFF14532D)),
+  rose('Rose', Color(0xFF9F1239)),
+  slate('Slate', Color(0xFF334155)),
+  plum('Plum', Color(0xFF4C1D95));
 
-  /// Dark card with a hairline border — quieter on a busy wallpaper.
-  dark('Dark');
-
-  const WidgetStyle(this.label);
+  const WidgetStyle(this.label, this.swatch);
   final String label;
+  final Color swatch;
 }
+
+/// Text colours a student can force over any palette. Empty means "follow the
+/// palette", which is first because it is right nearly always.
+const widgetTextColours = <({String label, String hex})>[
+  (label: 'Auto', hex: ''),
+  (label: 'White', hex: '#FFFFFF'),
+  (label: 'Black', hex: '#0F172A'),
+  (label: 'Amber', hex: '#FCD34D'),
+  (label: 'Sky', hex: '#7DD3FC'),
+  (label: 'Mint', hex: '#6EE7B7'),
+  (label: 'Rose', hex: '#FDA4AF'),
+];

@@ -5,18 +5,12 @@ import '../data/repository.dart';
 import '../data/settings.dart';
 import '../main.dart';
 import '../theme.dart';
+import 'widget_settings_screen.dart';
 
 /// Appearance and account. The two things a student can actually change —
 /// everything else in Handy comes from the college's record.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  /// Saves the preference, then republishes so the change lands on the home
-  /// screen immediately rather than at the next half-hourly refresh.
-  static Future<void> _applyWidgets(Future<void> Function() change) async {
-    await change();
-    await appState.pushToWidget();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,58 +97,27 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: 22),
-            Text('HOME-SCREEN WIDGETS', style: Theme.of(context).textTheme.labelSmall),
+            Text('WIDGETS', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 10),
             Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Long-press your home screen, choose Widgets, then Handy. There are four: '
-                      'next class, attendance, today, and dues.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: WidgetStyle.values.map((style) {
-                        final selected = style == settings.widgetStyle;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(style.label),
-                            selected: selected,
-                            onSelected: (_) => _applyWidgets(() => settings.setWidgetStyle(style)),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 6),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: settings.widgetShowFaculty,
-                      onChanged: (v) => _applyWidgets(() => settings.setWidgetShowFaculty(v)),
-                      title: const Text('Show faculty name', style: TextStyle(fontSize: 14)),
-                      subtitle: Text('On the next-class widget',
-                          style: Theme.of(context).textTheme.bodySmall),
-                    ),
-                    Text('Rows on the list widgets',
-                        style: Theme.of(context).textTheme.bodySmall),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [2, 3, 4].map((rows) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text('$rows'),
-                            selected: settings.widgetRows == rows,
-                            onSelected: (_) => _applyWidgets(() => settings.setWidgetRows(rows)),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const WidgetSettingsScreen()),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.all(18),
+                  child: Row(
+                    children: [
+                      Icon(Icons.widgets_outlined, size: 19),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text('Home-screen widgets',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                      Icon(Icons.chevron_right, size: 20),
+                    ],
+                  ),
                 ),
               ),
             ),

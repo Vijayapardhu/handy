@@ -35,12 +35,7 @@ abstract class HandyBaseWidget : AppWidgetProvider() {
     abstract fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize)
 
     /** Widgets can't read the app's theme, so appearance arrives as saved values. */
-    protected fun background(data: SharedPreferences): Int =
-        if (data.getString("widgetStyle", "accent") == "dark") {
-            R.drawable.widget_background_dark
-        } else {
-            R.drawable.widget_background
-        }
+    protected fun background(data: SharedPreferences): Int = lookOf(data).background
 
     /** The student's cap on list rows (2-4, default 4); the size caps it further. */
     protected fun rowLimit(data: SharedPreferences): Int =
@@ -126,13 +121,29 @@ abstract class HandyBaseWidget : AppWidgetProvider() {
         setViewVisibility(viewId, if (visible) View.VISIBLE else View.GONE)
     }
 
-    /** Shows a line only when there is both room for it and something to say. */
-    protected fun RemoteViews.line(viewId: Int, value: String?, room: Boolean) {
+    /**
+     * Shows a line only when there is both room for it and something to say,
+     * styled from the student's palette.
+     *
+     * `wrap` is why room names stopped being cut off mid-word: a narrow tile
+     * gives a room and a building two lines instead of one line and an
+     * ellipsis, which on a widget is the difference between an address and a
+     * riddle.
+     */
+    protected fun RemoteViews.line(
+        viewId: Int,
+        value: String?,
+        room: Boolean,
+        look: WidgetLook,
+        secondary: Boolean = true,
+        wrap: Int = 1,
+    ) {
         if (value.isNullOrEmpty() || !room) {
             setViewVisibility(viewId, View.GONE)
         } else {
             setViewVisibility(viewId, View.VISIBLE)
-            setTextViewText(viewId, value)
+            setTextViewText(viewId, if (secondary) look.secondary(value) else look.primary(value))
+            setInt(viewId, "setMaxLines", wrap)
         }
     }
 
@@ -156,8 +167,11 @@ class HandyWidgetProvider : HandyBaseWidget() {
     override val layoutId = R.layout.widget_next_class
 
     override fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize) {
-        views.setTextViewText(R.id.next_countdown, data.getString("nextClassCountdown", ""))
-        views.setTextViewText(R.id.next_subject, data.getString("nextClass", "Open Handy"))
+        val look = lookOf(data)
+        val wide = size.width >= 250
+
+        views.setTextViewText(R.id.next_countdown, look.secondary(data.getString("nextClassCountdown", "")))
+        views.setTextViewText(R.id.next_subject, look.primary(data.getString("nextClass", "Open Handy")))
 
         views.textSize(R.id.next_countdown, if (size.height <= 70) 9f else 11f)
         views.textSize(
@@ -171,14 +185,21 @@ class HandyWidgetProvider : HandyBaseWidget() {
         // One line at a squeeze, two once there's room for them to land.
         views.setInt(R.id.next_subject, "setMaxLines", if (size.height >= 90) 2 else 1)
 
-        views.line(R.id.next_time, data.getString("nextClassTime", ""), size.height >= 72)
-        views.line(R.id.next_venue, data.getString("nextClassVenue", ""), size.height >= 100)
+        views.line(R.id.next_time, data.getString("nextClassTime", ""), size.height >= 72, look)
+        // Room and building wrap on a narrow tile instead of ellipsising, and
+        // faculty names are long enough to need the same.
+        views.line(
+            R.id.next_venue, data.getString("nextClassVenue", ""), size.height >= 100, look,
+            wrap = if (wide) 1 else 2,
+        )
         // Faculty is opt-out and the first thing to go when space is short.
         val showFaculty = data.getString("widgetShowFaculty", "1") == "1"
         views.line(
             R.id.next_faculty,
             data.getString("nextClassFaculty", ""),
             showFaculty && size.height >= 124,
+            look,
+            wrap = if (wide) 1 else 2,
         )
     }
 }
@@ -192,8 +213,9 @@ class AttendanceWidgetProvider : HandyBaseWidget() {
     override val layoutId = R.layout.widget_attendance
 
     override fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize) {
-        views.setTextViewText(R.id.attendance_value, data.getString("attendance", "—"))
-        views.setTextViewText(R.id.attendance_meta, data.getString("attendanceMeta", ""))
+        val look = lookOf(data)
+        views.setTextViewText(R.id.attendance_value, look.primary(data.getString("attendance", "—")))
+        views.setTextViewText(R.id.attendance_meta, look.secondary(data.getString("attendanceMeta", "")))
 
         views.textSize(
             R.id.attendance_value,
@@ -215,7 +237,8 @@ class TodayWidgetProvider : HandyBaseWidget() {
     override val layoutId = R.layout.widget_today
 
     override fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize) {
-        views.setTextViewText(R.id.today_header, data.getString("todayCount", ""))
+        val look = lookOf(data)
+        views.setTextViewText(R.id.today_header, look.secondary(data.getString("todayCount", "")))
         views.show(R.id.today_header, size.height >= 66)
 
         val rows = listOf(
@@ -232,14 +255,17 @@ class TodayWidgetProvider : HandyBaseWidget() {
                 views.show(rowId, false)
             } else {
                 views.show(rowId, true)
-                views.setTextViewText(timeId, data.getString("day${i}Time", ""))
+                views.setTextViewText(timeId, look.secondary(data.getString("day${i}Time", "")))
                 val venue = data.getString("day${i}Venue", "")
                 // The room is the first thing to drop on a narrow tile: it's
                 // the least useful half of the line when read at a glance.
                 views.setTextViewText(
                     subjectId,
-                    if (venue.isNullOrEmpty() || size.width < 180) subject else "$subject · $venue",
+                    look.primary(
+                        if (venue.isNullOrEmpty() || size.width < 180) subject else "$subject · $venue",
+                    ),
                 )
+                views.setInt(subjectId, "setMaxLines", if (size.width >= 250) 1 else 2)
             }
         }
     }
@@ -250,7 +276,8 @@ class DuesWidgetProvider : HandyBaseWidget() {
     override val layoutId = R.layout.widget_dues
 
     override fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize) {
-        views.setTextViewText(R.id.dues_header, data.getString("tasks", "Nothing due"))
+        val look = lookOf(data)
+        views.setTextViewText(R.id.dues_header, look.secondary(data.getString("tasks", "Nothing due")))
         views.show(R.id.dues_header, size.height >= 66)
 
         val rows = listOf(
@@ -266,8 +293,9 @@ class DuesWidgetProvider : HandyBaseWidget() {
                 views.show(rowId, false)
             } else {
                 views.show(rowId, true)
-                views.setTextViewText(titleId, title)
-                views.setTextViewText(whenId, data.getString("due${i}When", ""))
+                views.setTextViewText(titleId, look.primary(title))
+                views.setInt(titleId, "setMaxLines", if (size.width >= 250) 1 else 2)
+                views.setTextViewText(whenId, look.secondary(data.getString("due${i}When", "")))
                 // The countdown is the point of this widget; on a narrow tile
                 // it keeps its place and the title gives way instead.
                 views.show(whenId, size.width >= 140)

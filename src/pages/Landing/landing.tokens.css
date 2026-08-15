@@ -1,0 +1,43 @@
+/*
+ * Marketing palette for the landing page.
+ *
+ * Scoped to [data-landing] rather than :root so ThemeProvider's light/dark
+ * toggle can't repaint it — the page is deliberately dark in both, the way a
+ * product site usually is, while the app itself stays whatever the student
+ * chose. The primary orange and the radius/space scale come straight from
+ * tokens.css so the page and the product read as one thing.
+ */
+
+[data-landing] {
+  --l-bg: #07090f;
+  --l-bg-raised: #0d1119;
+  --l-surface: rgba(255, 255, 255, 0.035);
+  --l-surface-strong: rgba(255, 255, 255, 0.06);
+  --l-border: rgba(255, 255, 255, 0.09);
+  --l-border-strong: rgba(255, 255, 255, 0.16);
+
+  --l-text: #f5f7fa;
+  --l-text-muted: #98a2b3;
+  --l-text-faint: #667085;
+
+  --l-accent: var(--color-primary);
+  --l-accent-soft: #fb923c;
+  --l-accent-glow: rgba(249, 115, 22, 0.32);
+
+  --l-good: #34d399;
+  --l-warn: #fbbf24;
+  --l-bad: #f87171;
+
+  --l-nav-height: 64px;
+  --l-max: 1140px;
+  --l-gutter: 24px;
+
+  /* One easing for everything that moves, so the page has a single feel. */
+  --l-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 768px) {
+  [data-landing] {
+    --l-gutter: 40px;
+  }
+}

@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Generated: four identical slots with distinct ids.
+
+  RemoteViews cannot reuse one <include> with different ids, so the slots are
+  spelled out rather than shared. Each can render either as a headline stat
+  (header + value + sub) or as a table (header + rows), and the provider hides
+  whichever parts that block does not use — which is what lets a student put
+  attendance, classes held and today's timetable in whatever order they want
+  inside a single widget.
+
+  Colours and typefaces are deliberately absent here. Every TextView is
+  coloured and typefaced by the provider from the student's chosen theme,
+  because a colour baked into this file cannot follow a palette change and was
+  the reason section headers used to render grey-on-orange.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="14dp"
+    android:background="@drawable/widget_bg_accent">
+
+    <LinearLayout
+        android:id="@+id/slot0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="0dp"
+        android:visibility="gone">
+
+        <TextView android:id="@+id/slot0_header"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="10sp" android:textStyle="bold" android:textAllCaps="true"
+            android:letterSpacing="0.06" android:maxLines="1" android:ellipsize="end" />
+
+        <TextView android:id="@+id/slot0_value"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="26sp" android:textStyle="bold" android:maxLines="1" />
+
+        <TextView android:id="@+id/slot0_sub"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="11sp" android:maxLines="2" android:ellipsize="end" />
+
+        <LinearLayout android:id="@+id/slot0_table"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingTop="4dp">
+            <LinearLayout
+                android:id="@+id/slot0_row0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot0_r0_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot0_r0_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot0_r0_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot0_row1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot0_r1_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot0_r1_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot0_r1_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot0_row2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot0_r2_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot0_r2_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot0_r2_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot0_row3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot0_r3_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot0_r3_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot0_r3_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/slot1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="10dp"
+        android:visibility="gone">
+
+        <TextView android:id="@+id/slot1_header"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="10sp" android:textStyle="bold" android:textAllCaps="true"
+            android:letterSpacing="0.06" android:maxLines="1" android:ellipsize="end" />
+
+        <TextView android:id="@+id/slot1_value"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="26sp" android:textStyle="bold" android:maxLines="1" />
+
+        <TextView android:id="@+id/slot1_sub"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="11sp" android:maxLines="2" android:ellipsize="end" />
+
+        <LinearLayout android:id="@+id/slot1_table"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingTop="4dp">
+            <LinearLayout
+                android:id="@+id/slot1_row0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot1_r0_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot1_r0_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot1_r0_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot1_row1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot1_r1_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot1_r1_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot1_r1_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot1_row2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot1_r2_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot1_r2_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot1_r2_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot1_row3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot1_r3_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot1_r3_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot1_r3_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/slot2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="10dp"
+        android:visibility="gone">
+
+        <TextView android:id="@+id/slot2_header"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="10sp" android:textStyle="bold" android:textAllCaps="true"
+            android:letterSpacing="0.06" android:maxLines="1" android:ellipsize="end" />
+
+        <TextView android:id="@+id/slot2_value"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="26sp" android:textStyle="bold" android:maxLines="1" />
+
+        <TextView android:id="@+id/slot2_sub"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="11sp" android:maxLines="2" android:ellipsize="end" />
+
+        <LinearLayout android:id="@+id/slot2_table"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingTop="4dp">
+            <LinearLayout
+                android:id="@+id/slot2_row0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot2_r0_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot2_r0_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot2_r0_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot2_row1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot2_r1_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot2_r1_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot2_r1_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot2_row2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot2_r2_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot2_r2_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot2_r2_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot2_row3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot2_r3_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot2_r3_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot2_r3_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/slot3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="10dp"
+        android:visibility="gone">
+
+        <TextView android:id="@+id/slot3_header"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="10sp" android:textStyle="bold" android:textAllCaps="true"
+            android:letterSpacing="0.06" android:maxLines="1" android:ellipsize="end" />
+
+        <TextView android:id="@+id/slot3_value"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="26sp" android:textStyle="bold" android:maxLines="1" />
+
+        <TextView android:id="@+id/slot3_sub"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:textSize="11sp" android:maxLines="2" android:ellipsize="end" />
+
+        <LinearLayout android:id="@+id/slot3_table"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingTop="4dp">
+            <LinearLayout
+                android:id="@+id/slot3_row0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot3_r0_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot3_r0_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot3_r0_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot3_row1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot3_r1_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot3_r1_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot3_r1_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot3_row2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot3_r2_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot3_r2_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot3_r2_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/slot3_row3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="3dp">
+                <TextView android:id="@+id/slot3_r3_c0"
+                    android:layout_width="0dp" android:layout_weight="2.2"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+                <TextView android:id="@+id/slot3_r3_c1"
+                    android:layout_width="0dp" android:layout_weight="5"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:paddingStart="6dp" android:paddingEnd="6dp" />
+                <TextView android:id="@+id/slot3_r3_c2"
+                    android:layout_width="0dp" android:layout_weight="3"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp" android:maxLines="2" android:ellipsize="end"
+                    android:gravity="end" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
