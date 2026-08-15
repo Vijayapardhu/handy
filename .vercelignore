@@ -11,6 +11,14 @@ mobile/
 # bundle — a key inside a deployment is a key inside every function's disk.
 service-account.json
 
+# The admin panel is its own app with its own package.json, node_modules and
+# build output, deployed separately. Walking it here uploads a second
+# node_modules into this deployment for nothing.
+admin/
+
+# Build output of the browser extension — released on GitHub, not served here.
+dist-extension/
+
 # Local-only.
 .env.local
 scripts/
