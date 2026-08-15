@@ -60,6 +60,7 @@ class Subject {
     required this.name,
     required this.shortName,
     required this.facultyName,
+    this.facultyId = '',
   });
 
   final String id;
@@ -68,12 +69,20 @@ class Subject {
   final String shortName;
   final String facultyName;
 
+  /// Which lecturer, as the portal numbers them.
+  ///
+  /// Carried because it is half of what identifies a *class* rather than a
+  /// subject: two students on the same timetable taking the same elective sit
+  /// in different rooms with different reps, and only this tells them apart.
+  final String facultyId;
+
   factory Subject.fromMap(String id, Map<String, dynamic> d) => Subject(
         id: id,
         code: d['code'] as String? ?? '',
         name: d['name'] as String? ?? '',
         shortName: d['shortName'] as String? ?? '',
         facultyName: d['facultyName'] as String? ?? '',
+        facultyId: d['facultyId'] as String? ?? '',
       );
 }
 

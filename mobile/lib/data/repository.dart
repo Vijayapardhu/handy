@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../models/class_content.dart';
 import '../models/models.dart';
 import '../models/timetable_entry.dart';
 
@@ -48,6 +49,58 @@ class Repository {
         .where('active', isEqualTo: true)
         .get();
     return snap.docs.map((d) => Subject.fromMap(d.id, d.data())).toList();
+  }
+
+  /// Every class group this student sits in, as the server recorded it on sync.
+  ///
+  /// A "class" is not a subject: two students on one timetable taking the same
+  /// elective sit with different lecturers, in different rooms, under different
+  /// reps. The key is `<timetableId>-<CODE>-<facultyId>`, and these documents
+  /// are what /api/announce actually fans out to — so anything shown from them
+  /// is the room the student would really be notified in.
+  Future<List<String>> classGroupKeys() async {
+    final snap = await _db
+        .collection('classGroupMembers')
+        .where('uid', isEqualTo: _uid)
+        .get();
+    return snap.docs.map((d) => d.data()['groupKey'] as String? ?? '').where((k) => k.isNotEmpty).toList();
+  }
+
+  /// The group among [keys] that is this subject taught by this student's own
+  /// lecturer. Matched on the suffix, since the last two parts of the key are
+  /// exactly what separates two rooms taking the same subject.
+  static String? matchGroupKey(List<String> keys, String subjectCode, String facultyId) {
+    if (subjectCode.trim().isEmpty || facultyId.trim().isEmpty) return null;
+    final suffix = '-${subjectCode.trim().toUpperCase()}-${facultyId.trim()}';
+    for (final key in keys) {
+      if (key.toUpperCase().endsWith(suffix.toUpperCase())) return key;
+    }
+    return null;
+  }
+
+  /// Course material for one class, newest first.
+  ///
+  /// Sorted here rather than in the query so the collection needs no composite
+  /// index alongside the groupKey filter.
+  Future<List<ClassNote>> classNotes(String groupKey) async {
+    final snap = await _db
+        .collection('classNotes')
+        .where('groupKey', isEqualTo: groupKey)
+        .get();
+    final notes = snap.docs.map((d) => ClassNote.fromMap(d.id, d.data())).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return notes;
+  }
+
+  /// Announcements posted to one class, newest first.
+  Future<List<AnnouncementSummary>> groupAnnouncements(String groupKey) async {
+    final snap = await _db
+        .collection('announcements')
+        .where('groupKey', isEqualTo: groupKey)
+        .get();
+    final items = snap.docs.map((d) => AnnouncementSummary.fromMap(d.id, d.data())).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return items;
   }
 
   Future<List<AttendanceSummary>> summaries() async {

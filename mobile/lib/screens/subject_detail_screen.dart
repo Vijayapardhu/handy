@@ -9,6 +9,7 @@ import '../models/timetable_entry.dart';
 import '../theme.dart';
 import '../widgets/detail_row.dart';
 import '../widgets/study_timer_card.dart';
+import '../widgets/subject_class_content.dart';
 import 'attendance_history_screen.dart';
 import 'subjects_screen.dart';
 import '../widgets/app_icon.dart';
@@ -161,6 +162,11 @@ class SubjectDetailScreen extends StatelessWidget {
 
           const SizedBox(height: 12),
           StudyTimerCard(subject: subject),
+
+          SubjectClassContent(
+            subjectCode: subject.code,
+            facultyId: subject.facultyId,
+          ),
 
           const SizedBox(height: 12),
           Card(
