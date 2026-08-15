@@ -5,20 +5,23 @@ import { AuthProvider } from "@/app/providers/AuthProvider";
 import { QueryProvider } from "@/app/providers/QueryProvider";
 import { NetworkStatusProvider } from "@/app/providers/NetworkStatusProvider";
 import { ThemeProvider } from "@/app/providers/ThemeProvider";
+import { AccentProvider } from "@/app/providers/AccentProvider";
 import { AppRouter } from "@/app/router/AppRouter";
 
 export default function App() {
   return (
     <ThemeProvider>
-      <QueryProvider>
-        <NetworkStatusProvider>
-          <AuthProvider>
-            <AppRouter />
-            {/* Page views only — no props, so nothing about a student is sent. */}
-            <Analytics />
-          </AuthProvider>
-        </NetworkStatusProvider>
-      </QueryProvider>
+      <AccentProvider>
+        <QueryProvider>
+          <NetworkStatusProvider>
+            <AuthProvider>
+              <AppRouter />
+              {/* Page views only — no props, so nothing about a student is sent. */}
+              <Analytics />
+            </AuthProvider>
+          </NetworkStatusProvider>
+        </QueryProvider>
+      </AccentProvider>
     </ThemeProvider>
   );
 }

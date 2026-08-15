@@ -13,6 +13,7 @@ import {
   Sun,
   Moon,
   BellOff,
+  Check,
   Megaphone,
   Smartphone,
   Download,
@@ -23,17 +24,21 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { CollegePortalSyncCard } from "@/components/profile/CollegePortalSyncCard";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useTheme } from "@/app/providers/ThemeProvider";
+import { useAccent } from "@/app/providers/AccentProvider";
 import { useClassRepRooms } from "@/hooks/useClassRep";
 import { useSubjectsWithAttendance } from "@/hooks/useSubjects";
 import { useLeaveRequests } from "@/hooks/useLeaves";
 import { aggregateAttendance } from "@/lib/calculations/attendance";
 import { updateNotifyNewData } from "@/services/students/studentService";
+import { ACCENT_CHOICES } from "@/constants/accent";
 import { ROUTES } from "@/constants/routes";
+import { cn } from "@/lib/utils/cn";
 import styles from "./ProfilePage.module.css";
 
 export function ProfilePage() {
   const { student, user, signOut, refreshStudent } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { accent, setAccent } = useAccent();
   const navigate = useNavigate();
   const subjectsQuery = useSubjectsWithAttendance();
   const leavesQuery = useLeaveRequests();
@@ -202,6 +207,31 @@ export function ProfilePage() {
             </span>
           </button>
         </div>
+      </Card>
+
+      <p className={styles.sectionTitle}>Accent</p>
+      <Card className={styles.accentCard}>
+        {ACCENT_CHOICES.map((choice) => {
+          const selected = choice.id === accent;
+          return (
+            <button
+              key={choice.id}
+              type="button"
+              className={styles.accentSwatchWrap}
+              onClick={() => setAccent(choice.id)}
+              aria-pressed={selected}
+              aria-label={`Use ${choice.label} accent`}
+            >
+              <span
+                className={cn(styles.accentSwatch, selected && styles.accentSwatchSelected)}
+                style={{ background: choice.primary }}
+              >
+                {selected && <Check size={18} color="white" strokeWidth={3} />}
+              </span>
+              <span className={styles.accentLabel}>{choice.label}</span>
+            </button>
+          );
+        })}
       </Card>
 
       <p className={styles.sectionTitle}>Support & More</p>
