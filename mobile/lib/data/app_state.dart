@@ -23,12 +23,17 @@ class AppState extends ChangeNotifier {
   List<Task> tasks = [];
   List<AttendanceMark> marks = [];
 
+  /// Unopened notifications, for the badge. A notification nobody can see is
+  /// a notification nobody reads.
+  int unreadNotifications = 0;
+
   bool loading = true;
   String? error;
 
   StreamSubscription<Student?>? _studentSub;
   StreamSubscription<List<Task>>? _tasksSub;
   StreamSubscription<List<AttendanceMark>>? _marksSub;
+  StreamSubscription<int>? _unreadSub;
 
   Map<String, Subject> get subjectsById => {for (final s in subjects) s.id: s};
 
@@ -91,6 +96,7 @@ class AppState extends ChangeNotifier {
       await _studentSub?.cancel();
       await _tasksSub?.cancel();
       await _marksSub?.cancel();
+      await _unreadSub?.cancel();
 
       _studentSub = repository.watchStudent().listen((s) async {
         student = s;
@@ -119,6 +125,11 @@ class AppState extends ChangeNotifier {
 
       _marksSub = repository.watchMarks().listen((m) {
         marks = m;
+        notifyListeners();
+      });
+
+      _unreadSub = repository.watchUnreadNotifications().listen((count) {
+        unreadNotifications = count;
         notifyListeners();
       });
     } catch (e) {

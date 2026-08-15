@@ -56,6 +56,9 @@ Future<void> main() async {
   );
   await reminders.init();
   await settings.load();
+  // After reminders.init(), which is what sets the notification plugin up —
+  // a restored session needs to repost its ongoing notification.
+  await studyTimer.restore();
 
   // A timetable push exists to answer "what moved", so tapping it opens the
   // diff. Wired here rather than inside Push because that class is built

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart' show Color, ChangeNotifier;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A study session, with a notification that stays on the lock screen while it
 /// runs.
@@ -12,10 +13,16 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 /// study session cannot survive. Ongoing and not dismissable, so it sits above
 /// the noise and can be glanced at from a locked screen.
 ///
-/// Deliberately not persisted across a process death. A session Handy cannot
-/// prove is still running is one it should not claim: reviving a timer that
-/// has been dead for four hours and calling it a study session would be
-/// inventing work the student never did.
+/// Survives the app being killed, but does not lie about it.
+///
+/// Android will stop a backgrounded app whenever it wants, and losing an
+/// hour's session to that is worse than useless. So the session is written
+/// down and picked back up. What it will not do is *keep running* through a
+/// gap it cannot vouch for: a timer restored after four hours would be
+/// crediting the student with work they may never have done. Anything older
+/// than [staleAfter] comes back paused at the time it had already earned,
+/// which is the honest half of the answer, and leaves the decision with the
+/// person who knows.
 class StudyTimer extends ChangeNotifier {
   StudyTimer(this._plugin);
 
@@ -23,6 +30,16 @@ class StudyTimer extends ChangeNotifier {
 
   /// A fixed id, so each tick replaces the notification rather than stacking.
   static const _notificationId = 9100;
+
+  /// Past this, a restored session comes back paused rather than running.
+  /// Long enough to cover a phone being killed mid-session and reopened after
+  /// a lecture; short enough that an overnight gap is never counted.
+  static const staleAfter = Duration(hours: 3);
+
+  static const _startedKey = 'handy.timer.startedAt';
+  static const _accumulatedKey = 'handy.timer.accumulated';
+  static const _subjectIdKey = 'handy.timer.subjectId';
+  static const _subjectNameKey = 'handy.timer.subjectName';
 
   static const _channel = AndroidNotificationDetails(
     'handy_study',
@@ -55,6 +72,66 @@ class StudyTimer extends ChangeNotifier {
     return _accumulated + DateTime.now().difference(_startedAt!);
   }
 
+  /// Picks up a session the app was killed in the middle of.
+  ///
+  /// Called once at startup. A session inside [staleAfter] resumes running —
+  /// the student was almost certainly still studying. An older one comes back
+  /// paused with the time it had earned up to the moment the app died, since
+  /// the gap after that is unaccounted for and counting it would be a guess.
+  Future<void> restore() async {
+    final prefs = await SharedPreferences.getInstance();
+    final startedAt = prefs.getString(_startedKey);
+    final accumulated = prefs.getInt(_accumulatedKey) ?? 0;
+    if (startedAt == null && accumulated == 0) return;
+
+    subjectId = prefs.getString(_subjectIdKey);
+    subjectName = prefs.getString(_subjectNameKey);
+    _accumulated = Duration(seconds: accumulated);
+
+    final started = startedAt == null ? null : DateTime.tryParse(startedAt);
+    if (started == null) {
+      // Was paused when the app died; nothing to reconcile.
+      await _show(paused: true);
+      notifyListeners();
+      return;
+    }
+
+    final gap = DateTime.now().difference(started);
+    if (gap <= staleAfter) {
+      _accumulated += gap;
+      await _persist();
+      await start(subjectId: subjectId, subjectName: subjectName);
+      return;
+    }
+
+    // Too long ago to vouch for. Keep what was banked before the app died and
+    // let the student restart if they were in fact still working.
+    _startedAt = null;
+    await _persist();
+    await _show(paused: true);
+    notifyListeners();
+  }
+
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_startedAt == null) {
+      await prefs.remove(_startedKey);
+    } else {
+      await prefs.setString(_startedKey, _startedAt!.toIso8601String());
+    }
+    await prefs.setInt(_accumulatedKey, _accumulated.inSeconds);
+    await prefs.setString(_subjectIdKey, subjectId ?? '');
+    await prefs.setString(_subjectNameKey, subjectName ?? '');
+  }
+
+  Future<void> _forget() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_startedKey);
+    await prefs.remove(_accumulatedKey);
+    await prefs.remove(_subjectIdKey);
+    await prefs.remove(_subjectNameKey);
+  }
+
   Future<void> start({String? subjectId, String? subjectName}) async {
     if (isRunning) return;
     this.subjectId = subjectId ?? this.subjectId;
@@ -69,6 +146,7 @@ class StudyTimer extends ChangeNotifier {
       if (elapsed.inSeconds % 60 == 0) _show();
     });
 
+    await _persist();
     await _show();
     notifyListeners();
   }
@@ -79,6 +157,7 @@ class StudyTimer extends ChangeNotifier {
     _startedAt = null;
     _ticker?.cancel();
     _ticker = null;
+    await _persist();
     await _show(paused: true);
     notifyListeners();
   }
@@ -92,6 +171,7 @@ class StudyTimer extends ChangeNotifier {
     _accumulated = Duration.zero;
     subjectId = null;
     subjectName = null;
+    await _forget();
     await _plugin.cancel(id: _notificationId);
     notifyListeners();
     return total;

@@ -185,6 +185,10 @@ class _HandyNavBar extends StatefulWidget {
   /// Index of the Tasks tab, which is the only one that carries a badge.
   static const tasksTab = 3;
 
+  /// Where the notifications inbox lives. Badged too, because an inbox you
+  /// only find by going looking is one nobody looks in.
+  static const youTab = 4;
+
   @override
   State<_HandyNavBar> createState() => _HandyNavBarState();
 }
@@ -280,7 +284,11 @@ class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderSta
                           onTap: () => widget.onSelect(i),
                           muted: muted,
                           onPill: scheme.primary,
-                          badge: i == _HandyNavBar.tasksTab ? pending : 0,
+                          badge: switch (i) {
+                            _HandyNavBar.tasksTab => pending,
+                            _HandyNavBar.youTab => state.unreadNotifications,
+                            _ => 0,
+                          },
                         ),
                       );
                     }),

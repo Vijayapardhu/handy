@@ -168,12 +168,15 @@ export function buildImportDocs(uid: string, snapshot: CollegePortalSnapshot, no
     section: snapshot.timetable?.name ?? "",
     semesterId,
     collegeId: SELF_IMPORT_COLLEGE_ID,
-    photoUrl: snapshot.photoUrl,
-    admissionNo: snapshot.admissionNo,
-    semesterLabel: snapshot.semesterLabel,
-    gender: snapshot.gender,
-    dob: snapshot.dob,
-    mobileNo: snapshot.mobileNo,
+    // Coerced to null, never left undefined — see the matching note in
+    // extension/src/snapshotMapping.js. Firestore rejects undefined, so a
+    // capture missing any one of these failed the whole write.
+    photoUrl: snapshot.photoUrl ?? null,
+    admissionNo: snapshot.admissionNo ?? null,
+    semesterLabel: snapshot.semesterLabel ?? null,
+    gender: snapshot.gender ?? null,
+    dob: snapshot.dob ?? null,
+    mobileNo: snapshot.mobileNo ?? null,
     profileComplete: true,
     updatedAt: now,
   };
@@ -195,8 +198,11 @@ export function buildImportDocs(uid: string, snapshot: CollegePortalSnapshot, no
         shortName:
           fromTimetable?.shortName ??
           (subject.name.length > 18 ? `${subject.name.slice(0, 17)}…` : subject.name),
-        facultyId: subject.facultyId,
-        facultyName: subject.facultyName,
+        // See the matching note in extension/src/snapshotMapping.js: the
+        // attendance table carries no faculty, so these are undefined until a
+        // timetable has been captured — and Firestore rejects undefined.
+        facultyId: subject.facultyId ?? "",
+        facultyName: subject.facultyName ?? "",
         semesterId,
         department: snapshot.branch ?? "",
         targetAttendance: null,

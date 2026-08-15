@@ -204,6 +204,18 @@ class Repository {
 
   Future<void> deleteTask(String taskId) => _db.collection('tasks').doc(taskId).delete();
 
+  /// How many notifications the student has not opened.
+  ///
+  /// Counted rather than listed: the badge only needs a number, and streaming
+  /// the whole collection to derive one would grow with every notification
+  /// ever sent.
+  Stream<int> watchUnreadNotifications() => _db
+      .collection('notifications')
+      .where('userId', isEqualTo: _uid)
+      .where('read', isEqualTo: false)
+      .snapshots()
+      .map((snap) => snap.size);
+
   /// The student's own day-by-day marks.
   ///
   /// A separate collection from the imported summaries, and from the

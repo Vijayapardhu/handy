@@ -104,6 +104,10 @@ export default async function handler(req, res) {
       console.error("[sync] push failed for", rollNumber, error),
     );
 
+    await pruneNotifications(db, uid).catch((error) =>
+      console.error("[sync] prune failed for", rollNumber, error),
+    );
+
     return res.status(200).json({ ok: true, uid, ...written, shared });
   } catch (error) {
     console.error("[sync] failed for", rollNumber, error);
@@ -240,6 +244,41 @@ async function notifyDevices(db, uid, written) {
   if (dead.length > 0) {
     await db.doc(`students/${uid}`).update({ fcmTokens: FieldValue.arrayRemove(...dead) });
   }
+}
+
+/**
+ * Drops notifications this student has already read and stopped caring about.
+ *
+ * Nothing else deleted from this collection, so it grew for the life of the
+ * account — a student syncing daily for three years accumulates a thousand
+ * "Attendance updated" records they read once. Done on sync because that is
+ * the only moment the server is already touching this student, and it costs
+ * one query.
+ *
+ * Only *read* ones, and only past the cutoff: an unread notification is still
+ * doing its job however old it is, and deleting it would lose the one thing
+ * the inbox exists to keep.
+ */
+const NOTIFICATION_TTL_DAYS = 45;
+
+async function pruneNotifications(db, uid) {
+  const cutoff = new Date(Date.now() - NOTIFICATION_TTL_DAYS * 24 * 60 * 60 * 1000)
+    .toISOString();
+
+  const stale = await db
+    .collection("notifications")
+    .where("userId", "==", uid)
+    .where("read", "==", true)
+    .where("createdAt", "<", cutoff)
+    // Bounded, so one sync can never turn into a thousand deletes; the next
+    // sync takes the next batch.
+    .limit(100)
+    .get();
+
+  if (stale.empty) return;
+  const batch = db.batch();
+  stale.docs.forEach((doc) => batch.delete(doc.ref));
+  await batch.commit();
 }
 
 function safeParse(body) {

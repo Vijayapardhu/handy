@@ -235,6 +235,44 @@ describe("buildImportDocs", () => {
     );
   });
 
+  it("never leaves an optional profile field undefined", () => {
+    // Firestore rejects undefined outright, so a capture missing any of these
+    // — a student with no photo on file, no mobile number, no date of birth —
+    // used to fail the entire sync with a 500 rather than writing the fields
+    // it did have. Both mappings must agree, since the server uses one and the
+    // web app the other.
+    // Cast through unknown deliberately: the *type* says these fields are
+    // present, but the parser produces undefined for anything the portal page
+    // omitted, and this test exists precisely because that reaches Firestore.
+    // Typing the fixture as complete would test a case that cannot happen.
+    const bare = {
+      rollNumber: "26B21CS999",
+      studentName: "NO OPTIONAL FIELDS",
+      capturedAt: NOW,
+      attendance: { total: null, subjects: [] },
+    } as unknown as CollegePortalSnapshot;
+
+    for (const [name, build] of [
+      ["web", buildImportDocs],
+      ["extension", extensionMapping.buildImportDocs],
+    ] as const) {
+      const { studentUpdate } = build(UID, bare, NOW);
+      for (const field of [
+        "photoUrl",
+        "admissionNo",
+        "semesterLabel",
+        "gender",
+        "dob",
+        "mobileNo",
+      ]) {
+        expect(
+          (studentUpdate as Record<string, unknown>)[field],
+          `${name} mapping left ${field} undefined`,
+        ).toBeNull();
+      }
+    }
+  });
+
   it("takes the student's section from the timetable", () => {
     expect(buildImportDocs(UID, makeSnapshot(true), NOW).studentUpdate.section).toBe("T6(CA3)");
     expect(buildImportDocs(UID, makeSnapshot(false), NOW).studentUpdate.section).toBe("");

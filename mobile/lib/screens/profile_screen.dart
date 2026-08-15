@@ -140,7 +140,10 @@ class ProfileScreen extends StatelessWidget {
                       _ActionRow(
                         icon: HugeIcons.strokeRoundedNotification01,
                         label: 'Notifications',
-                        detail: 'What Handy has told you, and what it may tell you',
+                        detail: state.unreadNotifications == 0
+                            ? 'What Handy has told you, and what it may tell you'
+                            : '${state.unreadNotifications} unread',
+                        badge: state.unreadNotifications,
                         onTap: () => _push(context, const NotificationsInboxScreen()),
                       ),
                       const _Rule(),
@@ -416,6 +419,7 @@ class _ActionRow extends StatelessWidget {
     required this.onTap,
     this.detail,
     this.colour,
+    this.badge = 0,
   });
 
   final AppIconData icon;
@@ -423,6 +427,9 @@ class _ActionRow extends StatelessWidget {
   final String? detail;
   final Color? colour;
   final VoidCallback onTap;
+
+  /// A count worth interrupting for. Zero draws nothing.
+  final int badge;
 
   @override
   Widget build(BuildContext context) {
@@ -449,6 +456,24 @@ class _ActionRow extends StatelessWidget {
                 ],
               ),
             ),
+            if (badge > 0) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badge > 99 ? '99+' : '$badge',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
             if (colour == null) AppIcon(HugeIcons.strokeRoundedArrowRight01, size: 20),
           ],
         ),
