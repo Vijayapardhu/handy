@@ -47,6 +47,9 @@ const ChangePasswordPage = lazy(() =>
 const NotificationsPage = lazy(() =>
   import("@/pages/Notifications/NotificationsPage").then((m) => ({ default: m.NotificationsPage })),
 );
+const AnnouncePage = lazy(() =>
+  import("@/pages/Announce/AnnouncePage").then((m) => ({ default: m.AnnouncePage })),
+);
 const NotFoundPage = lazy(() => import("@/pages/NotFound/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 const router = createBrowserRouter([
@@ -81,6 +84,7 @@ const router = createBrowserRouter([
               { path: ROUTES.profileAcademic, element: <AcademicInfoPage /> },
               { path: ROUTES.profilePassword, element: <ChangePasswordPage /> },
               { path: ROUTES.notifications, element: <NotificationsPage /> },
+              { path: ROUTES.announce, element: <AnnouncePage /> },
               { path: "*", element: <NotFoundPage /> },
             ],
           },

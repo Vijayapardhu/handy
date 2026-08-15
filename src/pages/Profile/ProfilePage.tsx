@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  Megaphone,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +19,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { CollegePortalSyncCard } from "@/components/profile/CollegePortalSyncCard";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useTheme } from "@/app/providers/ThemeProvider";
+import { useClassRepRooms } from "@/hooks/useClassRep";
 import { useSubjectsWithAttendance } from "@/hooks/useSubjects";
 import { useLeaveRequests } from "@/hooks/useLeaves";
 import { aggregateAttendance } from "@/lib/calculations/attendance";
@@ -30,6 +32,7 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const subjectsQuery = useSubjectsWithAttendance();
   const leavesQuery = useLeaveRequests();
+  const classRepRooms = useClassRepRooms();
 
   const overall = subjectsQuery.data
     ? aggregateAttendance(subjectsQuery.data.map((s) => ({ attended: s.attended, held: s.held })))
@@ -102,6 +105,26 @@ export function ProfilePage() {
           <p className={styles.statLabel}>Leaves Taken</p>
         </div>
       </div>
+
+      {/* Only a class rep sees this. Everyone else has no such section rather
+          than a disabled row explaining a capability they cannot get here. */}
+      {(classRepRooms.data?.length ?? 0) > 0 && (
+        <>
+          <p className={styles.sectionTitle}>Class representative</p>
+          <Card padded={false} className={styles.linkGroup}>
+            <ProfileLink
+              to={ROUTES.announce}
+              icon={Megaphone}
+              title="Post an announcement"
+              subtitle={
+                classRepRooms.data!.length === 1
+                  ? classRepRooms.data![0].subjectName
+                  : `${classRepRooms.data!.length} classes`
+              }
+            />
+          </Card>
+        </>
+      )}
 
       <p className={styles.sectionTitle}>College Portal</p>
       <CollegePortalSyncCard />

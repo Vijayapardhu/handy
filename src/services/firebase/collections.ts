@@ -16,6 +16,7 @@ import type { NotificationDoc } from "@/types/notification";
 import type { CollegeConfigDoc } from "@/types/config";
 import type { TimetableChangeReportDoc } from "@/types/timetableChangeReport";
 import type { TaskDoc } from "@/types/task";
+import type { ClassRepGrantDoc } from "@/types/announcement";
 
 /**
  * Firestore doesn't round-trip a document's own id, so every converter
@@ -51,6 +52,7 @@ export const COLLECTIONS = {
   colleges: "colleges",
   timetableChangeReports: "timetableChangeReports",
   tasks: "tasks",
+  classReps: "classReps",
 } as const;
 
 export const studentsCol = () => typedCollection<StudentDoc>(COLLECTIONS.students);
@@ -70,6 +72,7 @@ export const collegesCol = () => typedCollection<CollegeConfigDoc>(COLLECTIONS.c
 export const timetableChangeReportsCol = () =>
   typedCollection<TimetableChangeReportDoc>(COLLECTIONS.timetableChangeReports);
 export const tasksCol = () => typedCollection<TaskDoc>(COLLECTIONS.tasks);
+export const classRepsCol = () => typedCollection<ClassRepGrantDoc>(COLLECTIONS.classReps);
 
 export const studentDocRef = (studentId: string) =>
   doc(db, COLLECTIONS.students, studentId).withConverter(makeConverter<StudentDoc>());

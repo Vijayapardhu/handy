@@ -21,4 +21,7 @@ export const ROUTES = {
   profileAcademic: "/profile/academic",
   profilePassword: "/profile/password",
   notifications: "/notifications",
+  // Reachable by anyone, but useful only to a class rep — the page itself says
+  // so rather than the route pretending the capability doesn't exist.
+  announce: "/announce",
 } as const;
