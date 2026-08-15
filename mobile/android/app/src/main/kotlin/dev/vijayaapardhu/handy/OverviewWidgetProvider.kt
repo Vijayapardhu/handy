@@ -82,6 +82,7 @@ class OverviewWidgetProvider : HandyBaseWidget() {
         size: WidgetSize,
     ) {
         val look = lookOf(data)
+        val schedule = Schedule.from(data)
         val order = (data.getString("overviewBlocks", "attendance,today")
             ?: "attendance,today")
             .split(",")
@@ -100,7 +101,7 @@ class OverviewWidgetProvider : HandyBaseWidget() {
                 return@forEachIndexed
             }
             views.show(slot.root, true)
-            renderBlock(views, slot, block, data, look, size)
+            renderBlock(views, slot, block, data, look, size, schedule)
         }
     }
 
@@ -111,6 +112,7 @@ class OverviewWidgetProvider : HandyBaseWidget() {
         data: SharedPreferences,
         look: WidgetLook,
         size: WidgetSize,
+        schedule: Schedule,
     ) {
         // Every block starts from nothing showing, so a block that uses only a
         // value never inherits a stale table from the previous configuration.
@@ -147,7 +149,7 @@ class OverviewWidgetProvider : HandyBaseWidget() {
             }
 
             "today" -> {
-                header(views, slot, data.getString("todayCount", "Today"), look)
+                header(views, slot, schedule.dayLabel(), look)
                 views.show(slot.table, true)
                 var shown = 0
                 for (i in 0 until slot.rows.size) {
@@ -171,13 +173,14 @@ class OverviewWidgetProvider : HandyBaseWidget() {
             }
 
             "next" -> {
-                header(views, slot, data.getString("nextClassCountdown", "Next class"), look)
+                val next = schedule.next
+                header(views, slot, schedule.countdown().ifEmpty { "Next class" }, look)
                 stat(
                     views, slot, look,
-                    value = data.getString("nextClass", "—"),
+                    value = next?.subject?.ifEmpty { "Class" } ?: "No more classes today",
                     sub = listOfNotNull(
-                        data.getString("nextClassTime", "")?.takeIf { it.isNotEmpty() },
-                        data.getString("nextClassVenue", "")?.takeIf { it.isNotEmpty() },
+                        next?.let { "${it.start} – ${it.end}" },
+                        next?.venue?.takeIf { it.isNotEmpty() },
                     ).joinToString(" · "),
                     size = size,
                     // A subject name is words, not a figure, so it takes the

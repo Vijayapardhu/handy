@@ -169,9 +169,15 @@ class HandyWidgetProvider : HandyBaseWidget() {
     override fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize) {
         val look = lookOf(data)
         val wide = size.width >= 250
+        // Computed here, not read from a string the app wrote: see Schedule.kt.
+        val schedule = Schedule.from(data)
+        val next = schedule.next
 
-        views.setTextViewText(R.id.next_countdown, look.secondary(data.getString("nextClassCountdown", "")))
-        views.setTextViewText(R.id.next_subject, look.primary(data.getString("nextClass", "Open Handy")))
+        views.setTextViewText(R.id.next_countdown, look.secondary(schedule.countdown()))
+        views.setTextViewText(
+            R.id.next_subject,
+            look.primary(next?.subject?.ifEmpty { "Class" } ?: "No more classes today"),
+        )
 
         views.textSize(R.id.next_countdown, if (size.height <= 70) 9f else 11f)
         views.textSize(
@@ -185,18 +191,23 @@ class HandyWidgetProvider : HandyBaseWidget() {
         // One line at a squeeze, two once there's room for them to land.
         views.setInt(R.id.next_subject, "setMaxLines", if (size.height >= 90) 2 else 1)
 
-        views.line(R.id.next_time, data.getString("nextClassTime", ""), size.height >= 72, look)
+        views.line(
+            R.id.next_time,
+            next?.let { "${it.start} – ${it.end}" } ?: "",
+            size.height >= 72,
+            look,
+        )
         // Room and building wrap on a narrow tile instead of ellipsising, and
         // faculty names are long enough to need the same.
         views.line(
-            R.id.next_venue, data.getString("nextClassVenue", ""), size.height >= 100, look,
+            R.id.next_venue, next?.venue ?: "", size.height >= 100, look,
             wrap = if (wide) 1 else 2,
         )
         // Faculty is opt-out and the first thing to go when space is short.
         val showFaculty = data.getString("widgetShowFaculty", "1") == "1"
         views.line(
             R.id.next_faculty,
-            data.getString("nextClassFaculty", ""),
+            next?.faculty ?: "",
             showFaculty && size.height >= 124,
             look,
             wrap = if (wide) 1 else 2,
@@ -238,7 +249,10 @@ class TodayWidgetProvider : HandyBaseWidget() {
 
     override fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize) {
         val look = lookOf(data)
-        views.setTextViewText(R.id.today_header, look.secondary(data.getString("todayCount", "")))
+        val schedule = Schedule.from(data)
+        // "2 of 3 left" rather than "3 classes today" once the day is under
+        // way — which the app could not have known when it last wrote.
+        views.setTextViewText(R.id.today_header, look.secondary(schedule.dayLabel()))
         views.show(R.id.today_header, size.height >= 66)
 
         val rows = listOf(

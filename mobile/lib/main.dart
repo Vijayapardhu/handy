@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'data/app_state.dart';
+import 'data/background_sync.dart';
 import 'data/push.dart';
 import 'data/reminders.dart';
 import 'data/settings.dart';
@@ -28,6 +29,12 @@ final appState = AppState();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Registered before anything else touches messaging. This is what keeps the
+  // home-screen widgets current for a student who syncs on a laptop and does
+  // not open the app: the server pushes on every sync and this wakes a
+  // background isolate to redraw them.
+  FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
 
   repository = Repository(FirebaseFirestore.instance, FirebaseAuth.instance);
   final localNotifications = FlutterLocalNotificationsPlugin();

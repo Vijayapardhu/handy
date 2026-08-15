@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /$
+Allow: /og-image.png
+Allow: /favicon.svg
+Allow: /icons/
+
+# Everything past the front door is a signed-in student's own data behind an
+# auth guard. There is nothing there for a crawler to index, and listing the
+# routes only advertises them.
+Disallow: /login
+Disallow: /connect-portal
+Disallow: /subjects
+Disallow: /timetable
+Disallow: /tasks
+Disallow: /leaves
+Disallow: /planner
+Disallow: /attendance
+Disallow: /profile
+Disallow: /notifications
+Disallow: /api/
+
+Sitemap: https://handy-aus.vercel.app/sitemap.xml

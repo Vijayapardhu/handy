@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type RefObject } from "react";
 
 /**
  * Marks elements as revealed the first time they enter the viewport.
@@ -12,7 +12,7 @@ import { useEffect } from "react";
  * Reveal is one-way on purpose. Re-hiding on scroll-up makes a page feel
  * twitchy when you scroll back to re-read something.
  */
-export function useReveal(rootRef: React.RefObject<HTMLElement>) {
+export function useReveal(rootRef: RefObject<HTMLElement>) {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;

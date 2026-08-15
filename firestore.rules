@@ -200,6 +200,33 @@ service cloud.firestore {
      * including delete, which is denied everywhere else because those
      * documents are records of what the college reported.
      */
+    // Help content, written by whoever runs Handy and read by everyone signed
+    // in. No client write at all: an FAQ a student can edit is a notice board.
+    match /faqs/{faqId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Feedback is write-only from the app's point of view.
+    //
+    // A student may post their own, and may not read anyone's — including
+    // their own back. That is deliberate: `list` on this collection would
+    // otherwise be one rule change away from exposing every student's
+    // complaints, and nothing in the app needs to read them. They are read
+    // with the Admin SDK, outside these rules.
+    //
+    // No update or delete either. Feedback that can be edited after the fact
+    // is not a record of anything.
+    match /feedback/{feedbackId} {
+      allow read: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 4000;
+      allow update, delete: if false;
+    }
+
     match /tasks/{taskId} {
       allow read: if isSignedIn() && resource.data.studentId == request.auth.uid;
       allow create: if isSignedIn()

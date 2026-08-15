@@ -30,7 +30,12 @@ export default defineConfig({
         // The FCM service worker must be fetched fresh and registered on its
         // own scope — precaching another service worker's script through this
         // one causes stale-registration bugs that are miserable to debug.
-        globIgnores: ["**/firebase-messaging-sw.js"],
+        //
+        // og-image.png is a 100KB card for link previews. Only crawlers and
+        // chat apps ever fetch it, and precaching it would put it in the
+        // install payload of every student who adds the app to their home
+        // screen.
+        globIgnores: ["**/firebase-messaging-sw.js", "**/og-image.png"],
       },
     }),
   ],

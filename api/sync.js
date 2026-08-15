@@ -21,7 +21,8 @@
 //   HANDY_SYNC_API_KEY        shared secret the extension sends as x-handy-key
 import { getApps, initializeApp, cert, applicationDefault } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getMessaging } from "firebase-admin/messaging";
 import {
   buildImportDocs,
   buildStudentStub,
@@ -83,10 +84,60 @@ export default async function handler(req, res) {
 
     const uid = await ensureAuthUser(rollNumber);
     const written = await writeSnapshot(db, uid, rollNumber, snapshot);
+    // Tell the student's phone straight away. Best-effort and after the write,
+    // so a push failure can never cost them a sync.
+    await notifyDevices(db, uid, written).catch((error) =>
+      console.error("[sync] push failed for", rollNumber, error),
+    );
     return res.status(200).json({ ok: true, uid, ...written });
   } catch (error) {
     console.error("[sync] failed for", rollNumber, error);
     return res.status(500).json({ ok: false, error: String(error?.message ?? error) });
+  }
+}
+
+/**
+ * Pushes "new data" to the student's devices after a successful sync.
+ *
+ * Two jobs in one message. The notification half tells them something changed;
+ * the data half (`type: "sync"`) is what the phone acts on — its background
+ * handler refreshes the home-screen widgets without the app being opened,
+ * which is the only way a widget can be current for a student who syncs on a
+ * laptop and never launches Handy.
+ *
+ * `priority: high` and `contentAvailable` are what get the message delivered
+ * to a dozing device rather than held until the next time it wakes on its own.
+ */
+async function notifyDevices(db, uid, written) {
+  const student = await db.doc(`students/${uid}`).get();
+  const tokens = student.data()?.fcmTokens ?? [];
+  if (tokens.length === 0) return;
+
+  const subjects = written?.subjectCount ?? 0;
+  const body = subjects > 0
+    ? `Attendance updated across ${subjects} subject${subjects === 1 ? "" : "s"}.`
+    : "Your latest figures are in.";
+
+  const result = await getMessaging().sendEachForMulticast({
+    tokens,
+    notification: { title: "New data in Handy", body },
+    data: { type: "sync", subjects: String(subjects) },
+    android: {
+      priority: "high",
+      notification: { channelId: "handy_push", icon: "ic_notification", color: "#F97316" },
+    },
+    apns: { payload: { aps: { "content-available": 1 } } },
+  });
+
+  // Uninstalled apps and restored devices leave tokens that will never deliver
+  // again; keeping them means every future send reports failures.
+  const dead = tokens.filter((_, i) => {
+    const code = result.responses[i]?.error?.code;
+    return code === "messaging/registration-token-not-registered"
+      || code === "messaging/invalid-registration-token";
+  });
+  if (dead.length > 0) {
+    await db.doc(`students/${uid}`).update({ fcmTokens: FieldValue.arrayRemove(...dead) });
   }
 }
 

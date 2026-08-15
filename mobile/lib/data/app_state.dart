@@ -156,6 +156,38 @@ class AppState extends ChangeNotifier {
       await put('day${i}Venue', block?.first.room ?? '');
     }
 
+    // The whole day, unformatted, so the widgets can do their own clock work.
+    //
+    // Everything above is a finished string, which is right for anything that
+    // only changes when the data does. It is wrong for anything that changes
+    // because time passed: a countdown written here is correct at the moment
+    // it is written and stale by the time anyone reads it, and a student who
+    // has not opened Handy since yesterday would see yesterday's "next class"
+    // indefinitely. Given the raw schedule, the launcher-side providers pick
+    // the next class and phrase the countdown themselves every time they
+    // redraw — which happens on a timer, on resize, and on boot, with the app
+    // closed throughout. See Schedule.kt.
+    await HomeWidget.saveWidgetData<int>('schedCount', today.length);
+    for (var i = 0; i < 8; i++) {
+      final block = i < today.length ? today[i] : null;
+      await put('sched${i}Start', block?.startTime ?? '');
+      await put('sched${i}End', block?.endTime ?? '');
+      await put(
+        'sched${i}Subject',
+        block == null ? '' : (subjectsById[block.first.subjectId]?.name ?? 'Class'),
+      );
+      await put(
+        'sched${i}Venue',
+        block == null
+            ? ''
+            : [block.first.room, block.first.block]
+                .whereType<String>()
+                .where((p) => p.isNotEmpty)
+                .join(' · '),
+      );
+      await put('sched${i}Faculty', block?.first.facultyName ?? '');
+    }
+
     // Dues
     final open = tasks.where((t) => !t.done).toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));

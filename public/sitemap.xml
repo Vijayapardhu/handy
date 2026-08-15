@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  One entry, because there is one public page. Every other route in this app
+  is behind the auth guard and serves a student's own data; the landing page's
+  in-page anchors (#android, #extension, #faq) are part of this URL, not
+  separate ones.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://handy-aus.vercel.app/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
