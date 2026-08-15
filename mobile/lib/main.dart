@@ -9,6 +9,7 @@ import 'data/app_state.dart';
 import 'data/background_sync.dart';
 import 'data/push.dart';
 import 'data/reminders.dart';
+import 'data/study_timer.dart';
 import 'data/settings.dart';
 import 'data/repository.dart';
 import 'firebase_options.dart';
@@ -20,6 +21,7 @@ import 'theme.dart';
 late final Repository repository;
 late final Reminders reminders;
 late final Push push;
+late final StudyTimer studyTimer;
 final settings = AppSettings();
 
 /// Global so that routes pushed onto the root Navigator can reach it: an
@@ -45,6 +47,7 @@ Future<void> main() async {
   repository = Repository(FirebaseFirestore.instance, FirebaseAuth.instance);
   final localNotifications = FlutterLocalNotificationsPlugin();
   reminders = Reminders(localNotifications);
+  studyTimer = StudyTimer(localNotifications);
   push = Push(
     FirebaseMessaging.instance,
     localNotifications,

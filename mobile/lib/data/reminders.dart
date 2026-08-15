@@ -18,9 +18,11 @@ class Reminders {
 
   final FlutterLocalNotificationsPlugin _plugin;
 
-  /// Minutes before a class starts. Enough time to get moving, not so early
-  /// that it becomes noise.
-  static const classLeadMinutes = 15;
+  /// Default minutes before a class starts. Enough time to get moving, not so
+  /// early that it becomes noise — but a student living on campus and one
+  /// commuting want different numbers, so this is only the starting point
+  /// (see AppSettings.classLeadMinutes).
+  static const defaultClassLeadMinutes = 15;
 
   static const _classChannel = AndroidNotificationDetails(
     'handy_classes',
@@ -83,6 +85,8 @@ class Reminders {
     required Map<String, Subject> subjectsById,
     bool classes = true,
     bool deadlines = true,
+    int classLeadMinutes = 15,
+    int deadlineLeadDays = 2,
   }) async {
     for (final pending in await _plugin.pendingNotificationRequests()) {
       await _plugin.cancel(id: pending.id);
@@ -91,19 +95,20 @@ class Reminders {
     // stop adding more — reminders are scheduled weeks ahead, so skipping the
     // next scheduling pass would leave a month of them still to fire. That is
     // why the cancel above happens unconditionally and these gate the rebuild.
-    if (classes) await _scheduleClasses(entries, subjectsById);
-    if (deadlines) await _scheduleTasks(tasks);
+    if (classes) await _scheduleClasses(entries, subjectsById, classLeadMinutes);
+    if (deadlines) await _scheduleTasks(tasks, deadlineLeadDays);
   }
 
   Future<void> _scheduleClasses(
     List<TimetableEntry> entries,
     Map<String, Subject> subjectsById,
+    int leadMinutes,
   ) async {
     var id = 1000;
     for (final entry in entries.where((e) => e.active)) {
       final subject = subjectsById[entry.subjectId];
       final when = _nextOccurrence(entry.dayOfWeek, entry.startTime)
-          .subtract(const Duration(minutes: classLeadMinutes));
+          .subtract(Duration(minutes: leadMinutes));
 
       // Room *and* building: "AGBI-2.1" alone doesn't say which side of campus.
       final place = [
@@ -113,7 +118,7 @@ class Reminders {
 
       await _plugin.zonedSchedule(
         id: id++,
-        title: '${subject?.shortName ?? 'Class'} in $classLeadMinutes min',
+        title: '${subject?.shortName ?? 'Class'} in $leadMinutes min',
         body: place.isEmpty ? entry.facultyName : place,
         scheduledDate: when,
         notificationDetails: const NotificationDetails(
@@ -127,7 +132,7 @@ class Reminders {
     }
   }
 
-  Future<void> _scheduleTasks(List<Task> tasks) async {
+  Future<void> _scheduleTasks(List<Task> tasks, int leadDays) async {
     var id = 5000;
     final now = tz.TZDateTime.now(tz.local);
 
@@ -163,8 +168,13 @@ class Reminders {
     }
 
     for (final task in tasks.where((t) => !t.done)) {
-      // Two nudges: two days out to start it, the evening before to finish it.
-      for (final daysBefore in [2, 1]) {
+      // Two nudges: one to start it, and the evening before to finish it. The
+      // first is configurable because two days suits an assignment and is
+      // useless for a lab record that takes a week; the second is not, because
+      // it is the one that stops something being forgotten outright.
+      //
+      // A set, so a lead of one day does not schedule the same evening twice.
+      for (final daysBefore in {leadDays, 1}) {
         final due = tz.TZDateTime(
           tz.local,
           task.dueDate.year,
@@ -177,7 +187,9 @@ class Reminders {
 
         await _plugin.zonedSchedule(
           id: id++,
-          title: daysBefore == 1 ? 'Due tomorrow: ${task.title}' : '2 days left: ${task.title}',
+          title: daysBefore == 1
+              ? 'Due tomorrow: ${task.title}'
+              : '$daysBefore days left: ${task.title}',
           body: taskKindLabels[task.kind] ?? 'Reminder',
           scheduledDate: when,
           notificationDetails: const NotificationDetails(

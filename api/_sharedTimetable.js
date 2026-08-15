@@ -158,14 +158,14 @@ export async function publishSharedTimetable(db, { timetable, section, syncedBy 
   if (!current) return { changed: false, version, reason: "first_seen" };
 
   const notified = await notifyMembers(db, {
-    members: (current.members ?? []).filter((uid) => uid !== syncedBy),
+    members: (current.members ?? []).filter((member) => member !== syncedBy),
     timetableId: id,
     section: section ?? timetable?.name ?? "",
     version,
     changes,
   });
 
-  return { changed: true, version, changes, notified };
+  return { changed: true, timetableId: id, version, changes, notified };
 }
 
 async function pruneVersions(ref, latest) {
@@ -184,8 +184,6 @@ async function notifyMembers(db, { members, timetableId, section, version, chang
   const docs = await Promise.all(
     members.map((uid) => db.doc(`students/${uid}`).get()),
   );
-  const tokens = docs.flatMap((doc) => doc.data()?.fcmTokens ?? []);
-  if (tokens.length === 0) return 0;
 
   const summary = changes.length === 0
     ? "The schedule was republished."
@@ -193,14 +191,37 @@ async function notifyMembers(db, { members, timetableId, section, version, chang
       ? `${changes[0].where} changed.`
       : `${changes.length} slots changed.`;
 
+  const title = `Timetable updated — ${section || timetableId}`;
+  const body = `Version ${version}. ${summary}`;
+
+  // One inbox record each, written for every member whether or not they have
+  // a device registered. This is the notification most worth keeping — a
+  // student who swipes it away still needs to be able to find out what moved.
+  const now = new Date().toISOString();
+  await Promise.all(
+    members.map((uid) =>
+      db.collection("notifications").add({
+        userId: uid,
+        type: "timetable",
+        title,
+        body,
+        actionUrl: null,
+        timetableId,
+        version,
+        read: false,
+        createdAt: now,
+      }),
+    ),
+  );
+
+  const tokens = docs.flatMap((doc) => doc.data()?.fcmTokens ?? []);
+  if (tokens.length === 0) return 0;
+
   let sent = 0;
   for (let i = 0; i < tokens.length; i += BATCH) {
     const result = await getMessaging().sendEachForMulticast({
       tokens: tokens.slice(i, i + BATCH),
-      notification: {
-        title: `Timetable updated — ${section || timetableId}`,
-        body: `Version ${version}. ${summary}`,
-      },
+      notification: { title, body },
       data: {
         type: "timetable",
         timetableId,

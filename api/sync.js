@@ -130,7 +130,10 @@ export default async function handler(req, res) {
 async function notifyDevices(db, uid, written) {
   const student = await db.doc(`students/${uid}`).get();
   const tokens = student.data()?.fcmTokens ?? [];
-  if (tokens.length === 0) return;
+
+  // No early return on an empty token list. The inbox record is worth writing
+  // whether or not a device is registered to receive it — a student who signs
+  // in on a phone later should still find what happened while they had none.
 
   // A student who has turned "new data" off still gets their widgets
   // refreshed — that is a silent data message, not an interruption. Only the
@@ -163,6 +166,8 @@ async function notifyDevices(db, uid, written) {
         written.shared.changes.length === 1 ? "" : "s"
       } moved.`,
       tag: `timetable-${written.shared.version}`,
+      timetableId: written.shared.timetableId,
+      version: written.shared.version,
     });
   }
 
@@ -174,6 +179,31 @@ async function notifyDevices(db, uid, written) {
 
   let result;
   for (const message of messages) {
+    // Recorded before it is sent, and regardless of whether it is sent at all.
+    // A push is gone the moment it is swiped away, and a student who clears
+    // their shade on the bus has no way back to what it said — so the inbox
+    // holds the copy that lasts. Silent data messages have no title and are
+    // not news, so they are not recorded.
+    if (message.title) {
+      await db.collection("notifications").add({
+        userId: uid,
+        type: message.type,
+        title: message.title,
+        body: message.body,
+        actionUrl: null,
+        // Carried as fields rather than left to be parsed back out of the
+        // body: the inbox needs to open the right timetable version, and
+        // recovering an id by regexing a sentence is a bug waiting for the
+        // first reworded sentence.
+        timetableId: message.timetableId ?? null,
+        version: message.version ?? null,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    if (tokens.length === 0) continue;
+
     result = await getMessaging().sendEachForMulticast({
       tokens,
       ...(message.title
@@ -198,7 +228,10 @@ async function notifyDevices(db, uid, written) {
   }
 
   // Uninstalled apps and restored devices leave tokens that will never deliver
-  // again; keeping them means every future send reports failures.
+  // again; keeping them means every future send reports failures. Nothing was
+  // sent when there are no tokens, so there is no result to read.
+  if (!result) return;
+
   const dead = tokens.filter((_, i) => {
     const code = result.responses[i]?.error?.code;
     return code === "messaging/registration-token-not-registered"

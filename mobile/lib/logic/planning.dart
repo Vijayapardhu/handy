@@ -170,6 +170,77 @@ List<LeaveCost> leaveCost({
   return costs;
 }
 
+/// How a student is doing at finishing things, rather than at collecting them.
+class DeadlineRecord {
+  const DeadlineRecord({
+    required this.completed,
+    required this.onTime,
+    required this.thisMonth,
+    required this.streak,
+  });
+
+  final int completed;
+
+  /// Finished on or before the day it was due. The only measure here that
+  /// says anything about how it went rather than that it happened.
+  final int onTime;
+  final int thisMonth;
+
+  /// Consecutive completions, most recent first, that were not late. Breaks on
+  /// the first late one — a streak that survives a missed deadline is not
+  /// measuring anything.
+  final int streak;
+
+  double? get onTimeRate =>
+      completed == 0 ? null : roundPercentage((onTime / completed) * 100);
+}
+
+/// Reads the completed pile.
+///
+/// `completedAt` is what makes this possible: a done task keeps the date it
+/// was finished, so "on time" is a comparison rather than an assumption.
+/// Tasks completed before that field existed have no date and are counted as
+/// completed but not judged on timing — guessing would be worse than a gap.
+DeadlineRecord deadlineRecord(List<Task> tasks, DateTime today) {
+  final done = tasks.where((t) => t.done).toList()
+    ..sort((a, b) => (b.completedAt ?? '').compareTo(a.completedAt ?? ''));
+
+  var onTime = 0;
+  var judged = 0;
+  var thisMonth = 0;
+  var streak = 0;
+  var streakOpen = true;
+
+  for (final task in done) {
+    final at = task.completedAt;
+    if (at == null || at.length < 10) {
+      streakOpen = false;
+      continue;
+    }
+
+    final finished = DateTime.parse(at.substring(0, 10));
+    final due = DateTime(task.dueDate.year, task.dueDate.month, task.dueDate.day);
+    final punctual = !finished.isAfter(due);
+
+    judged++;
+    if (punctual) onTime++;
+    if (streakOpen && punctual) {
+      streak++;
+    } else {
+      streakOpen = false;
+    }
+
+    if (finished.year == today.year && finished.month == today.month) thisMonth++;
+  }
+
+  return DeadlineRecord(
+    completed: judged,
+    onTime: onTime,
+    thisMonth: thisMonth,
+    streak: streak,
+  );
+}
+
 /// The next exam, if one is close enough to be worth a countdown.
 ///
 /// Exams are the one deadline where the countdown itself is the useful thing,

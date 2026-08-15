@@ -33,6 +33,8 @@ class AppSettings extends ChangeNotifier {
   static const _remindDeadlinesKey = 'handy.remindDeadlines';
   static const _remindClassesKey = 'handy.remindClasses';
   static const _notifyNewDataKey = 'handy.notifyNewData';
+  static const _deadlineLeadKey = 'handy.deadlineLeadDays';
+  static const _classLeadKey = 'handy.classLeadMinutes';
 
   ThemeMode themeMode = ThemeMode.system;
   AccentChoice accent = AccentChoice.orange;
@@ -67,6 +69,18 @@ class AppSettings extends ChangeNotifier {
   bool remindDeadlines = true;
   bool remindClasses = true;
   bool notifyNewData = true;
+
+  /// How many days before a deadline the first nudge arrives. The evening
+  /// before is always sent as well and is not configurable — it is the one
+  /// that stops something being forgotten outright.
+  ///
+  /// Two days suits an assignment and is useless for a lab record that takes
+  /// a week, which is why this stopped being a constant.
+  int deadlineLeadDays = 2;
+
+  /// Minutes before a class starts. Fifteen is enough to get moving across
+  /// campus; a student living on it wants five, one commuting wants thirty.
+  int classLeadMinutes = 15;
 
   /// Which blocks the Overview widget shows, in order. This is the whole
   /// point of that widget, so it is a list rather than a set of switches.
@@ -105,6 +119,8 @@ class AppSettings extends ChangeNotifier {
     remindDeadlines = prefs.getBool(_remindDeadlinesKey) ?? true;
     remindClasses = prefs.getBool(_remindClassesKey) ?? true;
     notifyNewData = prefs.getBool(_notifyNewDataKey) ?? true;
+    deadlineLeadDays = prefs.getInt(_deadlineLeadKey) ?? 2;
+    classLeadMinutes = prefs.getInt(_classLeadKey) ?? 15;
 
     final blocks = prefs.getStringList(_widgetBlocksKey);
     if (blocks != null && blocks.isNotEmpty) {
@@ -196,6 +212,20 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_remindClassesKey, on);
+  }
+
+  Future<void> setDeadlineLeadDays(int days) async {
+    deadlineLeadDays = days;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_deadlineLeadKey, days);
+  }
+
+  Future<void> setClassLeadMinutes(int minutes) async {
+    classLeadMinutes = minutes;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_classLeadKey, minutes);
   }
 
   Future<void> setNotifyNewData(bool on) async {

@@ -152,6 +152,7 @@ class Task {
     this.repeat = TaskRepeat.none,
     this.attachDay,
     this.attachTime,
+    this.completedAt,
   });
 
   final String id;
@@ -174,6 +175,11 @@ class Task {
   /// college republished the timetable. A day and a clock time survive that.
   final int? attachDay;
   final String? attachTime;
+
+  /// ISO timestamp of when this was ticked off. Written since the beginning
+  /// but never read until there was a record to build from it — which is why
+  /// tasks completed earlier have one and older ones may not.
+  final String? completedAt;
 
   bool get isAttached => attachDay != null && attachTime != null;
 
@@ -202,6 +208,7 @@ class Task {
         ),
         attachDay: (d['attachDay'] as num?)?.toInt(),
         attachTime: d['attachTime'] as String?,
+        completedAt: d['completedAt'] as String?,
       );
 }
 

@@ -67,6 +67,7 @@ void main() {
   planningTests();
   markTests();
   leaveTests();
+  recordTests();
 
   group('timetable', () {
     TimetableEntry entry(int day, int period, String start, String end) => TimetableEntry(
@@ -450,6 +451,81 @@ void leaveTests() {
         ),
         isEmpty,
       );
+    });
+  });
+}
+
+/// The completed pile, read as a record.
+void recordTests() {
+  Task done(String id, String due, String? completed) => Task(
+        id: id,
+        title: id,
+        notes: '',
+        kind: TaskKind.assignment,
+        dueDate: DateTime.parse(due),
+        dueTime: null,
+        subjectId: null,
+        done: true,
+        completedAt: completed,
+      );
+
+  group('deadline record', () {
+    final today = DateTime(2026, 8, 15);
+
+    test('counts finishing on the due day as on time', () {
+      final r = deadlineRecord([done('a', '2026-08-10', '2026-08-10T09:00:00')], today);
+      expect(r.completed, 1);
+      expect(r.onTime, 1);
+      expect(r.onTimeRate, 100);
+    });
+
+    test('counts a day late as late', () {
+      final r = deadlineRecord([done('a', '2026-08-10', '2026-08-11T09:00:00')], today);
+      expect(r.onTime, 0);
+      expect(r.onTimeRate, 0);
+      expect(r.streak, 0);
+    });
+
+    test('breaks the streak on the first late one, most recent first', () {
+      final r = deadlineRecord([
+        done('newest', '2026-08-14', '2026-08-14T09:00:00'),
+        done('newer', '2026-08-13', '2026-08-13T09:00:00'),
+        done('late', '2026-08-12', '2026-08-13T09:00:00'),
+        done('oldest', '2026-08-11', '2026-08-11T09:00:00'),
+      ], today);
+
+      // Two recent punctual ones, then a late one stops it — a streak that
+      // survived a missed deadline would not be measuring anything.
+      expect(r.streak, 2);
+      expect(r.completed, 4);
+      expect(r.onTime, 3);
+    });
+
+    test('counts only this calendar month as this month', () {
+      final r = deadlineRecord([
+        done('aug', '2026-08-02', '2026-08-02T09:00:00'),
+        done('jul', '2026-07-30', '2026-07-30T09:00:00'),
+      ], today);
+      expect(r.thisMonth, 1);
+      expect(r.completed, 2);
+    });
+
+    test('does not judge tasks with no completion date', () {
+      // Written before completedAt was read back. Counting them as on time
+      // would invent a record; counting them as late would invent a worse one.
+      final r = deadlineRecord([
+        done('unknown', '2026-08-10', null),
+        done('known', '2026-08-11', '2026-08-11T09:00:00'),
+      ], today);
+      expect(r.completed, 1);
+      expect(r.onTime, 1);
+    });
+
+    test('is empty when nothing is done', () {
+      final r = deadlineRecord(const [], today);
+      expect(r.completed, 0);
+      expect(r.onTimeRate, isNull);
+      expect(r.streak, 0);
     });
   });
 }

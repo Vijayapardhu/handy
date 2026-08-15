@@ -155,6 +155,21 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Rebuilds the reminder schedule from the current data and preferences.
+  ///
+  /// Changing a lead time has to reach what is already queued: reminders are
+  /// scheduled weeks ahead, so without this a new setting would only take
+  /// effect the next time the data happened to change.
+  Future<void> rescheduleReminders() => reminders.reschedule(
+        entries: entries,
+        tasks: tasks,
+        subjectsById: subjectsById,
+        classes: settings.remindClasses,
+        deadlines: settings.remindDeadlines,
+        classLeadMinutes: settings.classLeadMinutes,
+        deadlineLeadDays: settings.deadlineLeadDays,
+      );
+
   /// Reminders and the home-screen widget both derive from the same data, so
   /// they're refreshed together whenever any of it changes.
   Future<void> _afterDataChanged() async {
@@ -165,6 +180,8 @@ class AppState extends ChangeNotifier {
       subjectsById: subjectsById,
       classes: settings.remindClasses,
       deadlines: settings.remindDeadlines,
+      classLeadMinutes: settings.classLeadMinutes,
+      deadlineLeadDays: settings.deadlineLeadDays,
     );
     await pushToWidget();
   }

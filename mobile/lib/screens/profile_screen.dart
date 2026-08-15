@@ -10,6 +10,7 @@ import '../widgets/student_photo.dart';
 import 'account_screens.dart';
 import 'attendance_history_screen.dart';
 import 'leave_planner_screen.dart';
+import 'notifications_inbox_screen.dart';
 import 'settings_screen.dart';
 import 'support_screens.dart';
 import 'subjects_screen.dart';
@@ -139,8 +140,8 @@ class ProfileScreen extends StatelessWidget {
                       _ActionRow(
                         icon: HugeIcons.strokeRoundedNotification01,
                         label: 'Notifications',
-                        detail: 'Manage notification preferences',
-                        onTap: () => _push(context, const NotificationSettingsScreen()),
+                        detail: 'What Handy has told you, and what it may tell you',
+                        onTap: () => _push(context, const NotificationsInboxScreen()),
                       ),
                       const _Rule(),
                       _ActionRow(

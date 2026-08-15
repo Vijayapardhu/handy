@@ -115,11 +115,13 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
           else if (_view == _View.done) ...[
             if (done.isEmpty)
               SliverToBoxAdapter(child: _Note('Nothing completed yet.'))
-            else
+            else ...[
+              SliverToBoxAdapter(child: _Record(tasks: state.tasks)),
               SliverList.builder(
                 itemCount: done.length,
                 itemBuilder: (context, i) => _TaskCard(task: done[i], state: state),
               ),
+            ],
             const SliverToBoxAdapter(child: SizedBox(height: 96)),
           ] else if (_view == _View.calendar) ...[
             SliverToBoxAdapter(
@@ -650,6 +652,85 @@ class _Workload extends StatelessWidget {
                     );
                   }),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The completed pile, read as a record rather than as a list.
+///
+/// A list of finished things says only that they are finished. What a student
+/// wants from it is whether they are keeping up — so it leads with how many
+/// were on time, which is the only figure here that says how it went rather
+/// than that it happened.
+class _Record extends StatelessWidget {
+  const _Record({required this.tasks});
+
+  final List<Task> tasks;
+
+  @override
+  Widget build(BuildContext context) {
+    final record = deadlineRecord(tasks, DateTime.now());
+    if (record.completed == 0) return const SizedBox.shrink();
+
+    final scheme = Theme.of(context).colorScheme;
+    final rate = record.onTimeRate;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    rate == null ? '—' : '${rate.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1.2,
+                      height: 1,
+                      color: statusColour(rate),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'finished on time',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  if (record.streak > 1)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${record.streak} in a row',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${record.completed} completed · ${record.thisMonth} this month',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),

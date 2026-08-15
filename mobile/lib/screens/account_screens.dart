@@ -162,6 +162,14 @@ class AcademicInformationScreen extends StatelessWidget {
 class NotificationSettingsScreen extends StatelessWidget {
   const NotificationSettingsScreen({super.key});
 
+  /// Saving a timing change is only half of it — the schedule already queued
+  /// has to be rebuilt, or the new lead applies from the next data change
+  /// rather than from now.
+  static Future<void> _apply(Future<void> Function() change) async {
+    await change();
+    await appState.rescheduleReminders();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -210,6 +218,56 @@ class NotificationSettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 22),
+            Text('TIMING', style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 10),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Before a class', style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [5, 10, 15, 30]
+                          .map((m) => ChoiceChip(
+                                label: Text('$m min'),
+                                selected: settings.classLeadMinutes == m,
+                                onSelected: (_) => _apply(
+                                  () => settings.setClassLeadMinutes(m),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('First deadline nudge', style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [1, 2, 3, 7]
+                          .map((d) => ChoiceChip(
+                                label: Text(d == 1 ? '1 day' : '$d days'),
+                                selected: settings.deadlineLeadDays == d,
+                                onSelected: (_) => _apply(
+                                  () => settings.setDeadlineLeadDays(d),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'You are always reminded the evening before as well. That '
+                      'one is not adjustable — it is the one that stops '
+                      'something being forgotten outright.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             const SizedBox(height: 14),
             Text(
               'Class and deadline reminders are scheduled on this phone, so they '
