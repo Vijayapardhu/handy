@@ -62,3 +62,7 @@ export async function updatePersonalInfo(
 ): Promise<void> {
   await updateDoc(studentDocRef(uid), { ...fields, updatedAt: new Date().toISOString() });
 }
+
+export async function updateNotifyNewData(uid: string, enabled: boolean): Promise<void> {
+  await updateDoc(studentDocRef(uid), { notifyNewData: enabled, updatedAt: new Date().toISOString() });
+}

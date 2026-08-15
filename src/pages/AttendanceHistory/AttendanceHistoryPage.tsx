@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, XCircle, CalendarOff, ShieldCheck, History, Download, Loader2 } from "@/components/ui/icons";
+import { CheckCircle2, XCircle, CalendarOff, History, Download, Loader2 } from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -11,20 +11,19 @@ import { useAttendanceHistory } from "@/hooks/useAttendanceHistory";
 import { useAttendanceMonth } from "@/hooks/useAttendanceMonth";
 import { useActiveSubjectsMap } from "@/hooks/useActiveSubjectsMap";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { getAttendanceForRange } from "@/services/attendance/attendanceService";
+import { getMarksForRange } from "@/services/attendance/attendanceMarkService";
 import { toCsv, downloadCsv } from "@/lib/utils/csv";
 import { formatDisplayDate, todayIso, addDaysIso } from "@/lib/date";
-import type { AttendanceStatus } from "@/types/attendance";
+import type { MarkStatus } from "@/types/attendanceMark";
 import { cn } from "@/lib/utils/cn";
 import styles from "./AttendanceHistoryPage.module.css";
 
 const EXPORT_WINDOW_DAYS = 730; // ~2 years — a single bounded query, generous enough to cover the whole course.
 
-const STATUS_CONFIG: Record<AttendanceStatus, { label: string; icon: typeof CheckCircle2; className: string }> = {
+const STATUS_CONFIG: Record<MarkStatus, { label: string; icon: typeof CheckCircle2; className: string }> = {
   present: { label: "Present", icon: CheckCircle2, className: styles.present },
   absent: { label: "Absent", icon: XCircle, className: styles.absent },
-  leave: { label: "Leave", icon: CalendarOff, className: styles.leave },
-  excused: { label: "Excused", icon: ShieldCheck, className: styles.excused },
+  cancelled: { label: "Cancelled", icon: CalendarOff, className: styles.cancelled },
 };
 
 export function AttendanceHistoryPage() {
@@ -62,7 +61,7 @@ export function AttendanceHistoryPage() {
     try {
       const today = todayIso();
       const startIso = addDaysIso(today, -EXPORT_WINDOW_DAYS);
-      const exportRecords = await getAttendanceForRange(student.id, startIso, today, subjectId);
+      const exportRecords = await getMarksForRange(student.id, startIso, today, subjectId);
       const rows = [...exportRecords]
         .reverse() // most recent first, matching the list view
         .map((r) => [r.date, subjectNameById.get(r.subjectId) ?? r.subjectId, STATUS_CONFIG[r.status].label]);

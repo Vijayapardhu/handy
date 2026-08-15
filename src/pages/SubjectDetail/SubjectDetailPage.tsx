@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TrendChart } from "@/components/charts/TrendChart";
+import { StudyTimerCard } from "@/components/subject/StudyTimerCard";
 import { SubjectAnnouncements } from "@/components/announcements/SubjectAnnouncements";
 import { SubjectNotes } from "@/components/announcements/SubjectNotes";
 import { useSubject } from "@/hooks/useSubjects";
@@ -134,6 +135,8 @@ export function SubjectDetailPage() {
           <TrendChart points={trendQuery.data} target={target} />
         )}
       </Card>
+
+      <StudyTimerCard subject={subject} />
 
       <SubjectNotes subjectCode={subject.code} facultyId={subject.facultyId} />
       <SubjectAnnouncements subjectCode={subject.code} facultyId={subject.facultyId} />

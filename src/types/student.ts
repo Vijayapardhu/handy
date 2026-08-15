@@ -34,4 +34,11 @@ export interface StudentDoc {
   gender?: string | null;
   dob?: string | null;
   mobileNo?: string | null;
+  /**
+   * Whether the server may push a notification to this student when a sync
+   * lands. Lives on the student doc rather than only on the device because
+   * the *server* decides whether to send, and it can't read a phone's local
+   * preferences. Missing (undefined) reads as enabled — see ProfilePage.
+   */
+  notifyNewData?: boolean;
 }

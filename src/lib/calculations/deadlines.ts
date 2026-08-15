@@ -1,4 +1,4 @@
-import type { TaskDoc } from "@/types/task";
+import type { TaskDoc, TaskRepeat } from "@/types/task";
 
 /**
  * How a deadline reads to a student. The urgency band drives colour and
@@ -70,4 +70,35 @@ export function getDueSoon(tasks: TaskDoc[], todayIso: string): TaskDoc[] {
   return sortByUrgency(tasks, todayIso).filter(
     (t) => getDeadline(t.dueDate, todayIso, t.done).daysLeft <= SOON_DAYS,
   );
+}
+
+/**
+ * The next due date after completing a repeating task. Mirrors
+ * Repository.nextOccurrence in mobile/lib/data/repository.dart — months are
+ * added by calendar rather than by 30 days, so "every month on the 5th"
+ * stays on the 5th.
+ */
+export function nextOccurrence(fromIso: string, repeat: TaskRepeat): string {
+  const [y, m, d] = fromIso.split("-").map(Number);
+  switch (repeat) {
+    case "daily":
+      return addUtcDays(y, m, d, 1);
+    case "weekly":
+      return addUtcDays(y, m, d, 7);
+    case "fortnightly":
+      return addUtcDays(y, m, d, 14);
+    case "monthly": {
+      const date = new Date(Date.UTC(y, m - 1, d));
+      date.setUTCMonth(date.getUTCMonth() + 1);
+      return date.toISOString().slice(0, 10);
+    }
+    case "none":
+      return fromIso;
+  }
+}
+
+function addUtcDays(y: number, m: number, d: number, days: number): string {
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }

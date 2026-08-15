@@ -371,7 +371,11 @@ service cloud.firestore {
         && request.resource.data.studentId == request.auth.uid
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
-        && request.resource.data.dueDate is string;
+        && request.resource.data.dueDate is string
+        // Absent (older client) or one of the five known cadences — never an
+        // arbitrary string a rolled-forward repeat check could later choke on.
+        && (!('repeat' in request.resource.data)
+          || request.resource.data.repeat in ['none', 'daily', 'weekly', 'fortnightly', 'monthly']);
       allow update: if isSignedIn()
         && resource.data.studentId == request.auth.uid
         && request.resource.data.studentId == request.auth.uid;

@@ -1,0 +1,32 @@
+.row {
+  display: flex;
+  align-items: stretch;
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-4) var(--space-2);
+  text-align: center;
+}
+
+.value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.divider {
+  width: 1px;
+  background: var(--color-border);
+  margin: var(--space-3) 0;
+}

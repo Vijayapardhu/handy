@@ -2,23 +2,22 @@ import { Flame, TrendingUp, TrendingDown, Minus } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useRecentAttendance } from "@/hooks/useRecentAttendance";
-import { calculateStreak } from "@/lib/calculations/dayStatus";
-import { ATTENDED_STATUSES, calculateAttendance, roundPercentage } from "@/lib/calculations/attendance";
+import { calculateMarkStreak, markAttendedHeld } from "@/lib/calculations/attendanceMarks";
+import { calculateAttendance, roundPercentage } from "@/lib/calculations/attendance";
 import { todayIso, addDaysIso } from "@/lib/date";
-import type { AttendanceRecordDoc } from "@/types/attendance";
+import type { AttendanceMarkDoc } from "@/types/attendanceMark";
 import styles from "./StreakCard.module.css";
 
-function weekPercentage(records: AttendanceRecordDoc[]): number | null {
-  const held = records.length;
+function weekPercentage(marks: AttendanceMarkDoc[]): number | null {
+  const { attended, held } = markAttendedHeld(marks);
   if (held === 0) return null;
-  const attended = records.filter((r) => ATTENDED_STATUSES.has(r.status)).length;
   return roundPercentage(calculateAttendance(attended, held));
 }
 
 /**
  * Home-page insight card: current day streak (no absences, worst-status-per-day
  * wins across all subjects) plus a this-week-vs-last-week % comparison. Purely
- * derived from the last 30 days of individual attendance records — a
+ * derived from the last 30 days of the student's own attendance marks — a
  * non-critical widget, so it fails quiet (renders nothing) rather than
  * blocking the rest of the home page on error.
  */
@@ -28,22 +27,22 @@ export function StreakCard() {
   if (recentQuery.isLoading) return <Skeleton height={96} />;
   if (recentQuery.isError || !recentQuery.data) return null;
 
-  const records = recentQuery.data;
-  const byDate = new Map<string, AttendanceRecordDoc[]>();
-  records.forEach((r) => {
-    const list = byDate.get(r.date) ?? [];
-    list.push(r);
-    byDate.set(r.date, list);
+  const marks = recentQuery.data;
+  const byDate = new Map<string, AttendanceMarkDoc[]>();
+  marks.forEach((m) => {
+    const list = byDate.get(m.date) ?? [];
+    list.push(m);
+    byDate.set(m.date, list);
   });
   const datesDesc = [...byDate.keys()].sort().reverse();
-  const streak = calculateStreak(datesDesc.map((date) => ({ date, records: byDate.get(date)! })));
+  const streak = calculateMarkStreak(datesDesc.map((date) => ({ date, marks: byDate.get(date)! })));
 
   const today = todayIso();
   const weekAgo = addDaysIso(today, -6);
   const twoWeeksAgo = addDaysIso(today, -13);
 
-  const thisWeekPct = weekPercentage(records.filter((r) => r.date >= weekAgo && r.date <= today));
-  const lastWeekPct = weekPercentage(records.filter((r) => r.date >= twoWeeksAgo && r.date < weekAgo));
+  const thisWeekPct = weekPercentage(marks.filter((m) => m.date >= weekAgo && m.date <= today));
+  const lastWeekPct = weekPercentage(marks.filter((m) => m.date >= twoWeeksAgo && m.date < weekAgo));
   const delta =
     thisWeekPct !== null && lastWeekPct !== null ? roundPercentage(thisWeekPct - lastWeekPct) : null;
 

@@ -1,8 +1,10 @@
 import { ClipboardList, MapPin } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { formatTime12h } from "@/lib/date";
+import { AttendanceMarkButtons } from "./AttendanceMarkButtons";
 import type { TimetableEntryDoc, TimetableEntryType } from "@/types/timetable";
 import type { SubjectDoc } from "@/types/subject";
+import type { MarkStatus } from "@/types/attendanceMark";
 import { TASK_KIND_LABELS, type TaskDoc } from "@/types/task";
 import styles from "./ClassCard.module.css";
 
@@ -18,11 +20,22 @@ export function ClassCard({
   entry,
   subject,
   tasks = [],
+  mark,
+  onMark,
+  markBusy,
 }: {
   entry: TimetableEntryDoc;
   subject?: SubjectDoc;
   /** Open tasks linked to this subject — "presentation in this class". */
   tasks?: TaskDoc[];
+  /**
+   * Self-marked attendance for this exact class, and the handlers to change
+   * it. Undefined (not just null) means "don't offer marking at all" — the
+   * caller only passes these for a class that has actually started, today.
+   */
+  mark?: MarkStatus | null;
+  onMark?: (status: MarkStatus | null) => void;
+  markBusy?: boolean;
 }) {
   if (entry.type === "break") {
     return (
@@ -63,6 +76,15 @@ export function ClassCard({
             <ClipboardList size={12} /> {TASK_KIND_LABELS[task.kind]}: {task.title}
           </p>
         ))}
+
+        {onMark && (
+          <AttendanceMarkButtons
+            current={mark ?? null}
+            busy={markBusy}
+            onMark={(status) => onMark(status)}
+            onClear={() => onMark(null)}
+          />
+        )}
       </div>
     </Card>
   );

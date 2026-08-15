@@ -10,6 +10,7 @@ export const ROUTES = {
   subjectPlanner: (id: string = ":subjectId") => `/subjects/${id}/planner`,
   timetable: "/timetable",
   tasks: "/tasks",
+  taskDetail: (id: string = ":taskId") => `/tasks/${id}`,
   leaves: "/leaves",
   leavePlanner: "/leaves/planner",
   leaveRequestNew: "/leaves/request",
@@ -27,4 +28,7 @@ export const ROUTES = {
   // Where an announcement notification lands. api/announce.js writes this path
   // into the notification's actionUrl, so the two have to agree.
   announcement: (id: string = ":announcementId") => `/announcements/${id}`,
+  faq: "/faq",
+  feedback: "/feedback",
+  about: "/about",
 } as const;

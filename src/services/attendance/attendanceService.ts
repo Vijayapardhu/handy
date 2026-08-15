@@ -1,15 +1,4 @@
-import {
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  runTransaction,
-  startAfter,
-  where,
-  type QueryDocumentSnapshot,
-} from "firebase/firestore";
+import { doc, getDoc, getDocs, query, runTransaction, where } from "firebase/firestore";
 import { db } from "@/app/config/firebase";
 import {
   attendanceCol,
@@ -35,52 +24,6 @@ export async function getAttendanceSummaryForSubject(
 ): Promise<AttendanceSummaryDoc | null> {
   const snapshot = await getDoc(doc(db, COLLECTIONS.attendanceSummaries, `${studentId}_${subjectId}`));
   return snapshot.exists() ? (snapshot.data() as AttendanceSummaryDoc) : null;
-}
-
-export interface AttendanceHistoryResultPage {
-  records: AttendanceRecordDoc[];
-  cursor: QueryDocumentSnapshot | null;
-}
-
-/** Paginated attendance history (SRS §24, §62 — never the whole history at once). */
-export async function getAttendanceHistoryPage(
-  studentId: string,
-  pageSize: number = 20,
-  cursor: QueryDocumentSnapshot | null = null,
-  subjectId?: string,
-): Promise<AttendanceHistoryResultPage> {
-  const clauses = [where("studentId", "==", studentId)];
-  if (subjectId) clauses.push(where("subjectId", "==", subjectId));
-  let q = query(attendanceCol(), ...clauses, orderBy("date", "desc"), limit(pageSize));
-  if (cursor) q = query(q, startAfter(cursor));
-
-  const snapshot = await getDocs(q);
-  return {
-    records: snapshot.docs.map((d) => d.data()),
-    cursor: snapshot.docs.at(-1) ?? null,
-  };
-}
-
-/**
- * Bounded range read for the calendar view (SRS §24) — one month at a time,
- * never the whole history. Reuses the same composite index as the paginated
- * list query (studentId [+ subjectId] + date).
- */
-export async function getAttendanceForRange(
-  studentId: string,
-  startDateIso: string,
-  endDateIso: string,
-  subjectId?: string,
-): Promise<AttendanceRecordDoc[]> {
-  const clauses = [
-    where("studentId", "==", studentId),
-    where("date", ">=", startDateIso),
-    where("date", "<=", endDateIso),
-  ];
-  if (subjectId) clauses.push(where("subjectId", "==", subjectId));
-  const q = query(attendanceCol(), ...clauses, orderBy("date", "asc"));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => d.data());
 }
 
 /**

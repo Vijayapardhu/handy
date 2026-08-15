@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useCreateTask } from "@/hooks/useTasks";
 import { todayIso } from "@/lib/date";
-import { TASK_KIND_LABELS, type TaskKind } from "@/types/task";
+import { TASK_KIND_LABELS, TASK_REPEAT_LABELS, type TaskKind, type TaskRepeat } from "@/types/task";
 import type { SubjectDoc } from "@/types/subject";
 import styles from "./TaskForm.module.css";
 
 const KINDS = Object.keys(TASK_KIND_LABELS) as TaskKind[];
+const REPEATS = Object.keys(TASK_REPEAT_LABELS) as TaskRepeat[];
 
 /**
  * Quick add. Only a title and a date are required — anything that makes a
@@ -21,11 +22,12 @@ export function TaskForm({ subjects, onClose }: { subjects: SubjectDoc[]; onClos
   const [dueTime, setDueTime] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [notes, setNotes] = useState("");
+  const [repeat, setRepeat] = useState<TaskRepeat>("none");
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!title.trim()) return;
-    await createTask.mutateAsync({ title, kind, dueDate, dueTime, subjectId, notes });
+    await createTask.mutateAsync({ title, kind, dueDate, dueTime, subjectId, notes, repeat });
     onClose();
   }
 
@@ -95,6 +97,17 @@ export function TaskForm({ subjects, onClose }: { subjects: SubjectDoc[]; onClos
             </select>
           </label>
         )}
+
+        <label className={styles.field}>
+          <span className={styles.label}>Repeat</span>
+          <select className={styles.input} value={repeat} onChange={(e) => setRepeat(e.target.value as TaskRepeat)}>
+            {REPEATS.map((r) => (
+              <option key={r} value={r}>
+                {TASK_REPEAT_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <textarea
           className={styles.textarea}

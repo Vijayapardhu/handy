@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { addWeeks, endOfWeek, format, startOfWeek, subWeeks } from "date-fns";
-import { getAttendanceForRange } from "@/services/attendance/attendanceService";
-import { ATTENDED_STATUSES, calculateAttendance, roundPercentage } from "@/lib/calculations/attendance";
+import { getMarksForRange } from "@/services/attendance/attendanceMarkService";
+import { markAttendedHeld } from "@/lib/calculations/attendanceMarks";
+import { calculateAttendance, roundPercentage } from "@/lib/calculations/attendance";
 import { useAuth } from "@/app/providers/AuthProvider";
 import type { TrendPoint } from "@/components/charts/TrendChart";
 
@@ -18,9 +19,9 @@ export function useSubjectTrend(subjectId: string | undefined, weeks: number = 8
   const endIso = format(today, "yyyy-MM-dd");
 
   return useQuery({
-    queryKey: ["subjectTrend", student?.id, subjectId, weeks, endIso],
+    queryKey: ["attendanceMarks", "trend", student?.id, subjectId, weeks, endIso],
     queryFn: async (): Promise<TrendPoint[]> => {
-      const records = await getAttendanceForRange(student!.id, startIso, endIso, subjectId);
+      const marks = await getMarksForRange(student!.id, startIso, endIso, subjectId);
 
       const buckets: TrendPoint[] = [];
       for (let i = 0; i < weeks; i++) {
@@ -29,9 +30,8 @@ export function useSubjectTrend(subjectId: string | undefined, weeks: number = 8
         const weekStartIso = format(weekStart, "yyyy-MM-dd");
         const weekEndIso = format(weekEnd, "yyyy-MM-dd");
 
-        const weekRecords = records.filter((r) => r.date >= weekStartIso && r.date <= weekEndIso);
-        const held = weekRecords.length;
-        const attended = weekRecords.filter((r) => ATTENDED_STATUSES.has(r.status)).length;
+        const weekMarks = marks.filter((m) => m.date >= weekStartIso && m.date <= weekEndIso);
+        const { attended, held } = markAttendedHeld(weekMarks);
 
         buckets.push({
           label: format(weekStart, "d MMM"),

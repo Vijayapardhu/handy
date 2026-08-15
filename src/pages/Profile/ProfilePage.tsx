@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   User,
@@ -11,6 +12,7 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  BellOff,
   Megaphone,
   Smartphone,
   Download,
@@ -25,16 +27,33 @@ import { useClassRepRooms } from "@/hooks/useClassRep";
 import { useSubjectsWithAttendance } from "@/hooks/useSubjects";
 import { useLeaveRequests } from "@/hooks/useLeaves";
 import { aggregateAttendance } from "@/lib/calculations/attendance";
+import { updateNotifyNewData } from "@/services/students/studentService";
 import { ROUTES } from "@/constants/routes";
 import styles from "./ProfilePage.module.css";
 
 export function ProfilePage() {
-  const { student, signOut } = useAuth();
+  const { student, user, signOut, refreshStudent } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const subjectsQuery = useSubjectsWithAttendance();
   const leavesQuery = useLeaveRequests();
   const classRepRooms = useClassRepRooms();
+  const [notifyBusy, setNotifyBusy] = useState(false);
+
+  // Missing (undefined) reads as enabled — matches every other student doc
+  // written before this field existed.
+  const notifyEnabled = student?.notifyNewData !== false;
+
+  async function toggleNotifyNewData() {
+    if (!user || notifyBusy) return;
+    setNotifyBusy(true);
+    try {
+      await updateNotifyNewData(user.uid, !notifyEnabled);
+      await refreshStudent();
+    } finally {
+      setNotifyBusy(false);
+    }
+  }
 
   const overall = subjectsQuery.data
     ? aggregateAttendance(subjectsQuery.data.map((s) => ({ attended: s.attended, held: s.held })))
@@ -159,13 +178,37 @@ export function ProfilePage() {
             <span className={styles.themeToggleThumb}>{theme === "dark" ? <Moon size={12} /> : <Sun size={12} />}</span>
           </button>
         </div>
+
+        <div className={styles.preferenceRow}>
+          <span className={styles.linkIcon}>{notifyEnabled ? <Bell size={16} /> : <BellOff size={16} />}</span>
+          <span className={styles.linkBody}>
+            <span className={styles.linkTitle}>Sync Alerts</span>
+            <span className={styles.linkSubtitle}>
+              {notifyEnabled ? "On — notified when new data syncs in" : "Off — no ping when a sync lands"}
+            </span>
+          </span>
+          <button
+            type="button"
+            className={styles.themeToggle}
+            data-on={notifyEnabled}
+            role="switch"
+            aria-checked={notifyEnabled}
+            aria-label="Toggle sync alerts"
+            disabled={notifyBusy}
+            onClick={toggleNotifyNewData}
+          >
+            <span className={styles.themeToggleThumb}>
+              {notifyEnabled ? <Bell size={12} /> : <BellOff size={12} />}
+            </span>
+          </button>
+        </div>
       </Card>
 
       <p className={styles.sectionTitle}>Support & More</p>
       <Card padded={false} className={styles.linkGroup}>
-        <ProfileLink to="#" icon={HelpCircle} title="Help & FAQ" subtitle="Get help and find answers" />
-        <ProfileLink to="#" icon={MessageSquare} title="Feedback" subtitle="Share your feedback with us" />
-        <ProfileLink to="#" icon={Info} title="About Handy" subtitle="Version 0.1.0" />
+        <ProfileLink to={ROUTES.faq} icon={HelpCircle} title="Help & FAQ" subtitle="Get help and find answers" />
+        <ProfileLink to={ROUTES.feedback} icon={MessageSquare} title="Feedback" subtitle="Share your feedback with us" />
+        <ProfileLink to={ROUTES.about} icon={Info} title="About Handy" subtitle="Version 0.1.0" />
       </Card>
 
       {/* Straight at the file, not at the releases page — one tap starts the

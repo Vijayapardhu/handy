@@ -91,7 +91,7 @@ export function TasksPage() {
               key={task.id}
               task={task}
               subjectName={task.subjectId ? subjectsMap.bySubjectId.get(task.subjectId)?.name : undefined}
-              onToggle={(isDone) => setDone.mutate({ taskId: task.id, done: isDone })}
+              onToggle={(isDone) => setDone.mutate({ taskId: task.id, done: isDone, task })}
               onDelete={() => removeTask.mutate(task.id)}
             />
           ))}
@@ -129,7 +129,7 @@ export function TasksPage() {
                 subjectName={
                   task.subjectId ? subjectsMap.bySubjectId.get(task.subjectId)?.name : undefined
                 }
-                onToggle={(isDone) => setDone.mutate({ taskId: task.id, done: isDone })}
+                onToggle={(isDone) => setDone.mutate({ taskId: task.id, done: isDone, task })}
                 onDelete={() => removeTask.mutate(task.id)}
               />
             ))}

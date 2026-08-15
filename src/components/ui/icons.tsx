@@ -1,6 +1,7 @@
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
   Alert02Icon,
+  ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Attachment01Icon,
@@ -64,6 +65,7 @@ import {
   PuzzleIcon,
   Refresh01Icon,
   Rocket01Icon,
+  Search01Icon,
   Shield01Icon,
   Shield02Icon,
   SmartPhone01Icon,
@@ -126,6 +128,7 @@ export const ArrowLeft = icon(ArrowLeft01Icon, "ArrowLeft");
 export const ArrowRight = icon(ArrowRight01Icon, "ArrowRight");
 export const ChevronLeft = icon(ArrowLeft01Icon, "ChevronLeft");
 export const ChevronRight = icon(ArrowRight01Icon, "ChevronRight");
+export const ChevronDown = icon(ArrowDown01Icon, "ChevronDown");
 export const Menu = icon(Menu01Icon, "Menu");
 export const Home = icon(Home01Icon, "Home");
 export const X = icon(Cancel01Icon, "X");
@@ -157,6 +160,7 @@ export const Moon = icon(Moon02Icon, "Moon");
 export const LogOut = icon(Logout01Icon, "LogOut");
 export const KeyRound = icon(Key01Icon, "KeyRound");
 export const MapPin = icon(Location01Icon, "MapPin");
+export const Search = icon(Search01Icon, "Search");
 
 /* Meaning ------------------------------------------------------------------ */
 export const AlertTriangle = icon(Alert02Icon, "AlertTriangle");

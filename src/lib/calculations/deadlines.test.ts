@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDeadline, getDueSoon, sortByUrgency } from "./deadlines";
+import { getDeadline, getDueSoon, nextOccurrence, sortByUrgency } from "./deadlines";
 import type { TaskDoc } from "@/types/task";
 
 const TODAY = "2026-08-15";
@@ -18,6 +18,12 @@ function task(id: string, dueDate: string, extra: Partial<TaskDoc> = {}): TaskDo
     completedAt: null,
     createdAt: TODAY,
     updatedAt: TODAY,
+    subtasks: [],
+    repeat: "none",
+    attachDay: null,
+    attachTime: null,
+    attachLabel: null,
+    leadDays: null,
     ...extra,
   };
 }
@@ -97,5 +103,31 @@ describe("getDueSoon", () => {
       TODAY,
     );
     expect(soon.map((t) => t.id)).toEqual(["overdue", "today", "in3"]);
+  });
+});
+
+describe("nextOccurrence", () => {
+  it("adds the right number of days for each non-monthly cadence", () => {
+    expect(nextOccurrence("2026-08-15", "daily")).toBe("2026-08-16");
+    expect(nextOccurrence("2026-08-15", "weekly")).toBe("2026-08-22");
+    expect(nextOccurrence("2026-08-15", "fortnightly")).toBe("2026-08-29");
+  });
+
+  it("leaves a non-repeating date untouched", () => {
+    expect(nextOccurrence("2026-08-15", "none")).toBe("2026-08-15");
+  });
+
+  it("adds a calendar month, keeping the same day of month", () => {
+    expect(nextOccurrence("2026-08-05", "monthly")).toBe("2026-09-05");
+  });
+
+  it("crosses a year boundary", () => {
+    expect(nextOccurrence("2026-12-20", "monthly")).toBe("2027-01-20");
+  });
+
+  it("clamps a monthly rollover when the next month is shorter (Jan 31 -> Feb 28)", () => {
+    // JS Date rolls Feb 31 forward into March; this documents that behavior
+    // rather than hiding it, matching mobile's plain DateTime(year, month+1, day).
+    expect(nextOccurrence("2026-01-31", "monthly")).toBe("2026-03-03");
   });
 });

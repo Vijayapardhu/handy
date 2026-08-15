@@ -1,0 +1,273 @@
+.headerCard {
+  margin-bottom: var(--space-5);
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.check {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: transparent;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.checked {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #fff;
+}
+
+.headerBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.titleDone {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-faint);
+}
+
+.countdown {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.overdue,
+.today {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.tomorrow,
+.soon {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.dueLine {
+  margin-top: var(--space-3);
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.notes {
+  margin-top: var(--space-2);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  margin: var(--space-5) 0 var(--space-2);
+}
+
+.section {
+  margin-bottom: var(--space-2);
+}
+
+.progressBar {
+  margin-bottom: 6px;
+}
+
+.progressLabel {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.subtaskList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.subtaskRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.subtaskCheck {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: transparent;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.subtaskTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+}
+
+.subtaskDone {
+  text-decoration: line-through;
+  color: var(--color-text-faint);
+}
+
+.subtaskDelete {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.subtaskDelete:hover {
+  color: var(--color-danger);
+}
+
+.addSubtaskRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.addSubtaskInput {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  padding: var(--space-3);
+  font-size: 13.5px;
+  color: var(--color-text);
+}
+
+.addSubtaskInput:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.chipCard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.chip {
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.chipActive {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.attachedRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
+.plannerHint {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: var(--space-3);
+}
+
+.plannerToggle {
+  align-self: flex-start;
+}
+
+.planner {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.plannerDayLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-faint);
+  margin-bottom: 6px;
+}
+
+.plannerSlots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.slotChip {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.slotFree {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+
+.deleteButton {
+  margin-top: var(--space-6);
+}

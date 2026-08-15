@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/Button";
 import { useActiveTimetable } from "@/hooks/useTimetable";
 import { useActiveSubjectsMap } from "@/hooks/useActiveSubjectsMap";
 import { useTasks } from "@/hooks/useTasks";
+import { useMarksForRange, useSetAttendanceMark } from "@/hooks/useAttendanceMarks";
 import { getEntriesForDay, getFreePeriods } from "@/lib/calculations/timetable";
-import { addDaysIso, dayOfWeekFromIso, formatDisplayDate, todayIso } from "@/lib/date";
+import { addDaysIso, dayOfWeekFromIso, formatDisplayDate, nowTimeHHmm, todayIso } from "@/lib/date";
+import type { MarkStatus } from "@/types/attendanceMark";
 import styles from "./TimetablePage.module.css";
 
 function weekDates(anchor: string): string[] {
@@ -32,6 +34,13 @@ export function TimetablePage() {
   const timetableQuery = useActiveTimetable(selectedDate);
   const subjectsMap = useActiveSubjectsMap();
   const tasksQuery = useTasks();
+  // Marking only ever applies to today (see AttendanceMarkButtons) — a
+  // browsed past/future day never fetches marks at all, since there is
+  // nothing to show or do with them here; Attendance History is where a past
+  // mark is reviewed.
+  const isToday = selectedDate === today;
+  const marksQuery = useMarksForRange(selectedDate, selectedDate, undefined, isToday);
+  const { set: setMark, clear: clearMark } = useSetAttendanceMark();
 
   const dates = useMemo(() => weekDates(selectedDate), [selectedDate]);
   const dayEntries = useMemo(() => {
@@ -66,6 +75,15 @@ export function TimetablePage() {
     }
     return bySubject;
   }, [tasksQuery.data]);
+
+  /** Keyed the same way a mark's own doc id is built — subjectId + startTime, date is already fixed to "today". */
+  const marksByKey = useMemo(() => {
+    const byKey = new Map<string, MarkStatus>();
+    for (const m of marksQuery.data ?? []) byKey.set(`${m.subjectId}_${m.startTime}`, m.status);
+    return byKey;
+  }, [marksQuery.data]);
+
+  const currentTime = nowTimeHHmm();
 
   const isViewingPast = selectedDate !== today;
 
@@ -156,18 +174,37 @@ export function TimetablePage() {
         // Wrapper exists so the day's classes can lay out in columns on wider
         // screens; on mobile it's still a plain stack.
         <div className={styles.classList}>
-          {dayItems.map((item) =>
-            item.kind === "class" ? (
+          {dayItems.map((item) => {
+            if (item.kind === "free") {
+              return <FreePeriodRow key={`free-${item.free.periodNo}`} free={item.free} />;
+            }
+
+            // Marking is only ever offered for a class that has actually
+            // started, today — marking a class that hasn't happened yet is a
+            // guess, not a record (mirrors mobile's Today-timeline rule).
+            const hasStarted = isToday && item.entry.startTime <= currentTime;
+            const key = `${item.entry.subjectId}_${item.entry.startTime}`;
+
+            return (
               <ClassCard
                 key={item.entry.id}
                 entry={item.entry}
                 subject={subjectsMap.bySubjectId.get(item.entry.subjectId)}
                 tasks={openTasksBySubject.get(item.entry.subjectId) ?? []}
+                mark={hasStarted ? (marksByKey.get(key) ?? null) : undefined}
+                markBusy={setMark.isPending || clearMark.isPending}
+                onMark={
+                  hasStarted
+                    ? (status) => {
+                        const vars = { subjectId: item.entry.subjectId, date: selectedDate, startTime: item.entry.startTime };
+                        if (status === null) clearMark.mutate(vars);
+                        else setMark.mutate({ ...vars, status });
+                      }
+                    : undefined
+                }
               />
-            ) : (
-              <FreePeriodRow key={`free-${item.free.periodNo}`} free={item.free} />
-            ),
-          )}
+            );
+          })}
         </div>
       )}
 

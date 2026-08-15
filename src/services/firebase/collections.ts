@@ -11,11 +11,14 @@ import type { StudentDoc } from "@/types/student";
 import type { SubjectDoc } from "@/types/subject";
 import type { TimetableVersionDoc, TimetableEntryDoc } from "@/types/timetable";
 import type { AttendanceRecordDoc, AttendanceCorrectionDoc, AttendanceSummaryDoc } from "@/types/attendance";
+import type { AttendanceMarkDoc } from "@/types/attendanceMark";
 import type { LeaveRequestDoc } from "@/types/leave";
 import type { NotificationDoc } from "@/types/notification";
 import type { CollegeConfigDoc } from "@/types/config";
 import type { TimetableChangeReportDoc } from "@/types/timetableChangeReport";
 import type { TaskDoc } from "@/types/task";
+import type { FaqDoc } from "@/types/faq";
+import type { FeedbackDoc } from "@/types/feedback";
 import type {
   AnnouncementDoc,
   ClassGroupMemberDoc,
@@ -50,6 +53,7 @@ export const COLLECTIONS = {
   timetableVersions: "timetableVersions",
   timetableEntries: "timetableEntries",
   attendance: "attendance",
+  attendanceMarks: "attendanceMarks",
   attendanceSummaries: "attendanceSummaries",
   attendanceCorrections: "attendanceCorrections",
   leaveRequests: "leaveRequests",
@@ -61,6 +65,8 @@ export const COLLECTIONS = {
   announcements: "announcements",
   classGroupMembers: "classGroupMembers",
   classNotes: "classNotes",
+  faqs: "faqs",
+  feedback: "feedback",
 } as const;
 
 export const studentsCol = () => typedCollection<StudentDoc>(COLLECTIONS.students);
@@ -70,6 +76,7 @@ export const timetableVersionsCol = () =>
 export const timetableEntriesCol = () =>
   typedCollection<TimetableEntryDoc>(COLLECTIONS.timetableEntries);
 export const attendanceCol = () => typedCollection<AttendanceRecordDoc>(COLLECTIONS.attendance);
+export const attendanceMarksCol = () => typedCollection<AttendanceMarkDoc>(COLLECTIONS.attendanceMarks);
 export const attendanceSummariesCol = () =>
   typedCollection<AttendanceSummaryDoc>(COLLECTIONS.attendanceSummaries);
 export const attendanceCorrectionsCol = () =>
@@ -85,6 +92,8 @@ export const announcementsCol = () => typedCollection<AnnouncementDoc>(COLLECTIO
 export const classGroupMembersCol = () =>
   typedCollection<ClassGroupMemberDoc>(COLLECTIONS.classGroupMembers);
 export const classNotesCol = () => typedCollection<ClassNoteDoc>(COLLECTIONS.classNotes);
+export const faqsCol = () => typedCollection<FaqDoc>(COLLECTIONS.faqs);
+export const feedbackCol = () => typedCollection<FeedbackDoc>(COLLECTIONS.feedback);
 
 export const studentDocRef = (studentId: string) =>
   doc(db, COLLECTIONS.students, studentId).withConverter(makeConverter<StudentDoc>());

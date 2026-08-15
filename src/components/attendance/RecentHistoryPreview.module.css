@@ -57,13 +57,9 @@
   color: var(--color-danger);
   background: var(--color-danger-bg);
 }
-.leave {
+.cancelled {
   color: var(--color-warning);
   background: var(--color-warning-bg);
-}
-.excused {
-  color: var(--color-info);
-  background: var(--color-info-bg);
 }
 
 .link {

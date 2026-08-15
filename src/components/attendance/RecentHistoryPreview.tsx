@@ -1,21 +1,20 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle2, XCircle, CalendarOff, ShieldCheck, History } from "@/components/ui/icons";
+import { ArrowRight, CheckCircle2, XCircle, CalendarOff, History } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAttendanceHistory } from "@/hooks/useAttendanceHistory";
 import { useActiveSubjectsMap } from "@/hooks/useActiveSubjectsMap";
 import { formatShortDate } from "@/lib/date";
-import type { AttendanceStatus } from "@/types/attendance";
+import type { MarkStatus } from "@/types/attendanceMark";
 import { cn } from "@/lib/utils/cn";
 import { ROUTES } from "@/constants/routes";
 import styles from "./RecentHistoryPreview.module.css";
 
-const STATUS_ICON: Record<AttendanceStatus, typeof CheckCircle2> = {
+const STATUS_ICON: Record<MarkStatus, typeof CheckCircle2> = {
   present: CheckCircle2,
   absent: XCircle,
-  leave: CalendarOff,
-  excused: ShieldCheck,
+  cancelled: CalendarOff,
 };
 
 const PREVIEW_LIMIT = 8;

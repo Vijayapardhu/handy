@@ -22,6 +22,9 @@ const SubjectDetailPage = lazyPage(() =>
 );
 const TimetablePage = lazyPage(() => import("@/pages/Timetable/TimetablePage").then((m) => ({ default: m.TimetablePage })));
 const TasksPage = lazyPage(() => import("@/pages/Tasks/TasksPage").then((m) => ({ default: m.TasksPage })));
+const TaskDetailPage = lazyPage(() =>
+  import("@/pages/TaskDetail/TaskDetailPage").then((m) => ({ default: m.TaskDetailPage })),
+);
 const LeavesPage = lazyPage(() => import("@/pages/Leaves/LeavesPage").then((m) => ({ default: m.LeavesPage })));
 const LeavePlannerPage = lazyPage(() =>
   import("@/pages/LeavePlanner/LeavePlannerPage").then((m) => ({ default: m.LeavePlannerPage })),
@@ -54,6 +57,9 @@ const AnnouncePage = lazyPage(() =>
 const AnnouncementPage = lazyPage(() =>
   import("@/pages/Announcement/AnnouncementPage").then((m) => ({ default: m.AnnouncementPage })),
 );
+const FaqPage = lazyPage(() => import("@/pages/Faq/FaqPage").then((m) => ({ default: m.FaqPage })));
+const FeedbackPage = lazyPage(() => import("@/pages/Feedback/FeedbackPage").then((m) => ({ default: m.FeedbackPage })));
+const AboutPage = lazyPage(() => import("@/pages/About/AboutPage").then((m) => ({ default: m.AboutPage })));
 const NotFoundPage = lazyPage(() => import("@/pages/NotFound/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 
 const router = createBrowserRouter([
@@ -78,6 +84,7 @@ const router = createBrowserRouter([
               { path: ROUTES.subjectPlanner(), element: <AttendancePlannerPage /> },
               { path: ROUTES.timetable, element: <TimetablePage /> },
               { path: ROUTES.tasks, element: <TasksPage /> },
+              { path: ROUTES.taskDetail(), element: <TaskDetailPage /> },
               { path: ROUTES.leaves, element: <LeavesPage /> },
               { path: ROUTES.leavePlanner, element: <LeavePlannerPage /> },
               { path: ROUTES.leaveRequestNew, element: <LeaveRequestPage /> },
@@ -90,6 +97,9 @@ const router = createBrowserRouter([
               { path: ROUTES.notifications, element: <NotificationsPage /> },
               { path: ROUTES.announce, element: <AnnouncePage /> },
               { path: ROUTES.announcement(), element: <AnnouncementPage /> },
+              { path: ROUTES.faq, element: <FaqPage /> },
+              { path: ROUTES.feedback, element: <FeedbackPage /> },
+              { path: ROUTES.about, element: <AboutPage /> },
               { path: "*", element: <NotFoundPage /> },
             ],
           },

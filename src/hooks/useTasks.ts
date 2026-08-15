@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { createTask, deleteTask, getTasks, setTaskDone, type NewTask } from "@/services/tasks/taskService";
+import {
+  createTask,
+  deleteTask,
+  getTasks,
+  setTaskDone,
+  updateTask,
+  type NewTask,
+  type TaskEdits,
+} from "@/services/tasks/taskService";
+import type { TaskDoc } from "@/types/task";
 
 const KEY = ["tasks"];
 
@@ -13,7 +22,7 @@ export function useTasks() {
   });
 }
 
-/** All three mutations invalidate the same key, so every screen showing tasks stays in step. */
+/** All mutations invalidate the same key, so every screen showing tasks stays in step. */
 function useTaskMutation<TArgs>(fn: (args: TArgs) => Promise<unknown>) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -27,9 +36,15 @@ export function useCreateTask() {
   return useTaskMutation((task: NewTask) => createTask(student!.id, task));
 }
 
+export function useUpdateTask() {
+  return useTaskMutation(({ taskId, edits }: { taskId: string; edits: TaskEdits }) => updateTask(taskId, edits));
+}
+
+/** `task` is the full doc when known — required to roll a repeating task forward on completion. */
 export function useSetTaskDone() {
-  return useTaskMutation(({ taskId, done }: { taskId: string; done: boolean }) =>
-    setTaskDone(taskId, done),
+  const { student } = useAuth();
+  return useTaskMutation(({ taskId, done, task }: { taskId: string; done: boolean; task?: TaskDoc }) =>
+    setTaskDone(student!.id, taskId, done, task),
   );
 }
 

@@ -36,6 +36,15 @@
 .body {
   flex: 1;
   min-width: 0;
+  display: block;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  color: var(--color-text-faint);
 }
 
 .title {

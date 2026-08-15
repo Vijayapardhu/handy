@@ -82,14 +82,13 @@
   background: var(--status-critical-bg);
   color: var(--status-critical);
 }
-.day[data-status="leave"] {
-  background: var(--status-average-bg);
-  color: var(--status-average);
-}
-.day[data-status="excused"] {
-  background: var(--color-info-bg);
-  color: var(--color-info);
-}
+/*
+ * No .day[data-status="cancelled"] rule: dominantMarkStatus() deliberately
+ * never returns "cancelled" for a whole day (see attendanceMarks.ts) — a
+ * cancelled-only day has no opinion about attendance, the same as a day with
+ * no marks at all, so it always falls through to the unstyled "none" state.
+ * A cancelled mark is still visible per-class in the detail list below.
+ */
 
 .today {
   box-shadow: 0 0 0 1.5px var(--color-primary);
@@ -125,12 +124,6 @@
 }
 .legendDot[data-status="absent"] {
   background: var(--status-critical);
-}
-.legendDot[data-status="leave"] {
-  background: var(--status-average);
-}
-.legendDot[data-status="excused"] {
-  background: var(--color-info);
 }
 
 .detail {
@@ -180,11 +173,7 @@
   color: var(--status-critical);
   background: var(--status-critical-bg);
 }
-.detailStatus[data-status="leave"] {
-  color: var(--status-average);
-  background: var(--status-average-bg);
-}
-.detailStatus[data-status="excused"] {
-  color: var(--color-info);
-  background: var(--color-info-bg);
+.detailStatus[data-status="cancelled"] {
+  color: var(--status-na);
+  background: var(--status-na-bg);
 }

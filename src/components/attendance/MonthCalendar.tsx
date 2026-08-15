@@ -1,29 +1,30 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, CalendarOff, ShieldCheck } from "@/components/ui/icons";
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, CalendarOff } from "@/components/ui/icons";
 import { addMonths, format, getDaysInMonth, startOfMonth, subMonths } from "date-fns";
 import { cn } from "@/lib/utils/cn";
-import { dominantStatus } from "@/lib/calculations/dayStatus";
-import type { AttendanceRecordDoc, AttendanceStatus } from "@/types/attendance";
+import { dominantMarkStatus } from "@/lib/calculations/attendanceMarks";
+import type { AttendanceMarkDoc, MarkStatus } from "@/types/attendanceMark";
 import styles from "./MonthCalendar.module.css";
 
 const WEEKDAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
 
-const STATUS_ICON: Record<AttendanceStatus, typeof CheckCircle2> = {
+const STATUS_ICON: Record<MarkStatus, typeof CheckCircle2> = {
   present: CheckCircle2,
   absent: XCircle,
-  leave: CalendarOff,
-  excused: ShieldCheck,
+  cancelled: CalendarOff,
 };
 
-const STATUS_LABEL: Record<AttendanceStatus, string> = {
+/** Only present/absent appear here — the two colours that can ever actually appear on a day cell. See below. */
+const LEGEND_STATUSES: MarkStatus[] = ["present", "absent"];
+
+const STATUS_LABEL: Record<MarkStatus, string> = {
   present: "Present",
-  absent: "Absent",
-  leave: "Leave",
-  excused: "Excused",
+  absent: "Missed",
+  cancelled: "Cancelled",
 };
 
 interface MonthCalendarProps {
-  records: AttendanceRecordDoc[];
+  records: AttendanceMarkDoc[];
   subjectNameById: Map<string, string>;
   month: Date;
   onMonthChange: (month: Date) => void;
@@ -33,7 +34,7 @@ export function MonthCalendar({ records, subjectNameById, month, onMonthChange }
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const recordsByDate = useMemo(() => {
-    const map = new Map<string, AttendanceRecordDoc[]>();
+    const map = new Map<string, AttendanceMarkDoc[]>();
     records.forEach((r) => {
       const list = map.get(r.date) ?? [];
       list.push(r);
@@ -85,7 +86,7 @@ export function MonthCalendar({ records, subjectNameById, month, onMonthChange }
         {cells.map((cell, i) => {
           if (!cell.dateIso) return <span key={`blank-${i}`} className={styles.blank} />;
           const dayRecords = recordsByDate.get(cell.dateIso) ?? [];
-          const status = dominantStatus(dayRecords);
+          const status = dominantMarkStatus(dayRecords);
           const isToday = cell.dateIso === today;
           const isSelected = cell.dateIso === selectedDate;
           const isFuture = cell.dateIso > today;
@@ -104,7 +105,7 @@ export function MonthCalendar({ records, subjectNameById, month, onMonthChange }
       </div>
 
       <div className={styles.legend}>
-        {(Object.keys(STATUS_LABEL) as AttendanceStatus[]).map((status) => (
+        {LEGEND_STATUSES.map((status) => (
           <span key={status} className={styles.legendItem}>
             <span className={styles.legendDot} data-status={status} />
             {STATUS_LABEL[status]}

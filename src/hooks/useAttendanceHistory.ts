@@ -1,52 +1,55 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { QueryDocumentSnapshot } from "firebase/firestore";
-import { getAttendanceHistoryPage } from "@/services/attendance/attendanceService";
+import { getAllMarks } from "@/services/attendance/attendanceMarkService";
 import { useAuth } from "@/app/providers/AuthProvider";
-import type { AttendanceRecordDoc } from "@/types/attendance";
 
 const PAGE_SIZE = 20;
 
-/** Cursor-paginated attendance history (SRS §24, §62). Each page is appended client-side. */
+/**
+ * The student's whole self-marked attendance history, newest first,
+ * paginated client-side. A single, unbounded read rather than Firestore
+ * cursor pagination — marks are self-reported and naturally low-volume (one
+ * per class a student actually bothered to tap), the same reasoning mobile's
+ * own AttendanceHistoryScreen uses for streaming the full set at once.
+ *
+ * Was previously cursor-paginated over `attendance` (AttendanceRecordDoc),
+ * which is admin-only and never populated for a real student — this hook now
+ * reads the collection that actually has data in it. See attendanceMarks.ts.
+ */
 export function useAttendanceHistory(subjectId?: string) {
   const { student } = useAuth();
   const queryClient = useQueryClient();
-  const [pages, setPages] = useState<AttendanceRecordDoc[][]>([]);
-  const [cursor, setCursor] = useState<QueryDocumentSnapshot | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  const initialLoad = useQuery({
-    queryKey: ["attendanceHistory", student?.id, subjectId],
-    queryFn: async () => {
-      const result = await getAttendanceHistoryPage(student!.id, PAGE_SIZE, null, subjectId);
-      setPages([result.records]);
-      setCursor(result.cursor);
-      setHasMore(result.records.length === PAGE_SIZE);
-      return result;
-    },
+  const query = useQuery({
+    queryKey: ["attendanceMarks", "all", student?.id],
+    queryFn: () => getAllMarks(student!.id),
     enabled: Boolean(student),
   });
 
-  async function loadMore() {
-    if (!student || !hasMore || !cursor) return;
-    const result = await getAttendanceHistoryPage(student.id, PAGE_SIZE, cursor, subjectId);
-    setPages((prev) => [...prev, result.records]);
-    setCursor(result.cursor);
-    setHasMore(result.records.length === PAGE_SIZE);
+  const sorted = useMemo(() => {
+    const all = query.data ?? [];
+    const filtered = subjectId ? all.filter((m) => m.subjectId === subjectId) : all;
+    return [...filtered].sort((a, b) => (a.date === b.date ? b.startTime.localeCompare(a.startTime) : b.date.localeCompare(a.date)));
+  }, [query.data, subjectId]);
+
+  const records = sorted.slice(0, visibleCount);
+  const hasMore = visibleCount < sorted.length;
+
+  function loadMore() {
+    setVisibleCount((v) => v + PAGE_SIZE);
   }
 
   function reset() {
-    setPages([]);
-    setCursor(null);
-    setHasMore(true);
-    queryClient.invalidateQueries({ queryKey: ["attendanceHistory", student?.id, subjectId] });
+    setVisibleCount(PAGE_SIZE);
+    queryClient.invalidateQueries({ queryKey: ["attendanceMarks", "all", student?.id] });
   }
 
   return {
-    records: pages.flat(),
-    isLoading: initialLoad.isLoading,
-    isError: initialLoad.isError,
-    error: initialLoad.error,
+    records,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
     hasMore,
     loadMore,
     reset,
