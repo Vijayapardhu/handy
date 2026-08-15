@@ -12,6 +12,7 @@ import 'data/reminders.dart';
 import 'data/study_timer.dart';
 import 'data/settings.dart';
 import 'data/repository.dart';
+import 'data/portal_auth.dart';
 import 'data/updates.dart';
 import 'firebase_options.dart';
 import 'screens/home_shell.dart';
@@ -25,6 +26,7 @@ late final Reminders reminders;
 late final Push push;
 late final StudyTimer studyTimer;
 late final Updates updates;
+late final PortalAuth portalAuth;
 final settings = AppSettings();
 
 /// Global so that routes pushed onto the root Navigator can reach it: an
@@ -49,6 +51,7 @@ Future<void> main() async {
 
   repository = Repository(FirebaseFirestore.instance, FirebaseAuth.instance);
   updates = Updates(FirebaseFirestore.instance);
+  portalAuth = PortalAuth();
   final localNotifications = FlutterLocalNotificationsPlugin();
   reminders = Reminders(localNotifications);
   studyTimer = StudyTimer(localNotifications);

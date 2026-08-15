@@ -293,6 +293,10 @@ class ProfileScreen extends StatelessWidget {
             ),
             onPressed: () {
               Navigator.of(dialogContext).pop();
+              // Drops the saved college portal password too. Signing out and
+              // leaving a credential for someone else's system in the keystore
+              // is not signing out.
+              portalAuth.forget();
               repository.signOut();
             },
             child: const Text('Sign out'),

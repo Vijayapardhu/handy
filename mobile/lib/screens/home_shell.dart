@@ -65,6 +65,16 @@ class _HomeShellState extends State<HomeShell> {
       showUpdateSheet(context, update);
     });
 
+    // AEC/ACET students have no extension syncing for them on a laptop, so the
+    // phone is the only thing that can refresh their attendance. Runs with the
+    // credential held in the device keystore, silently: someone who opened
+    // Handy to check a percentage did not ask to be told the network is slow.
+    // A success reloads, because the numbers on screen just went stale.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!await portalAuth.hasSavedCredential) return;
+      if (await portalAuth.resync() && mounted) appState.load();
+    });
+
     // Taps on a widget arrive as a URI. Handled here rather than in main()
     // because acting on one means changing tab and pushing a sheet, and this
     // is the first place with a tab to change.

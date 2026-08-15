@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../data/portal_auth.dart';
 import '../data/repository.dart';
+import '../logic/campus.dart';
 import '../main.dart';
 import '../theme.dart';
 import '../widgets/app_icon.dart';
@@ -30,6 +32,27 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _busy = false;
   String? _error;
 
+  /// Set only when the roll number did not say which college it is and the
+  /// student answered. Nobody with a recognisable roll number sees that ask.
+  Campus? _chosenCampus;
+
+  Campus? get _campus => _chosenCampus ?? detectCampus(_roll.text);
+
+  /// AEC and ACET sign in against their own portal, so they type that password
+  /// rather than a Handy one.
+  bool get _portalMode => _campus?.usesPortalLogin ?? false;
+
+  bool get _askForCampus =>
+      _chosenCampus == null && detectCampus(_roll.text) == null && _roll.text.trim().length >= 8;
+
+  @override
+  void initState() {
+    super.initState();
+    // The campus is read off the roll number as it is typed, so the password
+    // field appears without anyone choosing a campus from a list.
+    _roll.addListener(() => setState(() {}));
+  }
+
   @override
   void dispose() {
     _roll.dispose();
@@ -50,6 +73,25 @@ class _SignInScreenState extends State<SignInScreen> {
       _busy = true;
       _error = null;
     });
+
+    // AEC/ACET: the college portal is the authority. Nothing here touches the
+    // Handy account password, and a successful check creates the account.
+    if (_portalMode) {
+      try {
+        await portalAuth.signIn(
+          rollNumber: roll,
+          password: _password.text,
+          campus: _campus!,
+        );
+      } on PortalAuthException catch (error) {
+        setState(() => _error = error.message);
+      } catch (_) {
+        setState(() => _error = 'Something went wrong. Check your connection and try again.');
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+      return;
+    }
 
     final password = _password.text.isEmpty ? Repository.defaultPassword : _password.text;
 
@@ -123,7 +165,60 @@ class _SignInScreenState extends State<SignInScreen> {
                     onSubmitted: (_) => _submit(),
                   ),
 
-                  if (_showPasswordField) ...[
+                  // Only when the roll number did not say which college it is.
+                  // Not a picker — this is the fallback, not the default.
+                  if (_askForCampus) ...[
+                    const SizedBox(height: 14),
+                    Text('Which college?', style: Theme.of(context).textTheme.labelSmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: Campus.values
+                          .map((c) => OutlinedButton(
+                                onPressed: () => setState(() => _chosenCampus = c),
+                                child: Text(c.label),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'We could not tell from that roll number, and guessing would send your '
+                      'password to the wrong college.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+
+                  if (_portalMode) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _password,
+                      obscureText: _obscure,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        labelText: 'College portal password',
+                        suffixIcon: IconButton(
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                          icon: AppIcon(
+                            _obscure ? HugeIcons.strokeRoundedView : HugeIcons.strokeRoundedViewOff,
+                            size: 20,
+                          ),
+                          tooltip: _obscure ? 'Show password' : 'Hide password',
+                        ),
+                      ),
+                      onSubmitted: (_) => _submit(),
+                    ),
+                    const SizedBox(height: 8),
+                    // Said plainly: this is the one screen in Handy that asks
+                    // for a credential belonging to someone else's system.
+                    Text(
+                      'The same password you use on Campus Connect. It is sent to the college to '
+                      'check it is you, and kept only on this phone so Handy can refresh your '
+                      'attendance — never on our servers.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+
+                  if (_showPasswordField && !_portalMode) ...[
                     const SizedBox(height: 12),
                     TextField(
                       controller: _password,
@@ -180,7 +275,9 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
 
                   const SizedBox(height: 8),
-                  if (!_showPasswordField)
+                  // Meaningless on the portal path: there is no Handy password
+                  // to have set, because the college's is what signs you in.
+                  if (!_showPasswordField && !_portalMode)
                     TextButton(
                       onPressed: () => setState(() => _showPasswordField = true),
                       child: Text(
@@ -191,7 +288,11 @@ class _SignInScreenState extends State<SignInScreen> {
 
                   const SizedBox(height: 24),
                   Text(
-                    'No account yet? Install Handy College Sync on your laptop and open your Campus Connect profile — the account creates itself.',
+                    _portalMode
+                        // The extension is a laptop step these students do not
+                        // need, so telling them to go and do it would be wrong.
+                        ? 'Signing in checks your roll number and password against the college portal. If they are right, your Handy account is created there and then.'
+                        : 'No account yet? Install Handy College Sync on your laptop and open your Campus Connect profile — the account creates itself.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12.5, height: 1.5, color: muted),
                   ),
