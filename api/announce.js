@@ -15,6 +15,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 
 import { isClassRep, membersOf } from "./_classGroups.js";
+import { publicUrl, r2Config } from "./_r2.js";
 
 /** Firebase caps a multicast at 500. */
 const BATCH = 450;
@@ -113,16 +114,22 @@ export default async function handler(req, res) {
 }
 
 /**
- * Attachments are stored as R2 object keys, never as URLs the client chose.
+ * Attachments arrive as R2 object keys, never as URLs the client chose.
  *
  * A client-supplied URL would let a post point anywhere — someone else's
  * bucket, a tracking pixel, a phishing page dressed as a lecture slide — and
- * every phone in the room would load it. Keys are resolved to signed URLs at
- * read time against our own bucket, so an announcement can only ever show
- * something that was actually uploaded through us.
+ * every phone in the room would load it. The key is the only thing taken from
+ * the client, and it can only name something inside our own bucket.
+ *
+ * The `url` written alongside it is computed *here*, from that key and our own
+ * configured base, so the app has something to render without carrying bucket
+ * configuration of its own — and without any URL the client sent ever reaching
+ * a reader's screen. The key is kept too: it is what survives the public base
+ * ever changing, and what a cleanup job would delete by.
  */
 function normaliseAttachments(media) {
   if (!Array.isArray(media)) return [];
+  const config = r2Config();
   return media
     .slice(0, MAX_ATTACHMENTS)
     .map((item) => ({
@@ -131,7 +138,11 @@ function normaliseAttachments(media) {
       name: String(item?.name ?? "").trim().slice(0, 120),
       size: Number(item?.size) || 0,
     }))
-    .filter((item) => item.key.length > 0 && !item.key.includes(".."));
+    // "..' cannot climb out of the bucket, but it has no business in a key we
+    // generated either — its presence means the client did not send back what
+    // /api/upload-url handed it.
+    .filter((item) => item.key.length > 0 && !item.key.includes(".."))
+    .map((item) => ({ ...item, url: config ? publicUrl(config, item.key) : null }));
 }
 
 /**
