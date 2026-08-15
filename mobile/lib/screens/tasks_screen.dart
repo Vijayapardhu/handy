@@ -5,6 +5,7 @@ import '../data/app_state.dart';
 import '../logic/deadlines.dart';
 import '../main.dart';
 import '../models/models.dart';
+import '../widgets/form_sheet.dart';
 import '../widgets/skeleton.dart';
 
 /// What the student has to remember and the portal doesn't know: assignments,
@@ -170,14 +171,9 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   void _openForm(BuildContext context, AppState state) {
-    showModalBottomSheet<void>(
+    showFormSheet<void>(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _TaskForm(subjects: state.subjects),
-      ),
+      builder: (_) => _TaskForm(subjects: state.subjects),
     );
   }
 }
@@ -641,8 +637,7 @@ class _TaskFormState extends State<_TaskForm> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
+    return Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -765,7 +760,6 @@ class _TaskFormState extends State<_TaskForm> {
             ),
           ],
         ),
-      ),
     );
   }
 }

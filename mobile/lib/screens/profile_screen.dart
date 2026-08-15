@@ -238,8 +238,14 @@ class _IdentityCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          StudentPhoto(rollNumber: student?.rollNumber, name: student?.name),
-          const SizedBox(width: 16),
+          StudentPhoto(
+            rollNumber: student?.rollNumber,
+            name: student?.name,
+            size: 84,
+            circle: true,
+            ring: true,
+          ),
+          const SizedBox(width: 18),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

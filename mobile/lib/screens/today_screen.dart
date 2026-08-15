@@ -9,8 +9,9 @@ import '../logic/deadlines.dart';
 import '../logic/timetable.dart';
 import '../models/models.dart';
 import '../theme.dart';
-import '../widgets/class_tile.dart';
+import '../widgets/class_sheet.dart';
 import '../widgets/skeleton.dart';
+import '../widgets/student_photo.dart';
 import 'subject_detail_screen.dart';
 import 'subjects_screen.dart';
 
@@ -88,17 +89,33 @@ class _TodayScreenState extends State<TodayScreen> {
                   // greeting is content, not chrome, and the old bar left it
                   // cramped against the status bar.
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        _dateLine(now),
-                        style: Theme.of(context).textTheme.labelSmall,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _dateLine(now),
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _greeting(settings.greetingName(state.student?.name)),
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _greeting(settings.greetingName(state.student?.name)),
-                        style: Theme.of(context).textTheme.headlineMedium,
+                      const SizedBox(width: 12),
+                      // Their own face next to their own name. Small, but it's
+                      // the difference between an app and *their* app.
+                      StudentPhoto(
+                        rollNumber: state.student?.rollNumber,
+                        name: state.student?.name,
+                        size: 46,
+                        circle: true,
+                        ring: true,
                       ),
                     ],
                   ),
@@ -124,6 +141,7 @@ class _TodayScreenState extends State<TodayScreen> {
                         done: done,
                         total: blocks.length,
                         free: free.length,
+                        due: dueSoon.length,
                       ),
                       const SizedBox(height: 20),
                     ],
@@ -138,27 +156,14 @@ class _TodayScreenState extends State<TodayScreen> {
                     _AtRiskStrip(state: state),
 
                     const _Label('Today'),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     if (blocks.isEmpty)
                       _Quiet(
                         'No classes scheduled today.'
                         '${free.isEmpty ? '' : ' The whole day is yours.'}',
                       )
                     else
-                      ...blocks.map(
-                        (b) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Opacity(
-                            // Classes already finished fade back — they're
-                            // context, not something to act on.
-                            opacity: b.endTime.compareTo(nowHm) < 0 ? 0.45 : 1,
-                            child: ClassTile(
-                              block: b,
-                              subject: state.subjectsById[b.first.subjectId],
-                            ),
-                          ),
-                        ),
-                      ),
+                      _DayTimeline(blocks: blocks, state: state, nowHm: nowHm),
 
                     if (free.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -440,6 +445,22 @@ class _NextClassCard extends StatelessWidget {
               ],
             ],
           ),
+          // While a class is running, how much of it is left is the live fact.
+          // A countdown to the end says it in words; the bar says it without
+          // reading.
+          if (running) ...[
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: now.difference(start).inSeconds /
+                    end.difference(start).inSeconds.clamp(1, 1 << 30),
+                minHeight: 5,
+                backgroundColor: Colors.white24,
+                valueColor: const AlwaysStoppedAnimation(Colors.white),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -468,39 +489,337 @@ class _NextClassCard extends StatelessWidget {
   }
 }
 
-/// How far through the day you are — context the class list can't give at a glance.
+/// How far through the day you are, and what's left of it — context the class
+/// list can't give at a glance.
 class _DayProgress extends StatelessWidget {
   const _DayProgress({
     required this.done,
     required this.total,
     required this.free,
+    required this.due,
   });
 
   final int done;
   final int total;
   final int free;
+  final int due;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final left = total - done;
+
+    return Column(
       children: [
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: total == 0 ? 0 : done / total,
-              minHeight: 5,
-              backgroundColor: Theme.of(context).dividerColor,
-              valueColor: const AlwaysStoppedAnimation(HandyColors.orange),
-            ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: total == 0 ? 0 : done / total,
+            minHeight: 5,
+            backgroundColor: Theme.of(context).dividerColor,
+            valueColor: const AlwaysStoppedAnimation(HandyColors.orange),
           ),
         ),
-        const SizedBox(width: 12),
-        Text(
-          done == total ? 'Day done' : '$done of $total done',
-          style: Theme.of(context).textTheme.bodySmall,
+        const SizedBox(height: 12),
+        // Three counts rather than one sentence: the eye picks a number out of
+        // a row faster than it reads a clause out of a line.
+        Row(
+          children: [
+            _Chip(
+              icon: Icons.schedule,
+              value: left == 0 ? 'Done' : '$left',
+              label: left == 0 ? 'for today' : 'left today',
+            ),
+            const SizedBox(width: 8),
+            _Chip(icon: Icons.free_breakfast_outlined, value: '$free', label: 'free'),
+            const SizedBox(width: 8),
+            _Chip(icon: Icons.flag_outlined, value: '$due', label: 'due soon'),
+          ],
         ),
       ],
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({required this.icon, required this.value, required this.label});
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).textTheme.bodySmall?.color;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Theme.of(context).dividerColor),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: muted),
+            const SizedBox(width: 7),
+            Flexible(
+              child: RichText(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: value,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    TextSpan(text: ' $label', style: TextStyle(fontSize: 11.5, color: muted)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The day as a timeline rather than a stack of cards.
+///
+/// A list of class cards is a set of facts; a timeline is the shape of the
+/// day. The rail makes the gaps between classes visible — which is where free
+/// periods actually live — and a marker sits at the current time so "where am
+/// I in this" needs no arithmetic.
+class _DayTimeline extends StatelessWidget {
+  const _DayTimeline({required this.blocks, required this.state, required this.nowHm});
+
+  final List<ClassBlock> blocks;
+  final AppState state;
+  final String nowHm;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    var markerPlaced = false;
+
+    for (var i = 0; i < blocks.length; i++) {
+      final block = blocks[i];
+      final finished = block.endTime.compareTo(nowHm) < 0;
+      final running = !finished && block.startTime.compareTo(nowHm) <= 0;
+
+      // The marker goes in the gap before the first class still to come. Not
+      // drawn during a class — the card itself is already showing progress,
+      // and a second "now" would be saying it twice.
+      if (!markerPlaced && !finished && !running) {
+        rows.add(_NowMarker(time: nowHm));
+        markerPlaced = true;
+      }
+
+      rows.add(
+        _TimelineRow(
+          block: block,
+          subject: state.subjectsById[block.first.subjectId],
+          finished: finished,
+          running: running,
+          last: i == blocks.length - 1,
+          state: state,
+        ),
+      );
+
+      if (running) markerPlaced = true;
+    }
+
+    return Column(children: rows);
+  }
+}
+
+class _NowMarker extends StatelessWidget {
+  const _NowMarker({required this.time});
+  final String time;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 46,
+            child: Text(
+              time,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: accent),
+            ),
+          ),
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+          ),
+          Expanded(
+            child: Container(height: 1.5, color: accent.withValues(alpha: 0.45)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({
+    required this.block,
+    required this.subject,
+    required this.finished,
+    required this.running,
+    required this.last,
+    required this.state,
+  });
+
+  final ClassBlock block;
+  final Subject? subject;
+  final bool finished;
+  final bool running;
+  final bool last;
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = Theme.of(context).textTheme.bodySmall?.color;
+    final entry = block.first;
+    final place = [entry.room, entry.block]
+        .whereType<String>()
+        .where((p) => p.isNotEmpty)
+        .join(' · ');
+
+    final dotColour = running
+        ? scheme.primary
+        : finished
+            ? Theme.of(context).dividerColor
+            : scheme.primary.withValues(alpha: 0.4);
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 46,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    block.startTime,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                      color: finished ? muted : null,
+                    ),
+                  ),
+                  Text(block.endTime, style: TextStyle(fontSize: 11, color: muted)),
+                ],
+              ),
+            ),
+          ),
+          // The rail. Its segment below the dot is what makes a gap between
+          // classes read as a gap rather than as card spacing.
+          SizedBox(
+            width: 9,
+            child: Column(
+              children: [
+                const SizedBox(height: 17),
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: running ? dotColour : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: dotColour, width: 2),
+                  ),
+                ),
+                if (!last)
+                  Expanded(
+                    child: Container(width: 1.5, color: Theme.of(context).dividerColor),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 10),
+              child: Opacity(
+                // Classes already finished fade back — they're context, not
+                // something to act on.
+                opacity: finished ? 0.45 : 1,
+                child: Card(
+                  margin: EdgeInsets.zero,
+                  shape: running
+                      ? RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: scheme.primary, width: 1.6),
+                        )
+                      : null,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () => showClassSheet(
+                      context,
+                      block: block,
+                      subject: subject,
+                      state: state,
+                      date: DateTime.now(),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  subject?.name ?? 'Class',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                              if (block.isMerged)
+                                Text(
+                                  '${block.periods}p',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: muted,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          if (place.isNotEmpty || entry.facultyName.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              [place, entry.facultyName]
+                                  .where((s) => s.isNotEmpty)
+                                  .join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

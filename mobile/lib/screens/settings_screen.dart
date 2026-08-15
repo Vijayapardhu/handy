@@ -213,6 +213,7 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final _current = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   bool _obscure = true;
@@ -222,6 +223,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   void dispose() {
+    _current.dispose();
     _password.dispose();
     _confirm.dispose();
     super.dispose();
@@ -229,6 +231,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   Future<void> _save() async {
     final password = _password.text;
+    if (_current.text.isEmpty) {
+      setState(() => _error = 'Enter your current password.');
+      return;
+    }
     if (password.length < 6) {
       setState(() => _error = 'Use at least 6 characters.');
       return;
@@ -245,15 +251,37 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
-      await FirebaseAuth.instance.currentUser?.updatePassword(password);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user?.email == null) {
+        setState(() => _error = 'You are not signed in. Sign in and try again.');
+        return;
+      }
+
+      // The step this screen was missing. Firebase refuses updatePassword on
+      // a session older than a few minutes with 'requires-recent-login', and
+      // a student who signed in this morning is always past that — so the
+      // change failed every time in normal use. Proving the current password
+      // refreshes the session, which is exactly what Firebase is asking for,
+      // and it is the check a password change should make anyway: without it
+      // an unattended phone is enough to lock the owner out of their own
+      // account.
+      await user!.reauthenticateWithCredential(
+        EmailAuthProvider.credential(email: user.email!, password: _current.text),
+      );
+      await user.updatePassword(password);
       setState(() => _done = true);
     } on FirebaseAuthException catch (e) {
       setState(() {
-        _error = e.code == 'requires-recent-login'
-            // Firebase refuses a password change on a stale session; the fix
-            // is to sign in again, so say that instead of the raw code.
-            ? 'For security, sign out and back in first, then try again.'
-            : 'Could not change the password. ${e.message ?? ''}'.trim();
+        _error = switch (e.code) {
+          'wrong-password' ||
+          'invalid-credential' ||
+          'invalid-login-credentials' =>
+            'That current password is not right.',
+          'weak-password' => 'That password is too easy to guess. Try a longer one.',
+          'network-request-failed' => 'No connection. Try again when you are back online.',
+          'too-many-requests' => 'Too many attempts. Wait a minute and try again.',
+          _ => 'Could not change the password. ${e.message ?? ''}'.trim(),
+        };
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -283,8 +311,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                 style: Theme.of(context).textTheme.titleMedium),
                             const SizedBox(height: 4),
                             Text(
-                              'Use it next time you sign in. Your laptop extension will ask for it '
-                              'once so it can keep syncing.',
+                              'Use it next time you sign in, here and on the website. '
+                              'Syncing from your laptop carries on either way — it goes '
+                              'through the server and never uses your password.',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
@@ -298,8 +327,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Your account currently uses the shared default password '
-                    '(${Repository.defaultPassword}). Pick something only you know.',
+                    'Accounts start on the shared default (${Repository.defaultPassword}). '
+                    'Pick something only you know — roll numbers are public, so the '
+                    'default is not a secret.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
@@ -310,9 +340,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   const SizedBox(height: 22),
                   TextField(
-                    controller: _password,
+                    controller: _current,
                     obscureText: _obscure,
                     autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Current password'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _password,
+                    obscureText: _obscure,
                     decoration: InputDecoration(
                       labelText: 'New password',
                       suffixIcon: IconButton(

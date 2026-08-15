@@ -8,6 +8,7 @@ import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import 'detail_row.dart';
+import 'form_sheet.dart';
 
 /// Everything the portal told us about one class, plus the student's own notes.
 ///
@@ -228,14 +229,9 @@ class _ClassSheet extends StatelessWidget {
   }
 
   void _addNote(BuildContext context) {
-    showModalBottomSheet<void>(
+    showFormSheet<void>(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: _NoteForm(subject: subject, subjectId: block.first.subjectId, date: date),
-      ),
+      builder: (_) => _NoteForm(subject: subject, subjectId: block.first.subjectId, date: date),
     );
   }
 }

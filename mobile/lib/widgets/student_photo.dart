@@ -8,11 +8,26 @@ import 'package:flutter/material.dart';
 /// it isn't refetched on every rebuild, and the initials show while it loads
 /// as well as when there is no photo at all.
 class StudentPhoto extends StatelessWidget {
-  const StudentPhoto({super.key, required this.rollNumber, required this.name, this.size = 58});
+  const StudentPhoto({
+    super.key,
+    required this.rollNumber,
+    required this.name,
+    this.size = 58,
+    this.circle = false,
+    this.ring = false,
+  });
 
   final String? rollNumber;
   final String? name;
   final double size;
+
+  /// Fully round rather than a rounded square. Used where the photo is the
+  /// subject of the card rather than a marker beside a name.
+  final bool circle;
+
+  /// An accent ring around the photo, which also stops it dissolving into a
+  /// tinted card behind it.
+  final bool ring;
 
   static String? urlFor(String? rollNumber) {
     if (rollNumber == null || rollNumber.isEmpty) return null;
@@ -22,9 +37,9 @@ class StudentPhoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = urlFor(rollNumber);
-    final radius = size * 0.32;
+    final radius = circle ? size / 2 : size * 0.32;
 
-    return ClipRRect(
+    final photo = ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: SizedBox(
         width: size,
@@ -39,6 +54,19 @@ class StudentPhoto extends StatelessWidget {
                 errorWidget: (_, __, ___) => _Initials(name: name, size: size),
               ),
       ),
+    );
+
+    if (!ring) return photo;
+
+    final accent = Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        shape: circle ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: circle ? null : BorderRadius.circular(radius + 3),
+        border: Border.all(color: accent.withValues(alpha: 0.55), width: 2),
+      ),
+      child: photo,
     );
   }
 }
