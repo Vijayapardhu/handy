@@ -10,3 +10,12 @@ service-account.json
 *.tsbuildinfo
 .vite
 .vercel
+
+# Packed extension builds.
+#
+# handy.pem is the signing key: the extension ID is derived from it, so
+# leaking it lets someone else publish an update that installs over Handy on
+# every machine that has it. Losing it is nearly as bad — a new key means a new
+# ID and a reinstall for everybody. Keep a copy somewhere safe and off git.
+dist-extension/
+*.pem

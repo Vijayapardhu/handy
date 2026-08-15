@@ -104,6 +104,40 @@ function encodePNG(px, size) {
   return Buffer.concat([signature, chunk("IHDR", ihdr), chunk("IDAT", idat), chunk("IEND", Buffer.alloc(0))]);
 }
 
+/**
+ * The same mark, rendered `ss` times oversized and box-filtered back down.
+ *
+ * makeIcon draws with hard pixel tests, which is fine at 16px where a corner is
+ * two pixels anyway, but at store-logo size the rounded corners read as visibly
+ * stepped. Averaging an oversampled render is the whole of antialiasing here.
+ *
+ * The three manifest icons are deliberately left on the original path so this
+ * change doesn't rewrite assets that are already shipped and fine.
+ */
+function makeIconAA(size, ss = 4) {
+  const big = makeIcon(size * ss);
+  const out = new Uint8Array(size * size * 4);
+  const samples = ss * ss;
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      let r = 0, g = 0, b = 0, a = 0;
+      for (let dy = 0; dy < ss; dy++) {
+        for (let dx = 0; dx < ss; dx++) {
+          const idx = ((y * ss + dy) * size * ss + (x * ss + dx)) * 4;
+          r += big[idx]; g += big[idx + 1]; b += big[idx + 2]; a += big[idx + 3];
+        }
+      }
+      const idx = (y * size + x) * 4;
+      out[idx] = Math.round(r / samples);
+      out[idx + 1] = Math.round(g / samples);
+      out[idx + 2] = Math.round(b / samples);
+      out[idx + 3] = Math.round(a / samples);
+    }
+  }
+  return out;
+}
+
 fs.mkdirSync(OUT_DIR, { recursive: true });
 for (const size of [16, 48, 128]) {
   const png = encodePNG(makeIcon(size), size);
@@ -111,3 +145,12 @@ for (const size of [16, 48, 128]) {
   fs.writeFileSync(outPath, png);
   console.log(`wrote ${outPath} (${png.length} bytes)`);
 }
+
+// Store logo for the Edge Add-ons listing, which requires exactly 300x300 and
+// is not part of the extension package — hence dist-extension/, not icons/.
+const STORE_DIR = path.join(__dirname, "..", "..", "dist-extension", "listing");
+fs.mkdirSync(STORE_DIR, { recursive: true });
+const logo = encodePNG(makeIconAA(300), 300);
+const logoPath = path.join(STORE_DIR, "store-logo-300.png");
+fs.writeFileSync(logoPath, logo);
+console.log(`wrote ${logoPath} (${logo.length} bytes)`);

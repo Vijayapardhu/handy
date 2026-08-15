@@ -142,11 +142,19 @@ it. Add more origins there if you deploy Handy elsewhere.
 ## Stable extension ID
 
 `manifest.json` embeds a `"key"` (a public key) so the extension gets the
-same ID (`ledmfeohpnfmepdbncmcidoaflhijmkn`) whether it's loaded unpacked
-from any folder or eventually packed/published — the Handy web app hardcodes
-this ID to talk to the extension. The matching private key lives in
-`build/ext-private.pem` (gitignored) — you only need it if you ever
-re-generate the keypair; it's not used at runtime.
+same ID (`ledmfeohpnfmepdbncmcidoaflhijmkn`) whichever folder a student
+extracted it to. Without it Chrome derives the ID from the install path, every
+student gets a different one, and the web app can't address the extension.
+
+The web app no longer hardcodes that ID. The extension announces its own
+(`src/announce.js`) and `handyExtensionBridge.ts` reads it, falling back to the
+pinned value — so a build whose ID is assigned elsewhere still works.
+
+The matching **private** key is not used by anything: nothing verifies a
+signature on an unpacked extension, and this project ships unpacked. It was
+committed to the repo before it went public (`extention key.pem`, since
+untracked), so treat it as disclosed. That costs nothing here — what pins the
+ID is the *public* half above, which is meant to be public.
 
 ## Test harness (parser + popup, no browser install needed)
 

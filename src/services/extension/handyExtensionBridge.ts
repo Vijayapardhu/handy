@@ -1,11 +1,29 @@
 import type { CollegePortalSnapshot } from "@/types/collegePortal";
 
 /**
- * Fixed ID of the "Handy College Sync" browser extension (extension/), pinned
- * via manifest.json's "key" field so it's stable whether loaded unpacked or
- * eventually published — see extension/README.md.
+ * ID of the "Handy College Sync" extension (extension/) when it's the build we
+ * signed ourselves: manifest.json pins a "key", which fixes the ID for both the
+ * unpacked and the self-hosted package.
+ *
+ * A store does not honour that pin — it assigns its own ID — so this is a
+ * fallback, not the answer. Published builds announce their real ID instead.
  */
-const EXTENSION_ID = "ledmfeohpnfmepdbncmcidoaflhijmkn";
+const SELF_HOSTED_ID = "ledmfeohpnfmepdbncmcidoaflhijmkn";
+
+/**
+ * The ID the installed extension says it has.
+ *
+ * Set by the extension's announce.js content script on this origin, so the same
+ * code reaches the unpacked build, the self-hosted one, and the Edge Add-ons
+ * listing without knowing any of their IDs in advance.
+ *
+ * Untrusted, and doesn't need to be trusted: it only names where to send. The
+ * browser enforces the extension's own externally_connectable list on delivery,
+ * so a page that lies here gets its message dropped rather than answered.
+ */
+function extensionId(): string {
+  return document.documentElement.dataset.handyExtension || SELF_HOSTED_ID;
+}
 
 interface ChromeRuntimeLike {
   sendMessage: (extensionId: string, message: unknown, callback: (response: unknown) => void) => void;
@@ -31,7 +49,7 @@ function sendToExtension<T>(message: unknown, timeoutMs = 4000): Promise<T | nul
     }, timeoutMs);
 
     try {
-      runtime.sendMessage(EXTENSION_ID, message, (response) => {
+      runtime.sendMessage(extensionId(), message, (response) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);

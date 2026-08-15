@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Handy College Sync",
   "version": "1.0.0",
-  "description": "Reads your own Aditya University Campus Connect attendance from a page you're already logged into and syncs it to your Handy account. Your college password is never read; your Handy password is generated here and kept on this device.",
+  "description": "Copies your own Aditya University attendance and timetable into your Handy account, from a page you are already signed in to.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtfZr098VsFLpukRXA7srKV+AAqxDGZmPEVRwgpLansKAldPbD7669U+HsCkCClbqtBAb8A8t8rUcFgdbmXxG5b70JsMUBAF6QQ3f262deSzJkqxBK5GAXCCEjNymdTX6F5iYK1MQL3OosXQjiczvmGNc9KJlWn3D2sx5xikuDwgMlkX1SRwTIJ03wxFWs3NN121dAK+3oEtwKU2F1kmC5Z+RlDAHLS5r9lTGjUopp9wwiX0GcdtWfApiaupLW8fN85Oeyct3CkNmffMvpUpT0T6Rt/7mhoPmUzOGvYofb1kT00AJE9722ksfll+Jq7D3avQRjx2gxJ64IAr3LkJIrQIDAQAB",
   "icons": {
     "16": "icons/icon16.png",
@@ -49,6 +49,16 @@
       "js": ["src/autoTimetable.js"],
       "run_at": "document_idle",
       "all_frames": true
+    },
+    {
+      "matches": [
+        "https://handy-aus.vercel.app/*",
+        "https://handy.vijayaapardhu.dev/*",
+        "http://localhost:5173/*",
+        "http://127.0.0.1:5173/*"
+      ],
+      "js": ["src/announce.js"],
+      "run_at": "document_start"
     }
   ],
   "externally_connectable": {
