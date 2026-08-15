@@ -21,8 +21,6 @@
     "@hugeicons/react": "^1.1.9",
     "@tanstack/react-query": "^5.59.0",
     "@vercel/analytics": "^2.0.1",
-    "axios": "^1.19.0",
-    "axios-cookiejar-support": "^7.0.0",
     "cheerio": "^1.2.0",
     "date-fns": "^3.6.0",
     "firebase": "^10.13.2",
@@ -32,7 +30,6 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
     "react-router-dom": "^6.26.2",
-    "tough-cookie": "^6.0.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

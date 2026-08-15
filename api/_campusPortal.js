@@ -22,9 +22,6 @@
 //      it to sendDiscordAlert, which today ignores it — but a parameter that
 //      exists is one edit away from being logged.
 import { createCipheriv } from "node:crypto";
-import axios from "axios";
-import { wrapper } from "axios-cookiejar-support";
-import { CookieJar } from "tough-cookie";
 import * as cheerio from "cheerio";
 
 /**
@@ -76,36 +73,111 @@ function portalDate(date) {
   return `${d}/${m}/${date.getFullYear()}`;
 }
 
+const USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36";
+
+/**
+ * A cookie jar and an HTTP client, on Node's built-in fetch.
+ *
+ * Deliberately not axios + axios-cookiejar-support, which is what the reference
+ * uses: that chain pulls in http-cookie-agent → agent-base, and the bundle
+ * Vercel builds crashes on it at load with ERR_REQUIRE_ESM before a single line
+ * of this file runs. Rather than pin around somebody else's CJS/ESM mismatch,
+ * this drops three dependencies for about twenty lines — the whole session is
+ * one host, so a jar is a Map.
+ *
+ * Redirects are followed by default and only held back where a caller asks,
+ * which is the login POST alone: its 302 *is* the success signal, so that one
+ * has to be ours to inspect rather than something fetch quietly follows into a
+ * page that no longer says what happened. Holding them back everywhere instead
+ * is a quiet disaster — `default.aspx` redirects, so the login page arrives as
+ * an empty 302 body, every hidden ASP.NET field reads as "", and the portal
+ * answers the ensuing postback with a 500 that looks like it is about
+ * credentials.
+ */
 function newClient() {
-  return wrapper(
-    axios.create({
-      withCredentials: true,
-      // A short ceiling on every call: a serverless function that hangs on a
-      // slow portal burns its whole execution budget and returns nothing.
-      timeout: 20000,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
-        Origin: "https://info.aec.edu.in",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    }),
-  );
+  const jar = new Map();
+
+  function remember(response) {
+    // getSetCookie keeps multiple Set-Cookie headers separate; a plain get()
+    // joins them with commas and mangles any cookie containing one.
+    const cookies = response.headers.getSetCookie?.() ?? [];
+    for (const cookie of cookies) {
+      const [pair] = cookie.split(";");
+      const index = pair.indexOf("=");
+      if (index <= 0) continue;
+      jar.set(pair.slice(0, index).trim(), pair.slice(index + 1).trim());
+    }
+  }
+
+  /**
+   * Redirects are followed here rather than by fetch, because fetch does not
+   * carry a cookie set mid-chain: the portal hands out ASP.NET_SessionId on the
+   * first hop and expects it back on the next, and letting fetch follow instead
+   * loops until it gives up with "redirect count exceeded". Every hop below
+   * re-reads the jar, which is the whole reason this exists.
+   */
+  async function request(url, { method = "GET", body, headers = {}, follow = true } = {}) {
+    let target = url;
+    let verb = method;
+    let payload = body;
+
+    for (let hop = 0; ; hop++) {
+      const cookie = [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
+      const response = await fetch(target, {
+        method: verb,
+        body: payload,
+        redirect: "manual",
+        headers: {
+          "User-Agent": USER_AGENT,
+          Origin: "https://info.aec.edu.in",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          ...(cookie ? { Cookie: cookie } : {}),
+          ...headers,
+        },
+        // A ceiling on every call: a serverless function that hangs on a slow
+        // portal burns its whole budget and returns nothing.
+        signal: AbortSignal.timeout(20000),
+      });
+      remember(response);
+
+      const location = response.headers.get("location");
+      const redirected = [301, 302, 303, 307, 308].includes(response.status);
+      // Five is generous for a login flow; a portal asking for more is looping.
+      if (!follow || !redirected || !location || hop >= 5) return response;
+
+      target = new URL(location, target).href;
+      // 301/302/303 turn a POST into a GET, which is what the browser does and
+      // what the portal's own flow assumes. 307/308 preserve the method.
+      if (response.status !== 307 && response.status !== 308) {
+        verb = "GET";
+        payload = undefined;
+        headers = { ...headers };
+        delete headers["Content-Type"];
+      }
+    }
+  }
+
+  return {
+    /** The AuthToken cookie, which AUS's AJAX calls require as a header. */
+    cookie: (name) => jar.get(name),
+    get: (url, options) => request(url, options),
+    post: (url, body, options) => request(url, { ...options, method: "POST", body }),
+  };
 }
 
 /**
  * One ShowAttendance call. Empty dates mean "everything so far"; both dates set
  * to the same day means that day only — the filtering happens on the portal.
  */
-async function fetchAttendance(client, jar, baseUrl, fromDate, toDate, referer) {
+async function fetchAttendance(client, baseUrl, fromDate, toDate, referer) {
   const subjects = [];
   let overall = { held: 0, att: 0, per: 0 };
 
   const response = await client.post(
     `${baseUrl}Academics/studentattendance.aspx/ShowAttendance`,
-    { fromDate, toDate, excludeothersubjects: false },
+    JSON.stringify({ fromDate, toDate, excludeothersubjects: false }),
     {
-      jar,
       headers: {
         "Content-Type": "application/json; charset=UTF-8",
         "X-Requested-With": "XMLHttpRequest",
@@ -116,7 +188,8 @@ async function fetchAttendance(client, jar, baseUrl, fromDate, toDate, referer) 
 
   // The payload is HTML inside a JSON string. "Not an authorized user" is what
   // comes back when the session did not carry — not an empty timetable.
-  const html = response.data?.d;
+  const body = await response.json().catch(() => null);
+  const html = body?.d;
   if (!html || html === "Not an authorized user") return { subjects, overall };
 
   const $ = cheerio.load(html);
@@ -238,12 +311,11 @@ export async function scrapeCampus({ campus, rollNumber, password }) {
 
   const { baseUrl, btnX, btnY } = config;
   const client = newClient();
-  const jar = new CookieJar();
 
   // ASP.NET WebForms rejects a post that does not echo these back, and they are
   // per-session — fetched fresh every login, never cached.
-  const loginPage = await client.get(`${baseUrl}default.aspx`, { jar });
-  const $login = cheerio.load(loginPage.data);
+  const loginPage = await client.get(`${baseUrl}default.aspx`);
+  const $login = cheerio.load(await loginPage.text());
   const viewState = $login("#__VIEWSTATE").val() ?? "";
   const viewStateGenerator = $login("#__VIEWSTATEGENERATOR").val() ?? "";
   const eventValidation = $login("#__EVENTVALIDATION").val() ?? "";
@@ -263,16 +335,18 @@ export async function scrapeCampus({ campus, rollNumber, password }) {
     hdnDPToken: $login("#hdnDPToken").val() ?? "",
   });
 
-  // maxRedirects: 0 so the 302 is ours to inspect. A redirect *is* the success
-  // signal here; a 200 means the login page re-rendered with an error on it.
+  // The redirect *is* the success signal here; a 200 means the login page
+  // re-rendered with an error on it, which is why redirects are not followed.
   const posted = await client.post(`${baseUrl}default.aspx`, form, {
-    jar,
-    maxRedirects: 0,
-    validateStatus: () => true,
+    follow: false,
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Referer: `${baseUrl}default.aspx`,
+    },
   });
 
   if (posted.status === 200) {
-    const message = cheerio.load(posted.data)("#lblError").text().trim();
+    const message = cheerio.load(await posted.text())("#lblError").text().trim();
     throw new InvalidCredentialsError(
       message || "The portal rejected the sign-in without saying why.",
     );
@@ -281,9 +355,12 @@ export async function scrapeCampus({ campus, rollNumber, password }) {
     throw new Error(`Portal returned ${posted.status} instead of a sign-in redirect.`);
   }
 
-  const dashboard = await client.get(new URL(posted.headers.location, baseUrl).href, { jar });
+  const dashboard = await client.get(
+    new URL(posted.headers.get("location"), baseUrl).href,
+  );
   const studentName =
-    cheerio.load(dashboard.data)("#lblUser").text().trim().replace("Hi...", "").trim() || null;
+    cheerio.load(await dashboard.text())("#lblUser").text().trim().replace("Hi...", "").trim() ||
+    null;
 
   // Attendance and marks are independent: a student with one and not the other
   // should still get the half that worked, so neither failure aborts the other.
@@ -296,18 +373,18 @@ export async function scrapeCampus({ campus, rollNumber, password }) {
   try {
     const attendanceUrl = `${baseUrl}Academics/studentattendance.aspx`;
     // Visited first because the AJAX endpoint expects the page session.
-    await client.get(attendanceUrl, { jar, headers: { Referer: `${baseUrl}StudentMaster.aspx` } });
+    await client.get(attendanceUrl, { headers: { Referer: `${baseUrl}StudentMaster.aspx` } });
 
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
-    attendance.overall = await fetchAttendance(client, jar, baseUrl, "", "", attendanceUrl);
+    attendance.overall = await fetchAttendance(client, baseUrl, "", "", attendanceUrl);
     attendance.today = await fetchAttendance(
-      client, jar, baseUrl, portalDate(today), portalDate(today), attendanceUrl,
+      client, baseUrl, portalDate(today), portalDate(today), attendanceUrl,
     );
     attendance.yesterday = await fetchAttendance(
-      client, jar, baseUrl, portalDate(yesterday), portalDate(yesterday), attendanceUrl,
+      client, baseUrl, portalDate(yesterday), portalDate(yesterday), attendanceUrl,
     );
   } catch (error) {
     console.error(`[portal] ${campus} attendance failed:`, error.message);
@@ -319,13 +396,12 @@ export async function scrapeCampus({ campus, rollNumber, password }) {
   try {
     const marksUrl = `${baseUrl}Academics/StudentMarksReport.aspx`;
     const marksPage = await client.get(marksUrl, {
-      jar,
       headers: { Referer: `${baseUrl}StudentMaster.aspx` },
     });
 
     // The handler filename changes with every portal deploy, so it is read off
     // the page rather than hardcoded — a stale one 404s and marks vanish.
-    const handler = String(marksPage.data).match(
+    const handler = (await marksPage.text()).match(
       /Academics_StudentMarksReport,App_Web_studentmarksreport\.aspx\.[a-z0-9]+\.ashx/i,
     );
     if (!handler) throw new Error("marks handler not found on the page");
@@ -333,10 +409,10 @@ export async function scrapeCampus({ campus, rollNumber, password }) {
     const marks = await client.post(
       `${baseUrl}ajax/${handler[0]}?_method=ShowMarks&_session=rw`,
       "",
-      { jar, headers: { "Content-Type": "text/plain;charset=UTF-8", Referer: marksUrl } },
+      { headers: { "Content-Type": "text/plain;charset=UTF-8", Referer: marksUrl } },
     );
 
-    ({ grades, cgpa } = parseMarksHtml(marks.data));
+    ({ grades, cgpa } = parseMarksHtml(await marks.text()));
   } catch (error) {
     console.error(`[portal] ${campus} marks failed:`, error.message);
   }
@@ -353,7 +429,7 @@ export async function scrapeCampus({ campus, rollNumber, password }) {
         __VIEWSTATEGENERATOR: viewStateGenerator,
         __EVENTVALIDATION: eventValidation,
       }),
-      { jar },
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
     );
   } catch {
     /* ignore */
