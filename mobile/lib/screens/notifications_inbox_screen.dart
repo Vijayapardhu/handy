@@ -7,6 +7,7 @@ import '../theme.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/skeleton.dart';
 import 'account_screens.dart';
+import 'announcement_screen.dart';
 import 'timetable_changes_screen.dart';
 
 /// Everything Handy has told this student, kept.
@@ -138,6 +139,7 @@ class _Item {
     required this.createdAt,
     this.timetableId,
     this.version,
+    this.announcementId,
   });
 
   final String id;
@@ -151,6 +153,9 @@ class _Item {
   final String? timetableId;
   final int? version;
 
+  /// Set on announcements, so the inbox can open the one that was posted.
+  final String? announcementId;
+
   factory _Item.fromMap(String id, Map<String, dynamic> d) => _Item(
         id: id,
         type: d['type'] as String? ?? 'announcement',
@@ -160,6 +165,7 @@ class _Item {
         createdAt: d['createdAt'] as String? ?? '',
         timetableId: d['timetableId'] as String?,
         version: (d['version'] as num?)?.toInt(),
+        announcementId: d['announcementId'] as String?,
       );
 }
 
@@ -173,6 +179,7 @@ class _Row extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final (icon, colour) = switch (item.type) {
       'timetable' => (HugeIcons.strokeRoundedCalendar01, scheme.primary),
+      'announcement' => (HugeIcons.strokeRoundedNote01, scheme.primary),
       'attendance' => (HugeIcons.strokeRoundedPieChart, HandyColors.good),
       'target' => (HugeIcons.strokeRoundedAlert02, HandyColors.bad),
       _ => (HugeIcons.strokeRoundedNotification01, scheme.primary),
@@ -235,8 +242,17 @@ class _Row extends StatelessWidget {
           .update({'read': true});
     }
 
-    // Only the timetable one has somewhere to go. Sending the rest to a screen
-    // that does not answer them would be worse than leaving them alone.
+    if (item.type == 'announcement' && item.announcementId != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => AnnouncementScreen(announcementId: item.announcementId!),
+        ),
+      );
+      return;
+    }
+
+    // Only these two have somewhere to go. Sending the rest to a screen that
+    // does not answer them would be worse than leaving them alone.
     if (item.type != 'timetable') return;
     if (item.timetableId == null || item.version == null) return;
 

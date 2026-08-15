@@ -15,6 +15,7 @@ import '../widgets/class_sheet.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/student_photo.dart';
 import 'deadline_detail_screen.dart';
+import 'notifications_inbox_screen.dart';
 import 'subject_detail_screen.dart';
 import 'subjects_screen.dart';
 import '../widgets/app_icon.dart';
@@ -116,7 +117,12 @@ class _TodayScreenState extends State<TodayScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      // What's new, one tap from the screen everyone opens
+                      // first. It lived three taps deep under Profile, which
+                      // is too far for something worth checking daily — and a
+                      // feed nobody finds is a feed nobody reads.
+                      _Bell(unread: state.unreadNotifications),
+                      const SizedBox(width: 6),
                       // Their own face next to their own name. Small, but it's
                       // the difference between an app and *their* app.
                       StudentPhoto(
@@ -230,6 +236,65 @@ class _TodayScreenState extends State<TodayScreen> {
 
   static String _dateLine(DateTime now) =>
       '${_days[now.weekday % 7]}, ${now.day} ${_months[now.month - 1]}';
+}
+
+/// The way into the feed, with a count on it.
+///
+/// A bell is the one icon nobody has to be taught, and the count is the only
+/// reason to press it — so an empty one is drawn quietly and does not shout
+/// for attention it has not earned.
+class _Bell extends StatelessWidget {
+  const _Bell({required this.unread});
+
+  final int unread;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return IconButton(
+      tooltip: unread == 0 ? "What's new" : '$unread unread',
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const NotificationsInboxScreen()),
+      ),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AppIcon(
+            HugeIcons.strokeRoundedNotification01,
+            size: 23,
+            color: unread > 0 ? scheme.primary : null,
+          ),
+          if (unread > 0)
+            Positioned(
+              right: -5,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 15),
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(999),
+                  // Rings the badge in the page colour so it stays legible
+                  // against whatever it happens to overlap.
+                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5),
+                ),
+                child: Text(
+                  unread > 9 ? '9+' : '$unread',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 9,
+                    height: 1.3,
+                    fontWeight: FontWeight.w800,
+                    color: scheme.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 /// The number that decides everything, at the size that says so.

@@ -251,6 +251,38 @@ service cloud.firestore {
       }
     }
 
+    // Which room a student sits in, derived from their synced timetable.
+    //
+    // Server-written only. A student who could add themselves to a group could
+    // read another class's announcements; one who could remove themselves from
+    // another student's group could silence them. Membership follows the
+    // portal, not the client.
+    match /classGroupMembers/{membershipId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Who may post to a room. Granted out of band (scripts/grant-class-rep.mjs)
+    // and never by the app: a capability that reaches every phone in a class is
+    // not one a client should be able to award itself.
+    match /classReps/{repId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Announcements, readable by the room they were posted to.
+    //
+    // The membership lookup is what scopes it: a signed-in student can read an
+    // announcement only if a server-written document says they are in that
+    // group. Writes go through /api/announce, which re-checks that the caller
+    // is that group's rep — a rule alone could not, since being *in* a class
+    // is not permission to broadcast to it.
+    match /announcements/{announcementId} {
+      allow read: if isSignedIn()
+        && exists(/databases/$(database)/documents/classGroupMembers/$(request.auth.uid + '_' + resource.data.groupKey));
+      allow write: if false;
+    }
+
     // Help content, written by whoever runs Handy and read by everyone signed
     // in. No client write at all: an FAQ a student can edit is a notice board.
     match /faqs/{faqId} {

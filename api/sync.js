@@ -23,6 +23,7 @@ import { getApps, initializeApp, cert, applicationDefault } from "firebase-admin
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
+import { syncGroupMemberships } from "./_classGroups.js";
 import { publishSharedTimetable } from "./_sharedTimetable.js";
 import {
   buildImportDocs,
@@ -90,6 +91,14 @@ export default async function handler(req, res) {
     // so no messaging failure can cost a student their sync.
     let shared = null;
     if (snapshot.timetable) {
+      // Which rooms this student sits in, so a class rep's announcement can
+      // find them. Derived from the portal's own timetable rather than stored
+      // against the student: a membership list a student can edit is a
+      // membership list a student can join.
+      await syncGroupMemberships(db, uid, snapshot.timetable).catch((error) =>
+        console.error("[sync] group membership failed for", rollNumber, error),
+      );
+
       shared = await publishSharedTimetable(db, {
         timetable: snapshot.timetable,
         section: snapshot.timetable.name,
