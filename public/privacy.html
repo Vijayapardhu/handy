@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy — Handy College Sync</title>
+<meta name="description" content="What the Handy College Sync browser extension reads, where it sends it, and how to remove it.">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e5e7eb;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #f97316;
+    --accent-soft: #ffedd5;
+    --danger: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1120;
+      --surface: #111827;
+      --border: #1f2937;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #fb923c;
+      --accent-soft: #431407;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1120;
+    --surface: #111827;
+    --border: #1f2937;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #fb923c;
+    --accent-soft: #431407;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+
+  header { border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; margin-bottom: 2.5rem; }
+  .eyebrow {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 0.6rem;
+  }
+  h1 { font-size: clamp(1.8rem, 5vw, 2.4rem); line-height: 1.15; margin: 0 0 0.6rem; text-wrap: balance; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0; font-size: 0.95rem; }
+
+  h2 {
+    font-size: 1.15rem; margin: 2.75rem 0 0.75rem; letter-spacing: -0.01em;
+    padding-top: 1.75rem; border-top: 1px solid var(--border); text-wrap: balance;
+  }
+  h2:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+  h3 { font-size: 0.95rem; margin: 1.5rem 0 0.4rem; }
+  p, li { color: var(--text); }
+  ul { padding-left: 1.15rem; }
+  li { margin-bottom: 0.4rem; }
+  a { color: var(--accent); }
+
+  .lede {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 12px; padding: 1.1rem 1.25rem; margin: 0 0 2.5rem;
+  }
+  .lede p { margin: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  .scroll { overflow-x: auto; }
+  th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+
+  .never { border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--border); padding: 1.1rem 1.25rem; }
+  .never ul { margin: 0.5rem 0 0; }
+
+  footer { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+  code { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 0.85em; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 0.1em 0.35em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Handy College Sync</p>
+  <h1>What this extension reads, and where it goes</h1>
+  <p class="sub">Browser extension privacy policy · Last updated 15 August 2026</p>
+</header>
+
+<div class="lede">
+  <p>Handy College Sync reads your own attendance and timetable from a Campus Connect page you are already signed in to, and copies it to your own Handy account so the Handy app can show it to you. It does not read your college password, it does not touch any other website, and there is no advertising or analytics in it.</p>
+</div>
+
+<h2>Who this is for</h2>
+<p>Handy is an independent student project for Aditya University students. It is not built, endorsed, or operated by Aditya University, and it has no special access to college systems — it can only see what you can already see when you are logged in yourself.</p>
+
+<h2>What is read</h2>
+<p>When you visit Campus Connect (<code>info.aec.edu.in</code>) while signed in, the extension reads the pages your browser has already loaded and takes the following from them:</p>
+
+<div class="scroll">
+<table>
+  <thead>
+    <tr><th>Data</th><th>Why it is needed</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Roll number, name, photograph</td><td>Identifies which Handy account the data belongs to, and shows you your own profile.</td></tr>
+    <tr><td>Admission number, semester, section, gender, date of birth, mobile number</td><td>Shown back to you on your Handy profile; the section is what groups you with classmates on the same timetable.</td></tr>
+    <tr><td>Attendance — classes held and attended, per subject</td><td>The percentages, projections, and leave planning that are the point of the app.</td></tr>
+    <tr><td>Timetable — periods, subjects, faculty names, rooms</td><td>Your daily schedule, the home-screen widgets, and class reminders.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Nothing is read from any other site. The extension only runs on Campus Connect and on Handy's own pages, and it declares exactly those addresses in its manifest — your browser enforces that, not us.</p>
+
+<h2>What is never read</h2>
+<div class="never">
+  <ul>
+    <li><strong>Your college password.</strong> The extension reads pages after you have signed in. It never sees, stores, or transmits the password you typed.</li>
+    <li><strong>Your browsing history, other tabs, bookmarks, or downloads.</strong> It has no permission to reach any of them.</li>
+    <li><strong>Anything on any other website.</strong></li>
+  </ul>
+</div>
+
+<h2>Your Handy password</h2>
+<p>So that syncing can continue without asking you to type anything, the extension generates a Handy password on your own device and keeps it in the browser's local extension storage (<code>chrome.storage.local</code>) on that device. It is not sent anywhere except to Handy's own sign-in, and it never leaves your machine in any other direction. Removing the extension deletes it.</p>
+
+<h2>Where the data goes</h2>
+<p>Captured data is sent over HTTPS to Handy's own server at <code>handy.vijayaapardhu.dev</code>, which writes it to Google Firebase (Cloud Firestore and Firebase Authentication), where it is stored under your account and readable only by you and by Handy's own server functions. Firebase is operated by Google; their handling is covered by the <a href="https://firebase.google.com/support/privacy" rel="noopener">Firebase privacy documentation</a>.</p>
+<p>If you have the Handy mobile app installed and have allowed notifications, Google Firebase Cloud Messaging is used to deliver them to your device.</p>
+
+<h3>Who else can see it</h3>
+<ul>
+  <li><strong>You.</strong> Through your own Handy account.</li>
+  <li><strong>Classmates on your timetable</strong> can see that a shared timetable changed, and the changed periods — because the timetable is a class-level fact, not a personal one. Your attendance, marks, and personal details are never shown to another student.</li>
+  <li><strong>Nobody else.</strong> The data is not sold, rented, traded, or handed to advertisers, data brokers, or the university, and it is not used to train any model.</li>
+</ul>
+
+<h2>How long it is kept</h2>
+<p>Your data stays for as long as you keep a Handy account, because the app's purpose is to show you your record over a semester. Notification records older than 45 days are deleted automatically. Ask for deletion and the account and its data go.</p>
+
+<h2>Removing it</h2>
+<ul>
+  <li><strong>Stop the syncing:</strong> remove the extension from your browser's extensions page. Everything it stored on your device goes with it, and no further data is read.</li>
+  <li><strong>Delete what was already synced:</strong> email the address below from the account you want deleted, or ask inside the app. It will be removed from Firebase.</li>
+</ul>
+
+<h2>Children</h2>
+<p>Handy is for enrolled university students and is not directed at children under 13.</p>
+
+<h2>Changes</h2>
+<p>If what the extension collects ever changes, this page changes with it, and the date at the top moves. Material changes will be announced in the app rather than left here to be discovered.</p>
+
+<h2>Contact</h2>
+<p>Questions, data requests, or anything that looks wrong: <a href="mailto:vijaypardhu17@gmail.com">vijaypardhu17@gmail.com</a>.</p>
+
+<footer>
+  Handy · an independent project, not affiliated with Aditya University.
+</footer>
+
+</div>
+</body>
+</html>
