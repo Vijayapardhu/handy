@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, ChevronRight, Megaphone, Paperclip } from "lucide-react";
+import { AlertTriangle, ChevronRight, Megaphone, Paperclip } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useGroupAnnouncements, useMyClassGroups } from "@/hooks/useClassRep";

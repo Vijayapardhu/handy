@@ -7,11 +7,11 @@ import {
   Clock,
   Briefcase,
   BookOpen,
-  type LucideIcon,
-} from "lucide-react";
+  type IconComponent,
+} from "@/components/ui/icons";
 import type { SubjectIcon } from "@/types/subject";
 
-export const SUBJECT_ICONS: Record<SubjectIcon, LucideIcon> = {
+export const SUBJECT_ICONS: Record<SubjectIcon, IconComponent> = {
   rocket: Rocket,
   "pie-chart": PieChart,
   code: Code2,

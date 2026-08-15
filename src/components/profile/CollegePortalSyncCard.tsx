@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, ExternalLink, Trash2, PlugZap, DownloadCloud } from "lucide-react";
+import { RefreshCw, ExternalLink, Trash2, PlugZap, DownloadCloud } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarX2 } from "lucide-react";
+import { ArrowRight, CalendarX2 } from "@/components/ui/icons";
 import { ClassCard } from "@/components/timetable/ClassCard";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";

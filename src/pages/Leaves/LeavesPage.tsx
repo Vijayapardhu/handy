@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FileText, Plus, CalendarClock } from "lucide-react";
+import { FileText, Plus, CalendarClock } from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";

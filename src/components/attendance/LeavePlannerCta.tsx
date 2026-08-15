@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, CalendarClock } from "lucide-react";
+import { ArrowRight, CalendarClock } from "@/components/ui/icons";
 import { ROUTES } from "@/constants/routes";
 import styles from "./LeavePlannerCta.module.css";
 

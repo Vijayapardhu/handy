@@ -1,4 +1,4 @@
-import { Coffee } from "lucide-react";
+import { Coffee } from "@/components/ui/icons";
 import { formatTime12h } from "@/lib/date";
 import type { FreePeriod } from "@/lib/calculations/timetable";
 import styles from "./FreePeriodRow.module.css";

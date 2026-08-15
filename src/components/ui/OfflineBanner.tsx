@@ -1,4 +1,4 @@
-import { WifiOff } from "lucide-react";
+import { WifiOff } from "./icons";
 import { useIsOnline } from "@/app/providers/NetworkStatusProvider";
 import styles from "./OfflineBanner.module.css";
 

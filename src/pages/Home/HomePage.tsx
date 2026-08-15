@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Bell, Menu } from "lucide-react";
+import { Bell, Menu } from "@/components/ui/icons";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useSubjectsWithAttendance, useSubject } from "@/hooks/useSubjects";

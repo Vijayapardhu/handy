@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "./icons";
 import { cn } from "@/lib/utils/cn";
 import styles from "./Button.module.css";
 

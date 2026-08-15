@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "./icons";
 import { Button } from "./Button";
 import styles from "./ErrorState.module.css";
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { RefreshCcw, CalendarX2, CalendarSearch, MessageSquarePlus } from "lucide-react";
+import { RefreshCcw, CalendarX2, CalendarSearch, MessageSquarePlus } from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { DayTabs } from "@/components/timetable/DayTabs";
 import { ClassCard } from "@/components/timetable/ClassCard";

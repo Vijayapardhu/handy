@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Activity, BookOpen, Calendar, History as HistoryIcon } from "lucide-react";
+import { Activity, BookOpen, Calendar, History as HistoryIcon } from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { OverviewPanel } from "@/components/attendance/OverviewPanel";
 import { SubjectsPanel } from "@/components/attendance/SubjectsPanel";

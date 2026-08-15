@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { ArrowRight, Eye, EyeOff, Puzzle } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Puzzle } from "@/components/ui/icons";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { loginSchema, type LoginFormValues } from "@/lib/validators/auth";
 import { toFriendlyAuthMessage } from "@/lib/utils/errors";

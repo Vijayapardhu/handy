@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, BookOpen, Calendar, ClipboardList, FileText, User } from "lucide-react";
+import { Home, BookOpen, Calendar, ClipboardList, FileText, User } from "@/components/ui/icons";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils/cn";
 import styles from "./BottomNav.module.css";

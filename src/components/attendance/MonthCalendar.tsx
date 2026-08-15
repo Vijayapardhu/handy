@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, CalendarOff, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, CalendarOff, ShieldCheck } from "@/components/ui/icons";
 import { addMonths, format, getDaysInMonth, startOfMonth, subMonths } from "date-fns";
 import { cn } from "@/lib/utils/cn";
 import { dominantStatus } from "@/lib/calculations/dayStatus";

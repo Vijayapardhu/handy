@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, ChevronLeft, ChevronRight, Lightbulb, FilePlus, ListChecks } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Lightbulb, FilePlus, ListChecks } from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { SubjectRow } from "@/components/attendance/SubjectRow";
 import { SkeletonCard } from "@/components/ui/Skeleton";

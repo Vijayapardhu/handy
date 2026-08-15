@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { AlertTriangle, ExternalLink, FileText, Globe, PlayCircle } from "lucide-react";
+import { AlertTriangle, ExternalLink, FileText, Globe, PlayCircle } from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";

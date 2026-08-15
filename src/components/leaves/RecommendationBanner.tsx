@@ -1,4 +1,4 @@
-import { ShieldAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
+import { ShieldAlert, ShieldCheck, ShieldQuestion } from "@/components/ui/icons";
 import type { LeaveRecommendation } from "@/types/leave";
 import styles from "./RecommendationBanner.module.css";
 

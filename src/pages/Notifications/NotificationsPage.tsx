@@ -1,4 +1,4 @@
-import { Bell, BellOff, Calendar, TrendingDown, Target, FileText, Megaphone, CheckCheck } from "lucide-react";
+import { Bell, BellOff, Calendar, TrendingDown, Target, FileText, Megaphone, CheckCheck } from "@/components/ui/icons";
 import { Link } from "react-router-dom";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Button } from "@/components/ui/Button";

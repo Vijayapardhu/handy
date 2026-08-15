@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
-import { Inbox } from "lucide-react";
+import { Inbox, type IconComponent } from "./icons";
 import styles from "./EmptyState.module.css";
 
 interface EmptyStateProps {
-  icon?: LucideIcon;
+  icon?: IconComponent;
   title: string;
   description?: string;
   action?: ReactNode;

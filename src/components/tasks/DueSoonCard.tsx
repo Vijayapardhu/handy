@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronRight, ClipboardList } from "lucide-react";
+import { ChevronRight, ClipboardList } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { getDeadline, getDueSoon } from "@/lib/calculations/deadlines";
 import { useTasks } from "@/hooks/useTasks";

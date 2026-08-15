@@ -1,4 +1,4 @@
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2 } from "@/components/ui/icons";
 import { getDeadline } from "@/lib/calculations/deadlines";
 import { formatTime12h, todayIso } from "@/lib/date";
 import { TASK_KIND_LABELS, type TaskDoc } from "@/types/task";

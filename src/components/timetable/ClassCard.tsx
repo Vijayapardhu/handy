@@ -1,4 +1,4 @@
-import { ClipboardList, MapPin } from "lucide-react";
+import { ClipboardList, MapPin } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { formatTime12h } from "@/lib/date";
 import type { TimetableEntryDoc, TimetableEntryType } from "@/types/timetable";

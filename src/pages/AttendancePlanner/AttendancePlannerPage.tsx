@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Target, CheckCircle2, Info, Flag, ShieldCheck, TrendingDown } from "lucide-react";
+import { Target, CheckCircle2, Info, Flag, ShieldCheck, TrendingDown } from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";

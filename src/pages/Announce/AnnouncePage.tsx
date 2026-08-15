@@ -12,7 +12,7 @@ import {
   Send,
   Users,
   X,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";

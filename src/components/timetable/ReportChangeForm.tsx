@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, Send, X } from "lucide-react";
+import { CheckCircle2, Send, X } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { timetableReportSchema, type TimetableReportFormValues } from "@/lib/validators/timetableReport";

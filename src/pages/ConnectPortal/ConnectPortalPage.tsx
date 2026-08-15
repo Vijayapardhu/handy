@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { ExternalLink, RefreshCw, CheckCircle2, AlertTriangle, DownloadCloud } from "lucide-react";
+import { ExternalLink, RefreshCw, CheckCircle2, AlertTriangle, DownloadCloud } from "@/components/ui/icons";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useCollegePortalSync } from "@/hooks/useCollegePortalSync";
 import { importCollegePortalSnapshot } from "@/services/students/collegePortalImportService";

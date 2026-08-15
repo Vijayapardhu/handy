@@ -1,4 +1,4 @@
-import { Flame, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Flame, TrendingUp, TrendingDown, Minus } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useRecentAttendance } from "@/hooks/useRecentAttendance";

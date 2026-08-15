@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCircle2, XCircle, CalendarOff, ShieldCheck, History } from "lucide-react";
+import { ArrowRight, CheckCircle2, XCircle, CalendarOff, ShieldCheck, History } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";

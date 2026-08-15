@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, ChevronRight, PartyPopper } from "lucide-react";
+import { AlertTriangle, ChevronRight, PartyPopper } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { SUBJECT_ICONS } from "@/constants/subjectIcons";
