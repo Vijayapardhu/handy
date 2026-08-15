@@ -1,4 +1,5 @@
 import styles from "../landing.module.css";
+import { BrandMark } from "../components/BrandMark";
 import { ANDROID, EXTENSION, LINKS } from "@/constants/download";
 
 export function Footer() {
@@ -7,9 +8,7 @@ export function Footer() {
       <div className={styles.footerInner}>
         <div>
           <span className={styles.brand}>
-            <span className={styles.brandMark} aria-hidden="true">
-              H
-            </span>
+            <BrandMark size={30} className={styles.brandMark} />
             Handy
           </span>
           <p className={styles.downloadMeta}>
@@ -20,15 +19,18 @@ export function Footer() {
         </div>
 
         <nav className={styles.footerLinks} aria-label="Sections">
+          <span className={styles.footerLinksTitle}>The page</span>
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
-          <a href="#android">Install</a>
-          <a href="#extension">Extension</a>
+          <a href="#android">Install on Android</a>
+          <a href="#extension">Extension setup</a>
           <a href="#privacy">Privacy</a>
           <a href="#faq">FAQ</a>
         </nav>
 
         <nav className={styles.footerLinks} aria-label="Project">
+          <span className={styles.footerLinksTitle}>Project</span>
+          <a href={LINKS.webApp}>Web app</a>
           <a href={LINKS.repo}>Source</a>
           <a href={LINKS.releases}>Releases</a>
           <a href={LINKS.issues}>Report a problem</a>

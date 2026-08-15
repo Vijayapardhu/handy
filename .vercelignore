@@ -1,0 +1,20 @@
+# The Flutter app is not part of the web deployment.
+#
+# Without this, `vercel deploy` walks mobile/build — 2.7 GB of Gradle
+# intermediates and a 100 MB+ libflutter.so — and fails on the file size limit
+# before it uploads anything. The serverless functions in api/ and the Vite
+# build in src/ are the whole of what Vercel needs.
+mobile/
+
+# Server-side credentials. Vercel reads the service account from the
+# FIREBASE_SERVICE_ACCOUNT environment variable, never from a file in the
+# bundle — a key inside a deployment is a key inside every function's disk.
+service-account.json
+
+# Local-only.
+.env.local
+scripts/
+
+# NOT excluded, despite being a browser extension: api/sync.js imports
+# extension/src/snapshotMapping.js so the server and the extension write
+# byte-identical documents. Excluding it breaks the function build.

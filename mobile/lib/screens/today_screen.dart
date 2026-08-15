@@ -902,7 +902,7 @@ class _AtRiskStrip extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${row.percent!.toStringAsFixed(1)}%',
+                        '${row.percent!.toStringAsFixed(2)}%',
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,

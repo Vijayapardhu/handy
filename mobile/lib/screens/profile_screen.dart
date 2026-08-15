@@ -7,7 +7,9 @@ import '../models/models.dart';
 import '../theme.dart';
 import '../widgets/detail_row.dart';
 import '../widgets/student_photo.dart';
+import 'account_screens.dart';
 import 'settings_screen.dart';
+import 'support_screens.dart';
 import 'subjects_screen.dart';
 
 /// Identity and account.
@@ -32,7 +34,9 @@ class ProfileScreen extends StatelessWidget {
     final weekly = state.entries.where((e) => e.active).length;
 
     return Scaffold(
-      body: CustomScrollView(
+      body: ListenableBuilder(
+        listenable: settings,
+        builder: (context, _) => CustomScrollView(
         slivers: [
           SliverAppBar.large(title: const Text('Profile'), expandedHeight: 120),
           SliverPadding(
@@ -48,8 +52,13 @@ class ProfileScreen extends StatelessWidget {
                 // doing.
                 Row(
                   children: [
+                    // Two decimals, matching the portal and every other
+                    // percentage in the app. One decimal rounded 70.38 to
+                    // 70.4, which reads as a different number from the one on
+                    // the home screen and invites the question of which is
+                    // right.
                     _Stat(
-                      value: percent == null ? '—' : '${percent.toStringAsFixed(1)}%',
+                      value: percent == null ? '—' : '${percent.toStringAsFixed(2)}%',
                       label: 'Attendance',
                       colour: statusColour(percent),
                     ),
@@ -89,63 +98,121 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 22),
-                const _Label('Where this comes from'),
+                const SizedBox(height: 26),
+                const _Label('Account'),
                 const SizedBox(height: 10),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.sync, size: 18, color: HandyColors.orange),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Campus Connect',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Your attendance and timetable are captured from the college '
-                          'portal by the Handy extension on your laptop. Nothing here is '
-                          'typed in by hand, and nothing you do in this app changes the '
-                          'college record. Open your profile on the portal to refresh it.',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 22),
-                // One card, two rows: these are the only controls on the page,
-                // and separate cards made two buttons look like two sections.
                 Card(
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
                       _ActionRow(
-                        icon: Icons.tune,
-                        label: 'Settings',
-                        detail: 'Theme, accent, name, widgets, password',
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-                        ),
+                        icon: Icons.person_outline,
+                        label: 'Personal Information',
+                        detail: 'View and edit your details',
+                        onTap: () => _push(context, const PersonalInformationScreen()),
                       ),
-                      Divider(height: 1, color: Theme.of(context).dividerColor),
+                      const _Rule(),
                       _ActionRow(
-                        icon: Icons.logout,
-                        label: 'Sign out',
-                        colour: HandyColors.bad,
-                        onTap: () => _confirmSignOut(context),
+                        icon: Icons.school_outlined,
+                        label: 'Academic Information',
+                        detail: 'Course, Year, Department',
+                        onTap: () => _push(context, const AcademicInformationScreen()),
+                      ),
+                      const _Rule(),
+                      _ActionRow(
+                        icon: Icons.notifications_none,
+                        label: 'Notifications',
+                        detail: 'Manage notification preferences',
+                        onTap: () => _push(context, const NotificationSettingsScreen()),
+                      ),
+                      const _Rule(),
+                      _ActionRow(
+                        icon: Icons.lock_outline,
+                        label: 'Change Password',
+                        detail: 'Handy has no reset email — change it here',
+                        onTap: () => _push(context, const ChangePasswordScreen()),
                       ),
                     ],
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+                const _Label('Preferences'),
+                const SizedBox(height: 10),
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      // The switch is the control and the caption is the state,
+                      // so a student can tell what "off" means here — with
+                      // System selected it does not mean "light".
+                      SwitchListTile(
+                        value: settings.themeMode == ThemeMode.dark,
+                        onChanged: (on) => settings.setThemeMode(
+                          on ? ThemeMode.dark : ThemeMode.system,
+                        ),
+                        secondary: const Icon(Icons.dark_mode_outlined, size: 19),
+                        title: const Text('Dark Mode',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                          switch (settings.themeMode) {
+                            ThemeMode.dark => 'On',
+                            ThemeMode.light => 'Off — always light',
+                            ThemeMode.system => 'Off — matches your device by default',
+                          },
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                      const _Rule(),
+                      _ActionRow(
+                        icon: Icons.tune,
+                        label: 'All settings',
+                        detail: 'Accent colour, theme, widgets',
+                        onTap: () => _push(context, const SettingsScreen()),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+                const _Label('Support & more'),
+                const SizedBox(height: 10),
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      _ActionRow(
+                        icon: Icons.help_outline,
+                        label: 'Help & FAQ',
+                        detail: 'Get help and find answers',
+                        onTap: () => _push(context, const FaqScreen()),
+                      ),
+                      const _Rule(),
+                      _ActionRow(
+                        icon: Icons.mail_outline,
+                        label: 'Feedback',
+                        detail: 'Share your feedback with us',
+                        onTap: () => _push(context, const FeedbackScreen()),
+                      ),
+                      const _Rule(),
+                      _ActionRow(
+                        icon: Icons.info_outline,
+                        label: 'About Handy',
+                        detail: 'Version $handyVersion',
+                        onTap: () => _push(context, const AboutScreen()),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: _ActionRow(
+                    icon: Icons.logout,
+                    label: 'Log Out',
+                    colour: HandyColors.bad,
+                    onTap: () => _confirmSignOut(context),
                   ),
                 ),
 
@@ -162,6 +229,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -180,6 +248,10 @@ class ProfileScreen extends StatelessWidget {
 
     if (below == 0) return 'None';
     return '$below subject${below == 1 ? '' : 's'}';
+  }
+
+  static void _push(BuildContext context, Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
   void _confirmSignOut(BuildContext context) {
@@ -373,6 +445,15 @@ class _ActionRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A hairline between rows in a grouped card.
+class _Rule extends StatelessWidget {
+  const _Rule();
+
+  @override
+  Widget build(BuildContext context) =>
+      Divider(height: 1, color: Theme.of(context).dividerColor);
 }
 
 class _Label extends StatelessWidget {

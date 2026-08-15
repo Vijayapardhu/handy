@@ -1,11 +1,16 @@
 /*
- * Marketing palette for the landing page.
+ * Marketing palette and spacing scale for the landing page.
  *
  * Scoped to [data-landing] rather than :root so ThemeProvider's light/dark
  * toggle can't repaint it — the page is deliberately dark in both, the way a
  * product site usually is, while the app itself stays whatever the student
- * chose. The primary orange and the radius/space scale come straight from
- * tokens.css so the page and the product read as one thing.
+ * chose. The primary orange comes straight from tokens.css so the page and the
+ * product read as one thing.
+ *
+ * The spacing scale is separate from the app's --space-* for a reason: the app
+ * is a phone column where 24px is a large gap, and a marketing page needs
+ * room an order of magnitude bigger. Mixing the two scales is what makes a
+ * landing page feel cramped in some places and arbitrary in others.
  */
 
 [data-landing] {
@@ -28,16 +33,48 @@
   --l-warn: #fbbf24;
   --l-bad: #f87171;
 
+  /* Spacing scale. Every gap on this page comes from here — a one-off pixel
+     value is how vertical rhythm drifts section by section. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 88px;
+
+  /* Fluid, because a 140px section gap on a phone is dead space. */
+  --s-section: clamp(76px, 9.5vw, 132px);
+  --s-head: clamp(36px, 4.5vw, 60px);
+
+  /* Phone mockup size, in one place because the cluster has to reserve exactly
+     the device's height to keep it off the section edges. Capped against the
+     viewport height as well as its width, so a short laptop screen shrinks the
+     phone rather than cropping it. */
+  --phone-w: min(clamp(196px, 23vw, 278px), 40svh);
+  --phone-h: calc(var(--phone-w) * 620 / 300);
+
   --l-nav-height: 64px;
-  --l-max: 1140px;
-  --l-gutter: 24px;
+  --l-max: 1120px;
+  --l-gutter: 20px;
+  /* Comfortable reading measure, applied to prose rather than to containers,
+     so text stays readable while cards and rails use the full width. */
+  --l-measure: 64ch;
 
   /* One easing for everything that moves, so the page has a single feel. */
   --l-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   [data-landing] {
-    --l-gutter: 40px;
+    --l-gutter: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-landing] {
+    --l-gutter: 48px;
   }
 }

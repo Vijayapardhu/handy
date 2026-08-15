@@ -188,4 +188,37 @@ class Repository {
       };
 
   Future<void> deleteTask(String taskId) => _db.collection('tasks').doc(taskId).delete();
+
+  /// Help content, maintained centrally rather than shipped in the binary — an
+  /// answer that needs an app update to correct will stay wrong.
+  ///
+  /// Ordered here rather than in the query so the collection needs no index,
+  /// and so an entry with a missing `order` sinks rather than disappearing.
+  Future<List<Faq>> faqs() async {
+    final snap = await _db.collection('faqs').where('active', isEqualTo: true).get();
+    final rows = snap.docs.map((d) => Faq.fromMap(d.id, d.data())).toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+    return rows;
+  }
+
+  /// Feedback is write-only: firestore.rules refuses reads to every client,
+  /// including the student who wrote it. It is read with the Admin SDK.
+  Future<void> sendFeedback({
+    required String message,
+    required String kind,
+    required String appVersion,
+    String? rollNumber,
+    String? contact,
+  }) async {
+    await _db.collection('feedback').add({
+      'studentId': _uid,
+      'rollNumber': rollNumber ?? '',
+      'kind': kind,
+      'message': message.trim(),
+      'contact': contact?.trim() ?? '',
+      'appVersion': appVersion,
+      'platform': 'android',
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+  }
 }

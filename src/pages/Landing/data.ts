@@ -3,6 +3,19 @@
  * reading JSX. Everything here describes something that actually ships — if a
  * feature is removed from the product, its entry comes out of this file.
  */
+import {
+  Airplane01Icon,
+  Analytics01Icon,
+  Calendar03Icon,
+  ChartLineData02Icon,
+  Clock01Icon,
+  Csv01Icon,
+  Grid02Icon,
+  Notification03Icon,
+  Task01Icon,
+  Target01Icon,
+  Wifi01Icon,
+} from "@hugeicons/core-free-icons";
 
 /**
  * The eight widget palettes, mirroring THEMES in
@@ -26,26 +39,31 @@ export type WidgetTheme = (typeof WIDGET_THEMES)[number];
 export const WIDGETS = [
   {
     id: "next",
+    icon: Clock01Icon,
     name: "Next class",
     blurb: "Where to be, which room, and how long you have.",
   },
   {
     id: "attendance",
+    icon: Analytics01Icon,
     name: "Attendance",
     blurb: "The one number, without opening anything.",
   },
   {
     id: "today",
+    icon: Calendar03Icon,
     name: "Today",
     blurb: "Every session for the day, in order.",
   },
   {
     id: "dues",
+    icon: Task01Icon,
     name: "Dues",
     blurb: "Assignments and deadlines closing in.",
   },
   {
     id: "overview",
+    icon: Grid02Icon,
     name: "Overview",
     blurb: "Build your own — pick the rows and their order.",
   },
@@ -53,38 +71,47 @@ export const WIDGETS = [
 
 export const FEATURES = [
   {
+    icon: Target01Icon,
     title: "Attendance planner",
     body: "How many classes you must attend to reach 75%, where you land if you keep showing up, and how many you can still miss. Per subject, not just overall.",
   },
   {
+    icon: ChartLineData02Icon,
     title: "Subject breakdown",
     body: "Held, attended and percentage for every subject, with an eight-week trend so you can see which way it is moving.",
   },
   {
+    icon: Calendar03Icon,
     title: "Timetable that knows the date",
     body: "Your weekly grid, versioned by effective date — jump to any day and see the timetable that actually applied then.",
   },
   {
+    icon: Task01Icon,
     title: "Deadlines with steps",
     body: "Break an assignment into steps, set it to repeat weekly, and see what is due in the next few days on the home screen.",
   },
   {
+    icon: Airplane01Icon,
     title: "Leave planner",
     body: "Enter the dates you want to be away and see exactly what it costs each subject before you commit to it.",
   },
   {
+    icon: Grid02Icon,
     title: "Home-screen widgets",
     body: "Five widgets in eight palettes and four typefaces, sized to fit the space you give them. Answers without unlocking anything.",
   },
   {
+    icon: Notification03Icon,
     title: "Alerts that matter",
     body: "A push notification when a subject drops below the threshold — not a daily digest you learn to swipe away.",
   },
   {
+    icon: Wifi01Icon,
     title: "Works offline",
     body: "The last sync is cached and readable with no signal. When you are offline you are told, never quietly shown stale numbers as if they were live.",
   },
   {
+    icon: Csv01Icon,
     title: "Yours to take",
     body: "Dark mode throughout, and one tap to export your whole attendance history as CSV.",
   },

@@ -1,6 +1,9 @@
 import { useEffect, useState, type MutableRefObject } from "react";
 import type Lenis from "lenis";
+import { Cancel01Icon, Download04Icon, Menu01Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
+import { BrandMark } from "../components/BrandMark";
+import { Icon } from "../components/Icon";
 import { scrollToHash } from "../hooks/useLenis";
 import { ANDROID } from "@/constants/download";
 
@@ -51,9 +54,7 @@ export function LandingNav({ lenis }: { lenis: MutableRefObject<Lenis | null> })
             toTop();
           }}
         >
-          <span className={styles.brandMark} aria-hidden="true">
-            H
-          </span>
+          <BrandMark size={30} className={styles.brandMark} />
           Handy
         </a>
 
@@ -66,6 +67,7 @@ export function LandingNav({ lenis }: { lenis: MutableRefObject<Lenis | null> })
         </div>
 
         <a className={`${styles.btnPrimary} ${styles.btnSmall}`} href={ANDROID.url}>
+          <Icon icon={Download04Icon} size={16} />
           Download APK
         </a>
 
@@ -76,9 +78,7 @@ export function LandingNav({ lenis }: { lenis: MutableRefObject<Lenis | null> })
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           onClick={() => setMenuOpen((v) => !v)}
         >
-          <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            {menuOpen ? <path d="M5 5l10 10M15 5L5 15" /> : <path d="M3 6h14M3 10h14M3 14h14" />}
-          </svg>
+          <Icon icon={menuOpen ? Cancel01Icon : Menu01Icon} size={19} />
         </button>
 
         {menuOpen && (

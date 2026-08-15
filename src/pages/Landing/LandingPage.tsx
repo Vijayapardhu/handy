@@ -53,7 +53,7 @@ export function LandingPage() {
     // markup doesn't exist yet), so the scroll is redone once it does.
     const hash = window.location.hash;
     if (!hash || hash === "#top") return;
-    const id = window.setTimeout(() => scrollToHash(lenis.current, hash), 120);
+    const id = window.setTimeout(() => scrollToHash(lenis.current, hash, { immediate: true }), 120);
     return () => window.clearTimeout(id);
   }, [lenis]);
 

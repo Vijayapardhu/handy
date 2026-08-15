@@ -181,3 +181,30 @@ class Task {
         ),
       );
 }
+
+/// One help entry, maintained in Firestore rather than shipped in the binary:
+/// an answer that needs an app release to correct will stay wrong.
+class Faq {
+  const Faq({
+    required this.id,
+    required this.category,
+    required this.question,
+    required this.answer,
+    required this.order,
+  });
+
+  final String id;
+  final String category;
+  final String question;
+  final String answer;
+  final int order;
+
+  factory Faq.fromMap(String id, Map<String, dynamic> d) => Faq(
+        id: id,
+        category: d['category'] as String? ?? 'General',
+        question: d['question'] as String? ?? '',
+        answer: d['answer'] as String? ?? '',
+        // Missing order sinks to the bottom rather than jumping to the top.
+        order: (d['order'] as num?)?.toInt() ?? 9999,
+      );
+}

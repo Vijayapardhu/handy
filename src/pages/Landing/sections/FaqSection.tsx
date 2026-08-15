@@ -4,15 +4,18 @@ import { delay } from "../reveal";
 
 export function FaqSection() {
   return (
-    <section className={styles.section} id="faq">
-      <div className={`${styles.inner} ${styles.narrow}`}>
-        <span className={styles.eyebrow} data-reveal>
-          Questions
-        </span>
-        <h2 className={`${styles.h2} ${styles.sectionHead}`} data-reveal style={delay(0.05)}>
-          The ones everybody asks
-        </h2>
-        <div data-reveal style={delay(0.1)}>
+    <section className={`${styles.section} ${styles.sectionRuled}`} id="faq">
+      <div className={`${styles.inner} ${styles.split}`}>
+        <div className={styles.splitHead}>
+          <span className={styles.eyebrow} data-reveal>
+            Questions
+          </span>
+          <h2 className={styles.h2} data-reveal style={delay(0.05)}>
+            The ones everybody asks
+          </h2>
+        </div>
+
+        <div data-reveal>
           <Faq />
         </div>
       </div>

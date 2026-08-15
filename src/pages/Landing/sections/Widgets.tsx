@@ -2,6 +2,7 @@ import { useState } from "react";
 import styles from "../landing.module.css";
 import { WIDGETS, WIDGET_THEMES, type WidgetTheme } from "../data";
 import { WidgetPreview } from "../components/WidgetPreview";
+import { Icon } from "../components/Icon";
 import { useScrollProgress } from "../hooks/useScrollProgress";
 import { delay } from "../reveal";
 
@@ -22,19 +23,21 @@ export function Widgets() {
   const [theme, setTheme] = useState<WidgetTheme>(WIDGET_THEMES[0]);
 
   return (
-    <section className={styles.section} id="widgets">
-      <div className={`${styles.inner} ${styles.narrow} ${styles.sectionHead}`}>
-        <span className={styles.eyebrow} data-reveal>
-          Home screen
-        </span>
-        <h2 className={styles.h2} data-reveal style={delay(0.05)}>
-          Five widgets. Eight palettes. No unlocking.
-        </h2>
-        <p className={styles.lede} data-reveal style={delay(0.1)}>
-          Most days the only question is &ldquo;where am I meant to be, and am I still fine?&rdquo;.
-          That answer belongs on the home screen, not three taps into an app. Each widget resizes to
-          the space you give it and picks up the palette and typeface you chose.
-        </p>
+    <section className={`${styles.section} ${styles.sectionRuled}`} id="widgets">
+      <div className={styles.inner}>
+        <div className={styles.sectionHead}>
+          <span className={styles.eyebrow} data-reveal>
+            Home screen
+          </span>
+          <h2 className={styles.h2} data-reveal style={delay(0.05)}>
+            Five widgets. Eight palettes. No unlocking.
+          </h2>
+          <p className={styles.lede} data-reveal style={delay(0.1)}>
+            Most days the only question is &ldquo;where am I meant to be, and am I still fine?&rdquo;.
+            That answer belongs on the home screen, not three taps into an app. Each widget resizes to
+            the space you give it and picks up the palette and typeface you chose.
+          </p>
+        </div>
       </div>
 
       <div className={styles.inner}>
@@ -44,16 +47,17 @@ export function Widgets() {
               <div className={styles.widgetItem} key={w.id}>
                 <WidgetPreview id={w.id} theme={theme} />
                 <div className={styles.widgetCaption}>
-                  <div className={styles.widgetCaptionName}>{w.name}</div>
+                  <div className={styles.widgetCaptionName}>
+                    <Icon icon={w.icon} size={17} />
+                    {w.name}
+                  </div>
                   <p className={styles.widgetCaptionBlurb}>{w.blurb}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      <div className={styles.inner}>
         <div className={styles.swatches} data-reveal role="group" aria-label="Widget palette">
           {WIDGET_THEMES.map((t) => (
             <button

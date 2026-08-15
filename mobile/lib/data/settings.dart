@@ -30,6 +30,9 @@ class AppSettings extends ChangeNotifier {
   static const _widgetFontKey = 'handy.widgetFont';
   static const _widgetTextColourKey = 'handy.widgetTextColour';
   static const _widgetBlocksKey = 'handy.widgetBlocks';
+  static const _remindDeadlinesKey = 'handy.remindDeadlines';
+  static const _remindClassesKey = 'handy.remindClasses';
+  static const _notifyNewDataKey = 'handy.notifyNewData';
 
   ThemeMode themeMode = ThemeMode.system;
   AccentChoice accent = AccentChoice.orange;
@@ -58,6 +61,12 @@ class AppSettings extends ChangeNotifier {
   /// each palette already pairs a background with text that stays legible on
   /// it, and picking the two independently is how people get white on white.
   String widgetTextColour = '';
+
+  /// What Handy may interrupt for. All on by default: a reminder app whose
+  /// reminders are off by default is a calendar you have to remember to read.
+  bool remindDeadlines = true;
+  bool remindClasses = true;
+  bool notifyNewData = true;
 
   /// Which blocks the Overview widget shows, in order. This is the whole
   /// point of that widget, so it is a list rather than a set of switches.
@@ -92,6 +101,10 @@ class AppSettings extends ChangeNotifier {
       orElse: () => WidgetFont.system,
     );
     widgetTextColour = prefs.getString(_widgetTextColourKey) ?? '';
+
+    remindDeadlines = prefs.getBool(_remindDeadlinesKey) ?? true;
+    remindClasses = prefs.getBool(_remindClassesKey) ?? true;
+    notifyNewData = prefs.getBool(_notifyNewDataKey) ?? true;
 
     final blocks = prefs.getStringList(_widgetBlocksKey);
     if (blocks != null && blocks.isNotEmpty) {
@@ -169,6 +182,27 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_widgetTextColourKey, hex);
+  }
+
+  Future<void> setRemindDeadlines(bool on) async {
+    remindDeadlines = on;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_remindDeadlinesKey, on);
+  }
+
+  Future<void> setRemindClasses(bool on) async {
+    remindClasses = on;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_remindClassesKey, on);
+  }
+
+  Future<void> setNotifyNewData(bool on) async {
+    notifyNewData = on;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_notifyNewDataKey, on);
   }
 
   Future<void> setWidgetBlocks(List<WidgetBlock> blocks) async {

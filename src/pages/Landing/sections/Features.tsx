@@ -1,20 +1,21 @@
 import styles from "../landing.module.css";
+import { Icon } from "../components/Icon";
 import { FEATURES } from "../data";
 import { delay } from "../reveal";
 
 export function Features() {
   return (
-    <section className={styles.section} id="features">
-      <div className={`${styles.inner} ${styles.narrow} ${styles.sectionHead}`}>
-        <span className={styles.eyebrow} data-reveal>
-          What you get
-        </span>
-        <h2 className={styles.h2} data-reveal style={delay(0.05)}>
-          Everything the portal knows, plus what it never worked out for you.
-        </h2>
-      </div>
-
+    <section className={`${styles.section} ${styles.sectionRuled}`} id="features">
       <div className={styles.inner}>
+        <div className={styles.sectionHead}>
+          <span className={styles.eyebrow} data-reveal>
+            What you get
+          </span>
+          <h2 className={styles.h2} data-reveal style={delay(0.05)}>
+            Everything the portal knows, plus what it never worked out for you.
+          </h2>
+        </div>
+
         <div className={styles.featureGrid}>
           {FEATURES.map((f, i) => (
             <article
@@ -25,6 +26,9 @@ export function Features() {
               // one-by-one takes most of a second to finish arriving.
               style={delay((i % 3) * 0.07)}
             >
+              <span className={styles.featureIcon}>
+                <Icon icon={f.icon} size={21} />
+              </span>
               <h3 className={styles.featureTitle}>{f.title}</h3>
               <p className={styles.featureBody}>{f.body}</p>
             </article>

@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
+import { Icon } from "./Icon";
 import { FAQS } from "../data";
 
 /**
@@ -39,17 +41,9 @@ export function Faq() {
                 onClick={() => toggle(i)}
               >
                 {item.q}
-                <svg
-                  className={`${styles.faqSign} ${isOpen ? styles.faqSignOpen : ""}`}
-                  viewBox="0 0 14 14"
-                  aria-hidden="true"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                >
-                  <path d="M7 1v12M1 7h12" />
-                </svg>
+                <span className={`${styles.faqSign} ${isOpen ? styles.faqSignOpen : ""}`}>
+                  <Icon icon={PlusSignIcon} size={17} />
+                </span>
               </button>
             </h3>
             <div

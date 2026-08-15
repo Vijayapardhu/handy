@@ -12,7 +12,11 @@
       "Bash(rm -f test/widget_test.dart)",
       "Bash(flutter test *)",
       "Bash(node check-account.tmp.mjs)",
-      "Bash(node migrate-passwords.tmp.mjs)"
+      "Bash(node migrate-passwords.tmp.mjs)",
+      "Bash(sed -i \"/^import '..\\\\/data\\\\/settings.dart';$/d\" lib/screens/account_screens.dart lib/screens/profile_screen.dart)",
+      "Bash(flutter analyze *)",
+      "Bash(sed -i 's/toStringAsFixed\\(1\\)}%/toStringAsFixed\\(2\\)}%/' lib/screens/profile_screen.dart lib/screens/today_screen.dart)",
+      "Bash(python -)"
     ]
   }
 }

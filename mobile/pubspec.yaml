@@ -45,6 +45,7 @@ dependencies:
   cached_network_image: ^3.4.1
   firebase_messaging: ^16.5.0
   hugeicons: ^1.1.7
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

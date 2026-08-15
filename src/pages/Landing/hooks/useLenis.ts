@@ -30,10 +30,15 @@ export function useLenis() {
     if (reduceMotion || isTouch) return;
 
     const lenis = new Lenis({
-      // Lower lerp = heavier, longer glide. 0.085 is the point where it reads
-      // as deliberate rather than sluggish at 60fps.
-      lerp: 0.085,
-      wheelMultiplier: 0.9,
+      // Lower lerp = heavier, longer glide. Below about 0.06 the page starts
+      // arriving noticeably after the wheel stops, which reads as lag rather
+      // than weight; 0.07 is the heaviest setting that still feels connected.
+      lerp: 0.07,
+      // Slightly under 1 so a single wheel notch travels a shorter distance
+      // and the easing has room to be visible. Above 1 the glide is over
+      // before it registers.
+      wheelMultiplier: 0.85,
+      touchMultiplier: 1.6,
       // Anchors are handled explicitly (see scrollToHash) so the offset for
       // the sticky nav can be applied.
       anchors: false,
@@ -63,15 +68,24 @@ export function useLenis() {
  * Falls back to the platform's own smooth scroll when Lenis opted out, so the
  * in-page links keep working on a phone and under reduced motion (where the
  * browser honours the setting for `behavior: "smooth"` on its own).
+ *
+ * `immediate` jumps with no animation. That is what an arriving deep link
+ * wants: a shared `/#extension` is a request to *be* at that section, and
+ * gliding someone through nine thousand pixels of page they didn't ask to see
+ * is a worse answer than the plain jump a normal browser anchor would do. It
+ * also can't be interrupted — a smooth scroll that starts while the tab is in
+ * the background never advances, and the reader lands at the top instead.
  */
-export function scrollToHash(lenis: Lenis | null, hash: string, offset = -84) {
+export function scrollToHash(lenis: Lenis | null, hash: string, { offset = -88, immediate = false } = {}) {
   const el = document.querySelector(hash);
   if (!el) return;
 
   if (lenis) {
-    lenis.scrollTo(el as HTMLElement, { offset, duration: 1.4 });
+    // Lenis does its own scrolling and doesn't read scroll-margin, so the nav
+    // clearance is passed explicitly here. The CSS rule covers every other
+    // path (native fragment jumps, find-in-page, keyboard navigation).
+    lenis.scrollTo(el as HTMLElement, { offset, duration: 1.4, immediate });
     return;
   }
-  const top = el.getBoundingClientRect().top + window.scrollY + offset;
-  window.scrollTo({ top, behavior: "smooth" });
+  el.scrollIntoView({ behavior: immediate ? "auto" : "smooth", block: "start" });
 }

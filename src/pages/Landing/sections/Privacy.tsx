@@ -1,5 +1,20 @@
+import { Cancel01Icon, CheckmarkCircle02Icon, Search01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
+import { Icon } from "../components/Icon";
 import { delay } from "../reveal";
+
+const READS = [
+  "Your name, roll number and the bio-data your profile page displays",
+  "Per-subject classes held, classes attended, and the percentage",
+  "Your weekly timetable grid",
+];
+
+const NEVER = [
+  "Your college username or password — there is nowhere to enter them",
+  "Any other site, tab, or page you have open",
+  "Your browsing history, cookies, or anything outside the portal",
+  "Marks, fees, or anything else it was not written to parse",
+];
 
 /**
  * What the extension reads and what it cannot see, stated as two lists rather
@@ -12,67 +27,75 @@ import { delay } from "../reveal";
  */
 export function Privacy() {
   return (
-    <section className={styles.section} id="privacy">
-      <div className={`${styles.inner} ${styles.narrow} ${styles.sectionHead}`}>
-        <span className={styles.eyebrow} data-reveal>
-          Privacy
-        </span>
-        <h2 className={styles.h2} data-reveal style={delay(0.05)}>
-          It reads one page. That is the whole of it.
-        </h2>
-        <p className={styles.lede} data-reveal style={delay(0.1)}>
-          The extension runs on <code>info.aec.edu.in</code> and nowhere else, and it does not make
-          requests — it watches the responses the portal&rsquo;s own scripts have already received
-          once you are signed in.
-        </p>
-      </div>
-
-      <div className={styles.inner}>
-        <div className={styles.privacyGrid}>
-          <div className={styles.privacyCol} data-reveal>
-            <div className={styles.privacyHead}>
-              <span className={`${styles.problemMark} ${styles.markYes}`} aria-hidden="true">
-                ✓
-              </span>
-              What it reads
-            </div>
-            <ul className={styles.privacyList}>
-              <li>Your name, roll number and the bio-data your profile page displays</li>
-              <li>Per-subject classes held, classes attended, and the percentage</li>
-              <li>Your weekly timetable grid</li>
-            </ul>
-          </div>
-
-          <div className={styles.privacyCol} data-reveal style={delay(0.08)}>
-            <div className={styles.privacyHead}>
-              <span className={`${styles.problemMark} ${styles.markNo}`} aria-hidden="true">
-                ×
-              </span>
-              What it never sees
-            </div>
-            <ul className={styles.privacyList}>
-              <li>Your college username or password — there is nowhere to enter them</li>
-              <li>Any other site, tab, or page you have open</li>
-              <li>Your browsing history, cookies, or anything outside the portal</li>
-              <li>Marks, fees, or anything else it was not written to parse</li>
-            </ul>
-          </div>
+    <section className={`${styles.section} ${styles.sectionRuled}`} id="privacy">
+      <div className={`${styles.inner} ${styles.split}`}>
+        <div className={styles.splitHead}>
+          <span className={styles.eyebrow} data-reveal>
+            Privacy
+          </span>
+          <h2 className={styles.h2} data-reveal style={delay(0.05)}>
+            It reads one page. That is the whole of it.
+          </h2>
+          <p className={styles.lede} data-reveal style={delay(0.1)}>
+            The extension runs on <code>info.aec.edu.in</code> and nowhere else, and it does not make
+            requests — it watches the responses the portal&rsquo;s own scripts have already received
+            once you are signed in.
+          </p>
         </div>
 
-        <div className={styles.note} data-reveal>
-          <div className={styles.noteTitle}>
-            <span aria-hidden="true">🔍</span> If you would rather check than take our word for it
+        <div>
+          <div className={styles.privacyGrid}>
+            <div className={styles.privacyCol} data-reveal>
+              <div className={styles.privacyHead}>
+                <span className={styles.markYes}>
+                  <Icon icon={Tick02Icon} size={13} />
+                </span>
+                What it reads
+              </div>
+              <ul className={styles.privacyList}>
+                {READS.map((line) => (
+                  <li key={line}>
+                    <Icon icon={CheckmarkCircle02Icon} size={16} />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className={styles.privacyCol} data-reveal style={delay(0.08)}>
+              <div className={styles.privacyHead}>
+                <span className={styles.markNo}>
+                  <Icon icon={Cancel01Icon} size={13} />
+                </span>
+                What it never sees
+              </div>
+              <ul className={styles.privacyList}>
+                {NEVER.map((line) => (
+                  <li key={line}>
+                    <Icon icon={Cancel01Icon} size={16} />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <ul className={styles.noteList}>
-            <li>
-              The extension is loaded unpacked, so every file it runs is sitting in a folder on your
-              own disk in plain JavaScript. Nothing is minified or bundled — you can read all of it.
-            </li>
-            <li>
-              The whole project is open source, including the code that receives the sync on the
-              server.
-            </li>
-          </ul>
+
+          <div className={styles.note} data-reveal>
+            <div className={styles.noteTitle}>
+              <Icon icon={Search01Icon} size={17} /> If you would rather check than take our word for
+              it
+            </div>
+            <ul className={styles.noteList}>
+              <li>
+                The extension is loaded unpacked, so every file it runs is sitting in a folder on your
+                own disk in plain JavaScript. Nothing is minified or bundled — you can read all of it.
+              </li>
+              <li>
+                The whole project is open source, including the code that receives the sync on the
+                server.
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
