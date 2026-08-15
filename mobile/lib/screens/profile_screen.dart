@@ -172,32 +172,7 @@ class ProfileScreen extends StatelessWidget {
                       // the control looked broken — it could not reach Light
                       // at all. The setting has always had three values; the
                       // control now says so.
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
-                        child: Row(
-                          children: [
-                            AppIcon(HugeIcons.strokeRoundedMoon02, size: 19),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Text('Appearance',
-                                  style: Theme.of(context).textTheme.titleMedium),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-                        child: SegmentedButton<ThemeMode>(
-                          segments: const [
-                            ButtonSegment(value: ThemeMode.system, label: Text('System')),
-                            ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-                            ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
-                          ],
-                          selected: {settings.themeMode},
-                          showSelectedIcon: false,
-                          onSelectionChanged: (s) => settings.setThemeMode(s.first),
-                        ),
-                      ),
+                      const _AppearancePicker(),
                       const _Rule(),
                       _ActionRow(
                         icon: HugeIcons.strokeRoundedSettings02,
@@ -477,6 +452,210 @@ class _ActionRow extends StatelessWidget {
             if (colour == null) AppIcon(HugeIcons.strokeRoundedArrowRight01, size: 20),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Three miniatures of the app, rather than three words.
+///
+/// A segmented button made the reader translate "Light" into what the screen
+/// would look like. Showing it is both faster and honest about the one that is
+/// hard to name: System has no single appearance, so it is drawn as both,
+/// split down the middle.
+class _AppearancePicker extends StatelessWidget {
+  const _AppearancePicker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppIcon(HugeIcons.strokeRoundedMoon02, size: 19),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text('Appearance',
+                    style: Theme.of(context).textTheme.titleMedium),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              for (final mode in ThemeMode.values) ...[
+                if (mode != ThemeMode.values.first) const SizedBox(width: 10),
+                Expanded(
+                  child: _ThemeSwatch(
+                    mode: mode,
+                    selected: settings.themeMode == mode,
+                    onTap: () => settings.setThemeMode(mode),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeSwatch extends StatelessWidget {
+  const _ThemeSwatch({
+    required this.mode,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ThemeMode mode;
+  final bool selected;
+  final VoidCallback onTap;
+
+  static const _darkBg = Color(0xFF0F172A);
+  static const _darkCard = Color(0xFF1E293B);
+  static const _lightBg = Color(0xFFF8FAFC);
+  static const _lightCard = Color(0xFFFFFFFF);
+
+  String get _label => switch (mode) {
+        ThemeMode.system => 'System',
+        ThemeMode.light => 'Light',
+        ThemeMode.dark => 'Dark',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Column(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 74,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected ? accent : Theme.of(context).dividerColor,
+                width: selected ? 2 : 1,
+              ),
+            ),
+            // Clipped so the halves of the System swatch meet the rounded
+            // corner cleanly instead of squaring it off.
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: switch (mode) {
+                ThemeMode.light => _Mock(bg: _lightBg, card: _lightCard, accent: accent),
+                ThemeMode.dark => _Mock(bg: _darkBg, card: _darkCard, accent: accent),
+                // Both, because that is what "system" means — and a single
+                // neutral square would say nothing at all.
+                ThemeMode.system => Row(
+                    children: [
+                      Expanded(
+                        child: _Mock(bg: _lightBg, card: _lightCard, accent: accent),
+                      ),
+                      Expanded(
+                        child: _Mock(bg: _darkBg, card: _darkCard, accent: accent),
+                      ),
+                    ],
+                  ),
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (selected) ...[
+                AppIcon(HugeIcons.strokeRoundedTick02, size: 13, color: accent),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  _label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? accent : Theme.of(context).textTheme.bodySmall?.color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A tiny Handy: a heading, a card, and an accent bar. Enough shape to be
+/// recognisable as this app rather than as a generic light/dark square.
+class _Mock extends StatelessWidget {
+  const _Mock({required this.bg, required this.card, required this.accent});
+
+  final Color bg;
+  final Color card;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = bg.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+
+    return Container(
+      color: bg,
+      padding: const EdgeInsets.all(7),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 22,
+            height: 4,
+            decoration: BoxDecoration(
+              color: ink.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: card,
+                borderRadius: BorderRadius.circular(5),
+              ),
+              padding: const EdgeInsets.all(5),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 26,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: ink.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
