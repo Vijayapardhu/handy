@@ -1,6 +1,7 @@
 import { Download04Icon, PuzzleIcon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { Icon } from "../components/Icon";
+import { SectionHead } from "../components/SectionHead";
 import { delay } from "../reveal";
 import { ANDROID, EXTENSION, LINKS } from "@/constants/download";
 
@@ -9,13 +10,12 @@ export function Closer() {
   return (
     <section className={`${styles.section} ${styles.closer}`}>
       <div className={`${styles.inner} ${styles.closerInner}`}>
-        <h2 className={styles.h2} data-reveal>
-          Stop doing the arithmetic in your head.
-        </h2>
-        <p className={styles.lede} data-reveal style={delay(0.06)}>
-          Two downloads and one visit to a page you already visit. Then Handy keeps itself current for
-          the rest of the semester.
-        </p>
+        <SectionHead
+          centered
+          eyebrow="Get started"
+          title="Stop doing the arithmetic in your head."
+          lede="Two downloads and one visit to a page you already visit. Then Handy keeps itself current for the rest of the semester."
+        />
         <div className={styles.ctaRow} data-reveal style={delay(0.12)}>
           <a className={styles.btnPrimary} href={ANDROID.url}>
             <Icon icon={Download04Icon} size={17} />

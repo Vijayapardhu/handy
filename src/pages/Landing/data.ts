@@ -9,7 +9,6 @@ import {
   Calendar03Icon,
   ChartLineData02Icon,
   Clock01Icon,
-  Csv01Icon,
   Grid02Icon,
   Notification03Icon,
   Task01Icon,
@@ -74,6 +73,14 @@ export const FEATURES = [
     icon: Target01Icon,
     title: "Attendance planner",
     body: "How many classes you must attend to reach 75%, where you land if you keep showing up, and how many you can still miss. Per subject, not just overall.",
+    // Marks the card that leads the grid. It is the reason the app exists, and
+    // a nine-up grid of equal cards says everything is equally important.
+    featured: true,
+    stats: [
+      { value: "5", label: "classes to your target" },
+      { value: "80.0%", label: "projected by term end" },
+      { value: "0", label: "absences to spare" },
+    ],
   },
   {
     icon: ChartLineData02Icon,
@@ -109,11 +116,6 @@ export const FEATURES = [
     icon: Wifi01Icon,
     title: "Works offline",
     body: "The last sync is cached and readable with no signal. When you are offline you are told, never quietly shown stale numbers as if they were live.",
-  },
-  {
-    icon: Csv01Icon,
-    title: "Yours to take",
-    body: "Dark mode throughout, and one tap to export your whole attendance history as CSV.",
   },
 ] as const;
 

@@ -3,6 +3,7 @@ import type Lenis from "lenis";
 import { PuzzleIcon, BrowserIcon, SmartPhone01Icon, SquareLock02Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { Icon } from "../components/Icon";
+import { SectionHead } from "../components/SectionHead";
 import { useScrollProgress } from "../hooks/useScrollProgress";
 import { scrollToHash } from "../hooks/useLenis";
 import { delay } from "../reveal";
@@ -23,16 +24,11 @@ export function HowItWorks({ lenis }: { lenis: MutableRefObject<Lenis | null> })
     <section className={`${styles.section} ${styles.sectionRuled}`} id="how">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
-          <span className={styles.eyebrow} data-reveal>
-            How it works
-          </span>
-          <h2 className={styles.h2} data-reveal style={delay(0.05)}>
-            Three steps, once.
-          </h2>
-          <p className={styles.lede} data-reveal style={delay(0.1)}>
-            Handy has no signup form, because it never asks you for anything it can read from a page
-            you are already signed in to. After this, it keeps itself current on its own.
-          </p>
+          <SectionHead
+            eyebrow="How it works"
+            title="Three steps, once."
+            lede="Handy has no signup form, because it never asks you for anything it can read from a page you are already signed in to. After this, it keeps itself current on its own."
+          />
         </div>
 
         <div className={styles.steps}>

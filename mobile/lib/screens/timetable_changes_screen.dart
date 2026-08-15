@@ -22,15 +22,24 @@ class TimetableChangesScreen extends StatelessWidget {
     required this.timetableId,
     required this.version,
     this.section,
+    this.notificationId,
   });
 
   final String timetableId;
   final int version;
   final String? section;
 
+  /// The notification this was opened from.
+  ///
+  /// The changes live on it rather than on a shared version document, because
+  /// they differ per recipient: two students on the same timetable can have
+  /// different electives, so there is no single "what changed" to point at.
+  final String? notificationId;
+
   Future<Map<String, dynamic>?> _load() async {
+    if (notificationId == null) return null;
     final doc = await FirebaseFirestore.instance
-        .doc('sharedTimetables/$timetableId/versions/$version')
+        .doc('notifications/$notificationId')
         .get();
     return doc.data();
   }

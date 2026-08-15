@@ -18,7 +18,12 @@ import { syncSnapshotToCloud } from "./cloudSync.js";
 
 const SNAPSHOT_KEY = "handy:lastSnapshot";
 const HISTORY_KEY = "handy:history";
-const TIMETABLE_KEY = "handy:lastTimetable";
+// Deliberately a new key. The old one held a single bare timetable object
+// shared across every student; reading that as a roll-number map would give
+// every student a timetable keyed by "timetables", "slots" and "name". A new
+// key retires the old data outright, which is the right outcome — that value
+// was already wrong for everyone but the first student to use the browser.
+const TIMETABLE_KEY = "handy:timetablesByRoll";
 const AUTO_TIMETABLE_KEY = "handy:autoTimetablePending";
 const MAX_HISTORY = 20;
 
@@ -66,12 +71,17 @@ async function handleProfileCapture(snapshot) {
   // The timetable lives on a different page the student has no reason to
   // visit, so fetch it for them rather than leaving Timetable/Leave Planner
   // permanently empty.
-  await ensureTimetableCaptured();
+  await ensureTimetableCaptured(snapshot.rollNumber);
   return { ok: true, ...result };
 }
 
 async function handleTimetableCapture(timetable) {
-  await chrome.storage.local.set({ [TIMETABLE_KEY]: timetable, [AUTO_TIMETABLE_KEY]: false });
+  // Filed against whoever's profile is currently loaded. The auto-capture
+  // opens the timetable page moments after the profile page in the same
+  // session, so that is the student it belongs to.
+  const { [SNAPSHOT_KEY]: profile = null } = await chrome.storage.local.get(SNAPSHOT_KEY);
+  await setTimetableFor(profile?.rollNumber, timetable);
+  await chrome.storage.local.set({ [AUTO_TIMETABLE_KEY]: false });
   await closeHelperTab();
 
   // The timetable is only writable attached to a profile capture (it needs
@@ -99,10 +109,37 @@ async function storeSnapshot(snapshot) {
  * one snapshot, and `timetable` is simply absent until that page is visited.
  */
 async function getStoredSnapshot() {
-  const { [SNAPSHOT_KEY]: snapshot = null, [TIMETABLE_KEY]: timetable = null } =
-    await chrome.storage.local.get([SNAPSHOT_KEY, TIMETABLE_KEY]);
+  const { [SNAPSHOT_KEY]: snapshot = null } = await chrome.storage.local.get(SNAPSHOT_KEY);
   if (!snapshot) return null;
+
+  const timetable = await getTimetableFor(snapshot.rollNumber);
   return timetable ? { ...snapshot, timetable } : snapshot;
+}
+
+/**
+ * Timetables, kept per roll number.
+ *
+ * This was a single slot shared by every student the browser had ever seen,
+ * and on a shared machine that is not a cache — it is a data leak. The second
+ * student to sign in inherited the first one's timetable: their own profile,
+ * somebody else's classes, written to their account and shown on their phone.
+ * Two students in the same section can differ by an elective, so the result
+ * was not even obviously wrong.
+ *
+ * It also silently disabled the auto-capture, because the "have I got a
+ * timetable" check answered yes using someone else's.
+ */
+async function getTimetableFor(rollNumber) {
+  if (!rollNumber) return null;
+  const { [TIMETABLE_KEY]: byRoll = {} } = await chrome.storage.local.get(TIMETABLE_KEY);
+  return byRoll[rollNumber] ?? null;
+}
+
+async function setTimetableFor(rollNumber, timetable) {
+  if (!rollNumber) return;
+  const { [TIMETABLE_KEY]: byRoll = {} } = await chrome.storage.local.get(TIMETABLE_KEY);
+  byRoll[rollNumber] = timetable;
+  await chrome.storage.local.set({ [TIMETABLE_KEY]: byRoll });
 }
 
 async function syncNow() {
@@ -136,9 +173,11 @@ async function retryPendingSync() {
  * script to click anything — without it, it stays passive on pages the
  * student opened themselves.
  */
-async function ensureTimetableCaptured() {
-  const { [TIMETABLE_KEY]: timetable = null } = await chrome.storage.local.get(TIMETABLE_KEY);
-  if (timetable) return;
+async function ensureTimetableCaptured(rollNumber) {
+  // Asked about *this* student, not about whether any timetable exists at all.
+  // The old global check meant the first student to use the browser was the
+  // only one it ever fetched a timetable for.
+  if (await getTimetableFor(rollNumber)) return;
   if (helperTabId !== null) return; // one attempt at a time
 
   await chrome.storage.local.set({ [AUTO_TIMETABLE_KEY]: true });
@@ -197,14 +236,23 @@ async function handlePopupMessage(message) {
 
     case "SYNC_NOW": {
       const result = await syncNow();
-      await ensureTimetableCaptured();
+      const snapshot = await getStoredSnapshot();
+      await ensureTimetableCaptured(snapshot?.rollNumber);
       return { ...(await buildStatus()), syncResult: result };
     }
 
     case "RESET": {
       const snapshot = await getStoredSnapshot();
       if (snapshot?.rollNumber) await forgetAccount(snapshot.rollNumber);
-      await chrome.storage.local.remove([SNAPSHOT_KEY, HISTORY_KEY, TIMETABLE_KEY, AUTO_TIMETABLE_KEY]);
+      await chrome.storage.local.remove([
+        SNAPSHOT_KEY,
+        HISTORY_KEY,
+        TIMETABLE_KEY,
+        AUTO_TIMETABLE_KEY,
+        // The retired global slot, cleared on reset so an old install stops
+        // carrying one student's timetable around.
+        "handy:lastTimetable",
+      ]);
       await setBadge("", "#000000", 0);
       return buildStatus();
     }

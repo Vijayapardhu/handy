@@ -62,10 +62,66 @@ class Reminders {
       ),
     );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await android?.requestNotificationsPermission();
+
+    // Every channel is created up front, before anything needs one.
+    //
+    // A channel only exists on the device once something has been posted to
+    // it. Push messages name a channel by id, so until the app had happened to
+    // raise a local notification on that exact id, Android had never heard of
+    // it and quietly dropped the message onto the default channel — which is
+    // why an attendance update and a timetable change arrived looking
+    // identical and could not be silenced separately. Declaring them here
+    // makes them real from first launch, each with its own name and
+    // importance in system settings.
+    for (final channel in _channels) {
+      await android?.createNotificationChannel(channel);
+    }
   }
+
+  /// The full set, kept in one place so the app and the server cannot drift:
+  /// these ids must match the channelId values api/sync.js sends.
+  static const _channels = [
+    AndroidNotificationChannel(
+      'handy_classes',
+      'Class reminders',
+      description: 'Before each class, with the room and building.',
+      importance: Importance.high,
+    ),
+    AndroidNotificationChannel(
+      'handy_tasks',
+      'Deadlines',
+      description: 'Assignments and presentations that are due.',
+      importance: Importance.high,
+    ),
+    AndroidNotificationChannel(
+      'handy_attendance',
+      'Attendance updates',
+      description: 'When your attendance figures change.',
+      importance: Importance.defaultImportance,
+    ),
+    AndroidNotificationChannel(
+      'handy_timetable',
+      'Timetable changes',
+      description: "When your section's timetable is republished.",
+      importance: Importance.high,
+    ),
+    AndroidNotificationChannel(
+      'handy_study',
+      'Study timer',
+      description: 'The running session on your lock screen.',
+      importance: Importance.low,
+      playSound: false,
+    ),
+    AndroidNotificationChannel(
+      'handy_push',
+      'Announcements',
+      description: 'Occasional messages from Handy.',
+      importance: Importance.high,
+    ),
+  ];
 
   /// Rebuilds the whole schedule. Clearing first is what stops a changed
   /// timetable from leaving last week's reminders behind.

@@ -239,8 +239,14 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if false;
 
-      match /versions/{version} {
-        allow read: if isSignedIn();
+      // One document per student, holding the schedule they actually sync.
+      //
+      // Readable only by its owner. These carry a student's full timetable,
+      // and "everyone on T6(CA3)" is not a group anyone consented to share a
+      // schedule with — the matching that decides who hears about a change is
+      // done server-side with the Admin SDK, where it needs no client read.
+      match /members/{memberId} {
+        allow read: if isOwner(memberId);
         allow write: if false;
       }
     }

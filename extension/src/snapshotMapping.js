@@ -51,12 +51,19 @@ export function buildImportDocs(uid, snapshot, now) {
     section: snapshot.timetable?.name ?? "",
     semesterId,
     collegeId: SELF_IMPORT_COLLEGE_ID,
-    photoUrl: snapshot.photoUrl,
-    admissionNo: snapshot.admissionNo,
-    semesterLabel: snapshot.semesterLabel,
-    gender: snapshot.gender,
-    dob: snapshot.dob,
-    mobileNo: snapshot.mobileNo,
+    // Coerced to null, never left undefined.
+    //
+    // The Admin SDK rejects an undefined value outright, so a capture missing
+    // any one of these — a student with no photo on file, no mobile number,
+    // no date of birth — failed the *entire* sync with a 500 rather than
+    // syncing the fields it did have. Absent and unknown are the same thing
+    // here, and null is how Firestore says it.
+    photoUrl: snapshot.photoUrl ?? null,
+    admissionNo: snapshot.admissionNo ?? null,
+    semesterLabel: snapshot.semesterLabel ?? null,
+    gender: snapshot.gender ?? null,
+    dob: snapshot.dob ?? null,
+    mobileNo: snapshot.mobileNo ?? null,
     profileComplete: true,
     updatedAt: now,
   };
@@ -76,8 +83,12 @@ export function buildImportDocs(uid, snapshot, now) {
         shortName:
           fromTimetable?.shortName ??
           (subject.name.length > 18 ? `${subject.name.slice(0, 17)}…` : subject.name),
-        facultyId: subject.facultyId,
-        facultyName: subject.facultyName,
+        // Same reason as the profile fields above: the portal's attendance
+        // table carries no faculty at all, so these are undefined for every
+        // subject that was not also seen on the timetable page — which is all
+        // of them until the timetable has been captured once.
+        facultyId: subject.facultyId ?? "",
+        facultyName: subject.facultyName ?? "",
         semesterId,
         department: snapshot.branch ?? "",
         targetAttendance: null,

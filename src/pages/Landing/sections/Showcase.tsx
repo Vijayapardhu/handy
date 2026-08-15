@@ -1,5 +1,6 @@
 import styles from "../landing.module.css";
 import { PhoneCluster } from "../components/PhoneCluster";
+import { SectionHead } from "../components/SectionHead";
 import { useScrollProgress } from "../hooks/useScrollProgress";
 
 /**
@@ -18,13 +19,15 @@ export function Showcase() {
   const ref = useScrollProgress<HTMLDivElement>("pin");
 
   return (
-    <section className={styles.showcase} ref={ref} aria-label="The Handy app">
+    <section className={`${styles.showcase} ${styles.sectionRuled}`} ref={ref} id="app">
       <div className={styles.showcaseStage}>
+        <SectionHead
+          centered
+          eyebrow="The app"
+          title="Five screens, one answer each."
+          lede="Today, subjects, timetable, deadlines and the planner — all built from your own Campus Connect data."
+        />
         <PhoneCluster />
-        <p className={styles.showcaseCaption} data-reveal>
-          Today, subjects, timetable, deadlines and the planner — the whole app, built from your own
-          Campus Connect data.
-        </p>
       </div>
     </section>
   );

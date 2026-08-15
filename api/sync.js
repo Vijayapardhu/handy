@@ -147,7 +147,10 @@ async function notifyDevices(db, uid, written) {
   const subjects = written?.subjectCount ?? 0;
   const messages = [];
 
-  if (wanted && subjects > 0) {
+  // Only when the figures actually moved. A single visit to the portal syncs
+  // several times over half a minute and every one of them carries the same
+  // attendance; announcing each was three identical alerts for no news.
+  if (wanted && subjects > 0 && written?.attendanceChanged) {
     messages.push({
       channel: "handy_attendance",
       type: "attendance",
@@ -346,6 +349,16 @@ async function writeSnapshot(db, uid, rollNumber, snapshot) {
   const { studentUpdate, subjects, summaries } = buildImportDocs(uid, snapshot, now);
   batch.set(studentRef, studentUpdate, { merge: true });
 
+  // Did the numbers actually move?
+  //
+  // One visit to the portal produces several syncs — the profile capture, a
+  // retry, and again when the timetable lands and the merged snapshot is
+  // resent — and every one of them carries the same attendance. Notifying on
+  // each meant three identical "Attendance updated" alerts in half a minute
+  // for a figure that had not changed once. "Attendance updated" has to mean
+  // the attendance updated.
+  const attendanceChanged = await hasAttendanceMoved(db, uid, summaries);
+
   for (const subject of subjects) batch.set(db.doc(`subjects/${subject.id}`), subject.doc);
   for (const summary of summaries) {
     batch.set(db.doc(`attendanceSummaries/${summary.id}`), summary.doc);
@@ -367,7 +380,38 @@ async function writeSnapshot(db, uid, rollNumber, snapshot) {
   }
 
   await batch.commit();
-  return { subjectCount: subjects.length, slotCount };
+  return { subjectCount: subjects.length, slotCount, attendanceChanged };
+}
+
+/**
+ * Whether any subject's attended/held differs from what is already stored.
+ *
+ * Compared per subject rather than on the totals: a student who attends one
+ * class and misses another leaves the total unmoved while two subjects have
+ * genuinely changed, and they would want telling.
+ *
+ * A first sync counts as changed — there is nothing to compare against, and
+ * the arrival of a student's figures is exactly the moment worth announcing.
+ */
+async function hasAttendanceMoved(db, uid, summaries) {
+  const existing = await db
+    .collection("attendanceSummaries")
+    .where("studentId", "==", uid)
+    .get();
+
+  if (existing.empty) return true;
+
+  const before = new Map(existing.docs.map((d) => [d.id, d.data()]));
+  if (before.size !== summaries.length) return true;
+
+  return summaries.some((summary) => {
+    const previous = before.get(summary.id);
+    return (
+      !previous ||
+      previous.attended !== summary.doc.attended ||
+      previous.held !== summary.doc.held
+    );
+  });
 }
 
 async function appendTimetable(db, batch, uid, snapshot, semesterId, now) {

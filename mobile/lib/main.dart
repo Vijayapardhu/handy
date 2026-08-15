@@ -63,13 +63,14 @@ Future<void> main() async {
   // A timetable push exists to answer "what moved", so tapping it opens the
   // diff. Wired here rather than inside Push because that class is built
   // before there is a navigator to hand it.
-  push.onOpenTimetableChanges = (timetableId, version, section) {
+  push.onOpenTimetableChanges = (timetableId, version, section, notificationId) {
     navigatorKey.currentState?.push(
       MaterialPageRoute<void>(
         builder: (_) => TimetableChangesScreen(
           timetableId: timetableId,
           version: version,
           section: section,
+          notificationId: notificationId,
         ),
       ),
     );

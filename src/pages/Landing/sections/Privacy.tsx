@@ -1,6 +1,7 @@
 import { Cancel01Icon, CheckmarkCircle02Icon, Search01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { Icon } from "../components/Icon";
+import { SectionHead } from "../components/SectionHead";
 import { delay } from "../reveal";
 
 const READS = [
@@ -30,17 +31,17 @@ export function Privacy() {
     <section className={`${styles.section} ${styles.sectionRuled}`} id="privacy">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
-          <span className={styles.eyebrow} data-reveal>
-            Privacy
-          </span>
-          <h2 className={styles.h2} data-reveal style={delay(0.05)}>
-            It reads one page. That is the whole of it.
-          </h2>
-          <p className={styles.lede} data-reveal style={delay(0.1)}>
-            The extension runs on <code>info.aec.edu.in</code> and nowhere else, and it does not make
-            requests — it watches the responses the portal&rsquo;s own scripts have already received
-            once you are signed in.
-          </p>
+          <SectionHead
+            eyebrow="Privacy"
+            title="It reads one page. That is the whole of it."
+            lede={
+              <>
+                The extension runs on <code>info.aec.edu.in</code> and nowhere else, and it does not
+                make requests — it watches the responses the portal&rsquo;s own scripts have already
+                received once you are signed in.
+              </>
+            }
+          />
         </div>
 
         <div>

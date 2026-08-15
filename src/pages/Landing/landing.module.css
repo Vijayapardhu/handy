@@ -95,11 +95,6 @@
   cursor: pointer;
 }
 
-.page .footerLinks a {
-  text-decoration: none;
-  color: var(--l-text-muted);
-}
-
 .page code {
   font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
   font-size: 0.9em;
@@ -174,13 +169,39 @@
 .eyebrow {
   display: flex;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-3);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--l-accent-soft);
   margin-bottom: var(--s-4);
+}
+
+/* A short accent rule before every section label — the one repeated brand
+   device on the page, and the thing that makes eleven different sections read
+   as chapters of one document. */
+.eyebrowTick {
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  flex: none;
+}
+
+/* Centred heads: used above content that is itself centred on one axis. */
+.headCentered {
+  text-align: center;
+  max-width: 62ch;
+  margin-inline: auto;
+}
+
+.headCentered .eyebrow {
+  justify-content: center;
+}
+
+.headCentered .lede {
+  margin-inline: auto;
 }
 
 .h2 {
@@ -552,7 +573,7 @@
  */
 .showcase {
   position: relative;
-  height: 260vh;
+  height: 210vh;
   padding-inline: var(--l-gutter);
 }
 
@@ -560,22 +581,15 @@
   position: sticky;
   top: 0;
   height: 100svh;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr;
   align-items: center;
-  justify-content: center;
+  justify-items: center;
   gap: var(--s-6);
+  padding: calc(var(--l-nav-height) + var(--s-5)) 0 var(--s-7);
   /* Side phones fan past the container on narrow screens; clipping them at the
      section edge is intended, and stops the page scrolling sideways. */
   overflow: hidden;
-}
-
-.showcaseCaption {
-  max-width: 46ch;
-  text-align: center;
-  font-size: 14.5px;
-  line-height: 1.6;
-  color: var(--l-text-muted);
 }
 
 .cluster {
@@ -621,10 +635,23 @@
   will-change: transform;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  /* No pin, no fan: the phones simply sit side by side and the section
-     collapses to the height of its content. */
+@media (max-width: 720px) {
+  /* 260vh of pinned scrolling is a long thumb-drag on a phone. The fan opens
+     over a shorter distance instead of asking for the same swipe count. */
   .showcase {
+    height: 190vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * No pin and no animation — but the fan still has to be *open*, because at
+   * --progress 0 every side phone sits exactly behind the middle one at
+   * opacity 0. Forcing 1 here shows the finished arrangement as a still
+   * image, which is the whole point of the section.
+   */
+  .showcase {
+    --progress: 1;
     height: auto;
     padding-block: var(--s-section);
   }
@@ -933,65 +960,241 @@
   color: #f97316;
 }
 
-/* ---------------------------------------------------------------- problem */
+/* ------------------------------------------------------------ the gap tree */
 
-.problemGrid {
+/*
+ * A derivation diagram: one source figure at the top, four derived answers
+ * beneath it, joined by connectors that draw themselves as the section
+ * arrives.
+ *
+ * `--draw` remaps the section's raw scroll progress into the window where the
+ * lines should actually be drawing. Without the remap the trunk would already
+ * be complete before the diagram was properly on screen, because `enter`
+ * progress reaches 1 the moment the section's top touches the top of the
+ * viewport. The `var(--progress, 1)` fallback matters: with no JS, or under
+ * reduced motion where nothing writes the property, the diagram renders fully
+ * drawn rather than as a set of invisible lines.
+ */
+/*
+ * Deliberately no `gap`. The trunk, the handoff pill, the bar and the stubs
+ * are one continuous wire, and a grid gap would put a hole in it at every
+ * junction. Anything that needs breathing room asks for it with its own
+ * margin instead.
+ */
+.tree {
+  --draw: clamp(0, calc((var(--progress, 1) - 0.28) * 2.4), 1);
   display: grid;
-  gap: var(--s-4);
+  justify-items: center;
+  text-align: center;
 }
 
-@media (min-width: 880px) {
-  .problemGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--s-5);
-  }
-}
-
-.problemCard {
-  border-radius: var(--radius-lg);
+/* The source: deliberately plain and grey. It is the portal's contribution,
+   and its flatness next to the accented row below is the argument. */
+.treeSource {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-2);
+  padding: var(--s-6) clamp(var(--s-6), 5vw, var(--s-8));
   border: 1px solid var(--l-border);
+  border-radius: var(--radius-lg);
   background: var(--l-surface);
-  padding: var(--s-6);
+  max-width: 100%;
 }
 
-.problemCardGood {
-  border-color: rgba(249, 115, 22, 0.34);
-  background: linear-gradient(160deg, rgba(249, 115, 22, 0.09), var(--l-surface));
-}
-
-.problemLabel {
-  font-size: 12px;
+.treeSourceTag {
+  font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--l-text-faint);
 }
 
-.problemCardGood .problemLabel {
+.treeSourceValue {
+  font-size: clamp(44px, 6.4vw, 76px);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--l-text);
+}
+
+.treeSourceMeta {
+  font-size: 13.5px;
+  color: var(--l-text-muted);
+}
+
+/* --- the handoff --------------------------------------------------------- */
+
+/*
+ * Names the boundary explicitly. Without it the diagram is ambiguous about
+ * whose number is whose — a reader could reasonably assume Handy produced the
+ * 73.42% too, which would make the whole section pointless.
+ *
+ * It sits between the two trunk segments with no gap either side, so the wire
+ * reads as running into the label and out the other side.
+ */
+.treeHandoffPill {
+  padding: 6px 15px;
+  border-radius: var(--radius-pill);
+  background: var(--l-bg);
+  border: 1px solid var(--l-border-strong);
+  color: var(--l-text);
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+/* --- connectors ---------------------------------------------------------- */
+
+.treeTrunk {
+  width: 2px;
+  height: clamp(22px, 3vw, 34px);
+  border-radius: 2px;
+  background: var(--l-accent);
+  opacity: 0.55;
+  transform: scaleY(var(--draw));
+  transform-origin: top;
+}
+
+/*
+ * The bar and stubs share the leaves' grid so they line up with the columns
+ * automatically. Each stub sits in its own column and centres itself, which
+ * survives the grid reflowing without a single magic number.
+ */
+.treeBranch {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-4);
+  width: 100%;
+  height: clamp(22px, 3vw, 32px);
+  position: relative;
+  /* Half a grid column, exactly. With N equal columns and (N-1) gaps, a
+     column is (100% - (N-1)·gap)/N wide, so its centre sits half that from
+     the edge. Deriving it means the bar terminates *on* the outer stubs at
+     every width — an eyeballed percentage left them visibly unconnected. */
+  --half-col: calc((100% - 3 * var(--s-4)) / 8);
+}
+
+.treeBar {
+  position: absolute;
+  top: 0;
+  left: var(--half-col);
+  right: var(--half-col);
+  height: 2px;
+  border-radius: 2px;
+  background: var(--l-accent);
+  opacity: 0.55;
+  transform: scaleX(var(--draw));
+}
+
+.treeStub {
+  justify-self: center;
+  align-self: stretch;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--l-accent);
+  opacity: 0.55;
+  transform: scaleY(var(--draw));
+  transform-origin: top;
+}
+
+/* --- leaves -------------------------------------------------------------- */
+
+.treeLeaves {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s-4);
+  width: 100%;
+}
+
+.leaf {
+  display: grid;
+  align-content: start;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  text-align: left;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--l-border);
+  background: var(--l-surface);
+  transition:
+    border-color 0.3s var(--l-ease),
+    transform 0.3s var(--l-ease);
+}
+
+.leaf:hover {
+  border-color: var(--l-border-strong);
+  transform: translateY(-3px);
+}
+
+/* The question first, because a figure on its own makes the reader guess what
+   it measures — which is the failure this whole section is about. */
+.leafQuestion {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--l-text);
+  text-wrap: balance;
+}
+
+.leafValue {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
   color: var(--l-accent-soft);
 }
 
-.problemBig {
-  font-size: clamp(28px, 3.4vw, 36px);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  margin-top: var(--s-3);
-  line-height: 1.1;
+.leafUnit {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--l-accent-soft);
+  opacity: 0.72;
 }
 
-.problemList {
-  margin-top: var(--s-5);
-  display: grid;
-  gap: var(--s-3);
+
+@media (max-width: 900px) {
+  /* Two columns, so a column is (100% - 1·gap)/2 and its centre is a quarter
+     of that from the edge. */
+  .treeBranch,
+  .treeLeaves {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .treeBranch {
+    --half-col: calc((100% - var(--s-4)) / 4);
+  }
+
+  /* Stubs 3 and 4 fall on the grid's second row, where there is no bar above
+     them to hang from. */
+  .treeBranch .treeStub:nth-child(n + 4) {
+    display: none;
+  }
 }
 
-.problemList li {
-  display: flex;
-  gap: var(--s-3);
-  font-size: 15px;
-  line-height: 1.55;
-  color: var(--l-text-muted);
+@media (max-width: 560px) {
+  /* One column. A fan of connectors over a vertical stack is noise, so the
+     branch collapses and the cards simply stack under the trunk. */
+  .treeBranch {
+    display: none;
+  }
+
+  .treeLeaves {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaf:hover {
+    transform: none;
+  }
 }
 
 .markNo,
@@ -1058,8 +1261,8 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: var(--l-accent-soft);
-  background: var(--l-bg-raised);
+  color: var(--l-text-muted);
+  background: var(--l-bg);
   border: 1px solid var(--l-border-strong);
 }
 
@@ -1136,15 +1339,66 @@
 }
 
 .featureIcon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
   display: grid;
   place-items: center;
-  background: rgba(249, 115, 22, 0.12);
-  border: 1px solid rgba(249, 115, 22, 0.22);
-  color: var(--l-accent-soft);
+  background: var(--l-surface-strong);
+  border: 1px solid var(--l-border);
+  color: var(--l-text-muted);
   margin-bottom: var(--s-5);
+  transition: color 0.3s var(--l-ease);
+}
+
+/* The icon picks up the accent on hover — the one moment colour is useful
+   here, because it marks the card you are pointing at. */
+.feature:hover .featureIcon {
+  color: var(--l-text);
+}
+
+/* The lead card earns its emphasis from size and a slightly stronger edge,
+   not from a colour wash. */
+.featureLead {
+  border-color: var(--l-border-strong);
+  background: var(--l-surface-strong);
+}
+
+@media (min-width: 1024px) {
+  .featureLead {
+    grid-column: span 2;
+  }
+}
+
+.featureStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-4);
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--l-border);
+}
+
+.featureStat {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.featureStatValue {
+  font-size: clamp(20px, 2.2vw, 25px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--l-text);
+}
+
+.featureStatLabel {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--l-text-faint);
+  text-wrap: balance;
 }
 
 .featureTitle {
@@ -1167,58 +1421,298 @@
   }
 }
 
+/* -------------------------------------------------------------- developer */
+
+.devCard {
+  border: 1px solid var(--l-border);
+  border-radius: var(--radius-lg);
+  background: var(--l-surface);
+  padding: var(--s-6);
+  display: grid;
+  gap: var(--s-5);
+}
+
+.devIdentity {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.devMark {
+  flex: none;
+  border-radius: 13px;
+  box-shadow: 0 6px 20px var(--l-accent-glow);
+}
+
+.devName {
+  font-size: clamp(19px, 2.2vw, 23px);
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.devRole {
+  margin-top: 3px;
+  font-size: 13.5px;
+  color: var(--l-text-muted);
+}
+
+.devStory {
+  display: grid;
+  gap: var(--s-4);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--l-text-muted);
+  max-width: var(--l-measure);
+}
+
+.devLinks {
+  display: grid;
+  gap: var(--s-2);
+  border-top: 1px solid var(--l-border);
+  padding-top: var(--s-5);
+}
+
+.page .devLink {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-3);
+  margin: calc(var(--s-3) * -1);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--l-text);
+  transition: background-color 0.2s var(--l-ease);
+}
+
+.page .devLink:hover {
+  background: var(--l-surface-strong);
+  color: var(--l-text);
+}
+
+.devLinkIcon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--l-surface-strong);
+  border: 1px solid var(--l-border);
+  color: var(--l-text-muted);
+}
+
+.devLinkText {
+  display: grid;
+  min-width: 0;
+}
+
+.devLinkLabel {
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.devLinkDetail {
+  font-size: 12.5px;
+  color: var(--l-text-faint);
+}
+
+.devSignature {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--l-text-faint);
+}
+
 /* ---------------------------------------------------------------- widgets */
 
-.widgetViewport {
-  overflow: hidden;
-  margin-inline: calc(var(--l-gutter) * -1);
-  padding: var(--s-2) var(--l-gutter) var(--s-6);
+/*
+ * A one-at-a-time carousel, held while you scroll through it.
+ *
+ * The section is tall; a sticky stage inside it stays put for that whole
+ * height, and the scroll distance is spent sliding one widget out to the left
+ * while the next arrives from the right. Only ever one on screen, at a size
+ * worth looking at.
+ *
+ * 4 transitions (5 widgets) × ~62vh each, plus the 100vh the stage occupies.
+ */
+.widgets {
+  --count: 5;
+  position: relative;
+  /* 100vh of it is the stage itself, leaving 200vh of travel across four
+     transitions — about half a screen of scroll each, which is enough for the
+     slide to read without the section becoming a tunnel. */
+  height: 300vh;
 }
 
-.widgetTrack {
-  display: flex;
+@media (max-width: 720px) {
+  /* Same carousel, less thumb. */
+  .widgets {
+    height: 250vh;
+  }
+}
+
+.widgetsStage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: center;
+  justify-items: center;
   gap: var(--s-5);
-  /* Panned by scroll position: at the start of the section the rail sits to
-     the right, at the end it has travelled left. Centred at 0.5 so the
-     reduced-motion fallback resolves to a sensible resting position. */
-  transform: translate3d(calc((0.5 - var(--progress, 0.5)) * 2 * 14%), 0, 0);
-  will-change: transform;
+  padding: calc(var(--l-nav-height) + var(--s-5)) var(--l-gutter) var(--s-7);
+  overflow: hidden;
+  text-align: center;
 }
 
-.widgetItem {
-  flex: none;
-  width: 246px;
+/* The deck: every slide stacked in one cell, moved horizontally by scroll. */
+.widgetDeck {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
-@media (max-width: 900px) {
-  /* Scroll-panning a rail the reader can also swipe is two people steering
-     one wheel. On touch, it's just a rail. */
-  .widgetViewport {
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+/*
+ * Each slide owns a slot on the 0→1 progress line: slot = i / (count - 1), so
+ * the five sit at 0, .25, .5, .75, 1. `--offset` is how far this slide is from
+ * being the current one, and multiplying it by (count - 1) × 100vw puts
+ * exactly one viewport between neighbours — which is what guarantees only one
+ * is ever on screen.
+ *
+ * The `var(--progress, 0)` fallback leaves the first widget centred when
+ * nothing is driving the scroll.
+ */
+.widgetSlide {
+  --slot: calc(var(--i, 0) / (var(--count) - 1));
+  --offset: calc(var(--slot) - var(--progress, 0));
+  /* CSS has no widely-supported abs(); max(x, -x) is the same thing. */
+  --dist: max(var(--offset), calc(var(--offset) * -1));
+
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-5);
+
+  transform: translate3d(calc(var(--offset) * (var(--count) - 1) * 100vw), 0, 0)
+    scale(calc(1 - var(--dist) * 0.55));
+  /* Fades out well before it would reach the edge, so the swap reads as a
+     dissolve-and-slide rather than a card being flung off-screen. */
+  opacity: clamp(0, calc(1 - var(--dist) * 5), 1);
+  will-change: transform, opacity;
+}
+
+/* The hero-sized tile. One font-size drives the whole widget (see
+   .widgetPreview) so this is the only number that changes. */
+.widgetSlide .widgetPreview {
+  font-size: clamp(15px, 2.4vw, 26px);
+  width: min(560px, 84vw);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+}
+
+.widgetCaption {
+  max-width: 44ch;
+}
+
+.widgetCaptionName {
+  font-size: clamp(18px, 2.2vw, 23px);
+  font-weight: 680;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  color: var(--l-text);
+}
+
+.widgetCaptionBlurb {
+  font-size: 14.5px;
+  color: var(--l-text-muted);
+  margin-top: var(--s-2);
+  line-height: 1.55;
+}
+
+/* --- position indicator --------------------------------------------------- */
+
+.widgetDots {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.widgetDot {
+  --slot: calc(var(--i, 0) / (var(--count) - 1));
+  --offset: calc(var(--slot) - var(--progress, 0));
+  --dist: max(var(--offset), calc(var(--offset) * -1));
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--l-text);
+  /* Same slot maths as the slides, so the indicator can never disagree with
+     what is actually on screen. */
+  opacity: clamp(0.18, calc(1 - var(--dist) * 5), 1);
+  transform: scale(clamp(1, calc(1.5 - var(--dist) * 3), 1.5));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * No pin and no sliding: the stage releases, and the slides lay themselves
+   * out as an ordinary wrapped grid with everything visible at once.
+   */
+  .widgets {
+    height: auto;
   }
 
-  .widgetViewport::-webkit-scrollbar {
-    display: none;
+  .widgetsStage {
+    position: static;
+    height: auto;
+    padding-block: var(--s-section);
+    overflow: visible;
+    grid-template-rows: auto auto auto;
   }
 
-  .widgetTrack {
+  .widgetDeck {
+    height: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--s-6);
+  }
+
+  .widgetSlide {
+    position: static;
     transform: none;
+    opacity: 1;
     will-change: auto;
   }
 
-  .widgetItem {
-    scroll-snap-align: center;
-    width: 228px;
+  .widgetSlide .widgetPreview {
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .widgetDots {
+    display: none;
   }
 }
 
+/*
+ * Everything inside a widget is sized in `em` against the preview's own
+ * font-size, so the whole tile scales by changing one number. That is what
+ * lets the same component render as a small card in a rail and as the large
+ * hero of the carousel without a second set of styles — and it matches how the
+ * real widget behaves, resizing to whatever space the launcher gives it.
+ */
 .widgetPreview {
-  border-radius: 22px;
-  padding: var(--s-4);
-  min-height: 138px;
+  font-size: 12px;
+  border-radius: 1.85em;
+  padding: 1.35em;
+  min-height: 11.5em;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1228,7 +1722,7 @@
 }
 
 .widgetHead {
-  font-size: 9.5px;
+  font-size: 0.79em;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -1236,32 +1730,32 @@
 }
 
 .widgetBig {
-  font-size: 34px;
+  font-size: 2.85em;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
-  margin-top: var(--s-1);
+  margin-top: 0.1em;
 }
 
 .widgetSub {
-  font-size: 11.5px;
+  font-size: 0.96em;
   color: var(--w-secondary);
-  margin-top: var(--s-1);
+  margin-top: 0.35em;
   line-height: 1.4;
 }
 
 .widgetRow {
   display: flex;
-  gap: var(--s-2);
+  gap: 0.7em;
   align-items: baseline;
-  margin-top: 7px;
-  font-size: 11.5px;
+  margin-top: 0.6em;
+  font-size: 0.96em;
 }
 
 .widgetRowTime {
   font-weight: 700;
-  width: 42px;
+  width: 3.6em;
   flex: none;
   font-variant-numeric: tabular-nums;
 }
@@ -1292,12 +1786,18 @@
   line-height: 1.5;
 }
 
+.widgetsFoot {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-5);
+}
+
 .swatches {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: var(--s-3);
   align-items: center;
-  margin-top: var(--s-4);
 }
 
 .swatch {
@@ -1603,11 +2103,14 @@
 .closer {
   text-align: center;
   border-top: 1px solid var(--l-border);
-  background: radial-gradient(58% 100% at 50% 100%, rgba(249, 115, 22, 0.13), transparent 72%);
-}
-
-.closer .lede {
-  margin-inline: auto;
+  /*
+   * Centred rather than anchored to the bottom edge. Anchored at `50% 100%`
+   * the glow was at full strength exactly where the section met the footer,
+   * which read as a hard join between two panels — the seam was the gradient,
+   * not the footer. Centred, it has fallen to nothing by the boundary and the
+   * two run together.
+   */
+  background: radial-gradient(66% 62% at 50% 52%, rgba(249, 115, 22, 0.11), transparent 72%);
 }
 
 .closer .ctaRow,
@@ -1622,57 +2125,40 @@
 
 /* ----------------------------------------------------------------- footer */
 
+/*
+ * The footer is nothing but the wordmark, so it gets no background, no rule
+ * and no panel of its own — those are how a footer announces "a different
+ * region with different information in it", and there is no information here.
+ * It is the page simply running out, with the brand fading off the bottom.
+ */
 .footer {
-  border-top: 1px solid var(--l-border);
-  padding: var(--s-8) var(--l-gutter) var(--s-7);
-  background: var(--l-bg-raised);
+  position: relative;
+  padding: clamp(var(--s-6), 5vw, var(--s-8)) var(--l-gutter) 0;
+  background: transparent;
+  overflow: hidden;
 }
 
-.footerInner {
-  max-width: var(--l-max);
-  margin-inline: auto;
-  display: grid;
-  gap: var(--s-7);
+/*
+ * Oversized type running the width of the page, fading downward and cropped by
+ * the bottom edge so it reads as the brand signing off rather than as a line
+ * of text that happens to be large.
+ *
+ * The gradient starts low (0.11) and reaches nothing well before the baseline,
+ * so there is no edge where the wordmark stops — it dissolves into the page
+ * background instead of sitting on top of it.
+ */
+.footerWordmark {
+  /* Cropped deliberately: the glyphs run past the bottom of the page. */
+  margin-bottom: calc(clamp(16px, 2.6vw, 42px) * -1);
+  font-size: clamp(84px, 19.5vw, 280px);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 0.82;
+  text-align: center;
+  user-select: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.11) 5%, rgba(255, 255, 255, 0) 82%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-@media (min-width: 780px) {
-  .footerInner {
-    grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
-    gap: var(--s-8);
-  }
-}
-
-.footerLinks {
-  display: grid;
-  gap: var(--s-3);
-  font-size: 14px;
-  color: var(--l-text-muted);
-  align-content: start;
-}
-
-.footerLinksTitle {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--l-text-faint);
-  margin-bottom: var(--s-1);
-}
-
-.page .footerLinks a:hover {
-  color: var(--l-text);
-}
-
-.footerFine {
-  max-width: var(--l-max);
-  margin: var(--s-7) auto 0;
-  font-size: 12.5px;
-  line-height: 1.65;
-  color: var(--l-text-faint);
-  border-top: 1px solid var(--l-border);
-  padding-top: var(--s-5);
-}
-
-.footer .downloadMeta {
-  margin-top: var(--s-3);
-}

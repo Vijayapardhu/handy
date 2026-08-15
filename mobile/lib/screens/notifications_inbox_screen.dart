@@ -246,6 +246,9 @@ class _Row extends StatelessWidget {
           timetableId: item.timetableId!,
           version: item.version!,
           section: appState.student?.section,
+          // The changes live on the notification, since they differ per
+          // recipient — see TimetableChangesScreen.
+          notificationId: item.id,
         ),
       ),
     );

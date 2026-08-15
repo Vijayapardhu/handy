@@ -25,9 +25,19 @@
   --l-text-muted: #98a2b3;
   --l-text-faint: #667085;
 
+  /*
+   * One accent, spent sparingly. The rule this page follows: orange appears
+   * only on the brand mark, a primary call to action, and the single figure a
+   * section is actually about. Everything else — icons, card fills, borders,
+   * supporting numbers — is neutral.
+   *
+   * Tinting every card and icon box with the brand colour is what makes a
+   * page look loud rather than designed; with the tints gone the few orange
+   * things left are the things worth looking at.
+   */
   --l-accent: var(--color-primary);
   --l-accent-soft: #fb923c;
-  --l-accent-glow: rgba(249, 115, 22, 0.32);
+  --l-accent-glow: rgba(249, 115, 22, 0.28);
 
   --l-good: #34d399;
   --l-warn: #fbbf24;

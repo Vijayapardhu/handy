@@ -109,13 +109,23 @@ class Push {
     final version = int.tryParse(message.data['version'] as String? ?? '');
     if (id == null || version == null) return;
 
-    onOpenTimetableChanges?.call(id, version, message.data['section'] as String?);
+    onOpenTimetableChanges?.call(
+      id,
+      version,
+      message.data['section'] as String?,
+      message.data['notificationId'] as String?,
+    );
   }
 
   /// Set by the app once its navigator exists. A callback rather than a
   /// Navigator reference because this class is constructed in main() before
   /// there is anything to navigate.
-  void Function(String timetableId, int version, String? section)? onOpenTimetableChanges;
+  void Function(
+    String timetableId,
+    int version,
+    String? section,
+    String? notificationId,
+  )? onOpenTimetableChanges;
 
   Future<void> _saveToken(String token) async {
     final uid = _auth.currentUser?.uid;

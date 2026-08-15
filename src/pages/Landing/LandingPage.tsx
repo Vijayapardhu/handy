@@ -4,6 +4,7 @@ import { useLenis, scrollToHash } from "./hooks/useLenis";
 import { useReveal } from "./hooks/useReveal";
 import { LandingNav } from "./sections/LandingNav";
 import { Hero } from "./sections/Hero";
+import { Showcase } from "./sections/Showcase";
 import { Problem } from "./sections/Problem";
 import { HowItWorks } from "./sections/HowItWorks";
 import { Features } from "./sections/Features";
@@ -11,6 +12,7 @@ import { Widgets } from "./sections/Widgets";
 import { SetupAndroid } from "./sections/SetupAndroid";
 import { SetupExtension } from "./sections/SetupExtension";
 import { Privacy } from "./sections/Privacy";
+import { Developer } from "./sections/Developer";
 import { FaqSection } from "./sections/FaqSection";
 import { Closer } from "./sections/Closer";
 import { Footer } from "./sections/Footer";
@@ -62,13 +64,15 @@ export function LandingPage() {
       <LandingNav lenis={lenis} />
       <main>
         <Hero lenis={lenis} />
+        <Showcase />
         <Problem />
         <HowItWorks lenis={lenis} />
         <Features />
-        <Widgets />
+        <Widgets lenis={lenis} />
         <SetupAndroid />
         <SetupExtension />
         <Privacy />
+        <Developer />
         <FaqSection />
         <Closer />
       </main>

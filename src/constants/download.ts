@@ -34,7 +34,21 @@ export const LINKS = {
   repo: REPO,
   releases: `${REPO}/releases`,
   issues: `${REPO}/issues`,
-  webApp: "https://handy-aus.vercel.app",
+  /**
+   * The custom domain, matching extension/manifest.json's host_permissions and
+   * externally_connectable, extension/popup/popup.js, and the Android app's
+   * About screen.
+   *
+   * ⚠️ extension/src/config.js still points HANDY_URL at the old
+   * handy-aus.vercel.app alias, so the two halves of the extension disagree
+   * about where Handy lives. Worth reconciling — see the README's deployment
+   * note for why the Vercel alias mattered.
+   */
+  webApp: "https://handy.vijayaapardhu.dev",
   portal: "https://info.aec.edu.in/aus/",
+
+  // Developer. Mirrors the Android app's About screen — see Developer.tsx.
+  portfolio: "https://vijayaapardhu.dev",
+  github: "https://github.com/Vijayapardhu",
   contactEmail: "vijaypardhu17@gmail.com",
 } as const;

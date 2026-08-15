@@ -2,10 +2,8 @@ import type { MutableRefObject } from "react";
 import type Lenis from "lenis";
 import { ArrowDown01Icon, Download04Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
-import { PhoneMockup } from "../components/PhoneMockup";
 import { BrandMark } from "../components/BrandMark";
 import { Icon } from "../components/Icon";
-import { useScrollProgress } from "../hooks/useScrollProgress";
 import { scrollToHash } from "../hooks/useLenis";
 import { delay } from "../reveal";
 import { ANDROID, LINKS } from "@/constants/download";
@@ -13,18 +11,14 @@ import { ANDROID, LINKS } from "@/constants/download";
 /**
  * A single centred column, vertically centred in the first screen.
  *
- * The earlier two-column split put the headline hard against the left gutter
- * with the phone floating opposite it — which reads as a layout with two
- * subjects rather than one. Centring gives the page one focal axis: badge,
- * headline, promise, action, then the product itself directly beneath, cropped
- * by the fold so there is an obvious reason to keep scrolling.
+ * No device here. An earlier pass sat a phone under the copy and let the fold
+ * crop it, which landed the cut in a different place on every screen size and
+ * often clipped the device before its fade had even started. The phones now
+ * get a section of their own (Showcase) where they are never cropped at all;
+ * this screen is one focal axis — badge, headline, promise, action — and a cue
+ * to keep going.
  */
 export function Hero({ lenis }: { lenis: MutableRefObject<Lenis | null> }) {
-  // `enter` rather than `cover`: the phone should finish its move by the time
-  // the hero's top reaches the top of the screen, not keep turning for the
-  // whole section.
-  const phoneRef = useScrollProgress<HTMLDivElement>("enter");
-
   return (
     <section className={styles.hero} id="top">
       <div className={styles.heroGlow} aria-hidden="true" />

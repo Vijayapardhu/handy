@@ -1,6 +1,7 @@
 import { Download04Icon, Idea01Icon, Alert02Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { Icon } from "../components/Icon";
+import { SectionHead } from "../components/SectionHead";
 import { delay } from "../reveal";
 import { EXTENSION, LINKS } from "@/constants/download";
 
@@ -18,29 +19,24 @@ export function SetupExtension() {
     <section className={`${styles.section} ${styles.sectionRuled}`} id="extension">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
-          <span className={styles.eyebrow} data-reveal>
-            Install · Extension
-          </span>
-          <h2 className={styles.h2} data-reveal style={delay(0.05)}>
-            Set up Handy College Sync
-          </h2>
-          <p className={styles.lede} data-reveal style={delay(0.1)}>
-            This is the piece that reads your data out of Campus Connect and creates your account. It
-            runs in Chrome or Edge on a laptop or desktop — once, on any machine you use.
-          </p>
-
-          <div className={styles.downloadCard} data-reveal style={delay(0.14)}>
-            <div className={styles.downloadMeta}>
-              <span className={styles.downloadMetaName}>College Sync v{EXTENSION.version}</span>
-              Chrome · Edge · Brave
-              <br />
-              Loaded unpacked — not on the Web Store
+          <SectionHead
+            eyebrow="Install · Extension"
+            title="Set up Handy College Sync"
+            lede="This is the piece that reads your data out of Campus Connect and creates your account. It runs in Chrome or Edge on a laptop or desktop — once, on any machine you use."
+          >
+            <div className={styles.downloadCard} data-reveal style={delay(0.14)}>
+              <div className={styles.downloadMeta}>
+                <span className={styles.downloadMetaName}>College Sync v{EXTENSION.version}</span>
+                Chrome · Edge · Brave
+                <br />
+                Loaded unpacked — not on the Web Store
+              </div>
+              <a className={styles.btnPrimary} href={EXTENSION.url}>
+                <Icon icon={Download04Icon} size={17} />
+                Download ZIP
+              </a>
             </div>
-            <a className={styles.btnPrimary} href={EXTENSION.url}>
-              <Icon icon={Download04Icon} size={17} />
-              Download ZIP
-            </a>
-          </div>
+          </SectionHead>
         </div>
 
         <div>

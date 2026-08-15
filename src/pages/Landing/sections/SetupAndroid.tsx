@@ -1,6 +1,7 @@
 import { Download04Icon, SmartPhone01Icon } from "@hugeicons/core-free-icons";
 import styles from "../landing.module.css";
 import { Icon } from "../components/Icon";
+import { SectionHead } from "../components/SectionHead";
 import { delay } from "../reveal";
 import { ANDROID, LINKS } from "@/constants/download";
 
@@ -14,29 +15,24 @@ export function SetupAndroid() {
     <section className={`${styles.section} ${styles.sectionRuled}`} id="android">
       <div className={`${styles.inner} ${styles.split}`}>
         <div className={styles.splitHead}>
-          <span className={styles.eyebrow} data-reveal>
-            Install · Android
-          </span>
-          <h2 className={styles.h2} data-reveal style={delay(0.05)}>
-            Get the app
-          </h2>
-          <p className={styles.lede} data-reveal style={delay(0.1)}>
-            Handy is not on the Play Store, so this is a direct download. Android will ask you to
-            confirm that once — step 2 is what that dialog is.
-          </p>
-
-          <div className={styles.downloadCard} data-reveal style={delay(0.14)}>
-            <div className={styles.downloadMeta}>
-              <span className={styles.downloadMetaName}>Handy v{ANDROID.version}</span>
-              {ANDROID.size} · {ANDROID.minAndroid} and up
-              <br />
-              Released {ANDROID.releasedOn}
+          <SectionHead
+            eyebrow="Install · Android"
+            title="Get the app"
+            lede="Handy is not on the Play Store, so this is a direct download. Android will ask you to confirm that once — step 2 is what that dialog is."
+          >
+            <div className={styles.downloadCard} data-reveal style={delay(0.14)}>
+              <div className={styles.downloadMeta}>
+                <span className={styles.downloadMetaName}>Handy v{ANDROID.version}</span>
+                {ANDROID.size} · {ANDROID.minAndroid} and up
+                <br />
+                Released {ANDROID.releasedOn}
+              </div>
+              <a className={styles.btnPrimary} href={ANDROID.url}>
+                <Icon icon={Download04Icon} size={17} />
+                Download APK
+              </a>
             </div>
-            <a className={styles.btnPrimary} href={ANDROID.url}>
-              <Icon icon={Download04Icon} size={17} />
-              Download APK
-            </a>
-          </div>
+          </SectionHead>
         </div>
 
         <div>

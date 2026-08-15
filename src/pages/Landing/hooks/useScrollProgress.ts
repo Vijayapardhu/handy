@@ -33,10 +33,11 @@ export function useScrollProgress<T extends HTMLElement>(range: Range = "cover")
     if (!el) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // A fixed mid-range value leaves scroll-linked pieces in a sensible
-      // resting pose instead of stuck at their 0 extreme (fully tilted, rail
-      // fully to one side).
-      el.style.setProperty("--progress", "0.5");
+      // Write nothing at all, rather than pinning a value here. Each effect's
+      // CSS already declares its own resting pose — `var(--progress, 0.5)` for
+      // the ones that look right half-way, an explicit `--progress: 1` on the
+      // phone cluster, whose parts are stacked and invisible at 0. An inline
+      // value would beat every one of those.
       return;
     }
 
