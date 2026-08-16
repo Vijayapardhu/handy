@@ -3,15 +3,4 @@
   align-items: center;
   justify-content: center;
   min-height: 60vh;
-  color: var(--color-text-faint);
-}
-
-.spinner {
-  animation: page-loading-spin 0.8s linear infinite;
-}
-
-@keyframes page-loading-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }

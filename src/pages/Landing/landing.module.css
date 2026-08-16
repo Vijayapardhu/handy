@@ -609,7 +609,7 @@
  */
 .clusterSide {
   --spread: clamp(120px, 15vw, 224px);
-  opacity: calc(var(--progress, 0) * 1.6);
+  opacity: min(1, calc(var(--progress, 0) * 1.6));
   transform: translate3d(
       calc(var(--x) * var(--spread) * var(--progress, 0)),
       calc(var(--y) * var(--spread) * 0.34 * var(--progress, 0)),
@@ -678,6 +678,22 @@
   position: relative;
 }
 
+/* A small accent tab at the top edge — the one deliberately non-generic cue
+   that reads as hardware, not template. No other app-landing-page phone
+   mockup carries the brand colour on the frame itself, only in the screen. */
+.phone::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--l-accent);
+  z-index: 3;
+}
+
 .phoneScreen {
   height: 100%;
   border-radius: calc(var(--phone-w) * 0.107);
@@ -688,17 +704,26 @@
   position: relative;
 }
 
-.phoneNotch {
+/* The Handy mark, debossed into the bezel where a generic mockup would put a
+   plain camera dot — the same icon geometry as BrandMark.tsx, muted to read
+   as moulded into the device rather than printed on the screen. */
+.phoneBrandMark {
   position: absolute;
-  top: 9px;
+  top: calc(var(--phone-w) * 0.048);
   left: 50%;
   transform: translateX(-50%);
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #05070c;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
+  width: calc(var(--phone-w) * 0.078);
+  height: calc(var(--phone-w) * 0.078);
   z-index: 2;
+  opacity: 0.5;
+}
+
+.phoneBrandMark rect {
+  fill: rgba(255, 255, 255, 0.1);
+}
+
+.phoneBrandMark path {
+  stroke: rgba(255, 255, 255, 0.6);
 }
 
 .screenBody {

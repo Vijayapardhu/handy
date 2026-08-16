@@ -12,6 +12,18 @@ body,
   height: 100%;
 }
 
+/* Scrolling stays fully functional (wheel, trackpad, keyboard, drag) — this
+   only hides the browser's own scrollbar track/thumb, which reads as chrome
+   rather than product on both the app and the marketing page. */
+html {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, current Edge */
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);

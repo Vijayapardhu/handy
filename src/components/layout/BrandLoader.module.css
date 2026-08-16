@@ -1,0 +1,69 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mark {
+  width: 56px;
+  height: 56px;
+  overflow: visible;
+}
+
+.tile {
+  fill: var(--color-primary);
+  opacity: 0.14;
+  transform-origin: 50% 50%;
+  animation: tile-pulse 1.8s ease-in-out infinite;
+}
+
+/* One value comfortably longer than the glyph's real path length (~130) so
+   the dash covers it fully at offset 0 regardless of exact per-subpath
+   measurement — simpler and more robust than computing getTotalLength(). */
+.glyph {
+  stroke: var(--color-primary);
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation:
+    glyph-draw 0.9s cubic-bezier(0.65, 0, 0.35, 1) forwards,
+    glyph-pulse 1.8s ease-in-out 0.9s infinite;
+}
+
+@keyframes glyph-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes glyph-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes tile-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.14;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.24;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile,
+  .glyph {
+    animation: none;
+  }
+
+  .glyph {
+    stroke-dashoffset: 0;
+  }
+}

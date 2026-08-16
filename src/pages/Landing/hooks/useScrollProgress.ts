@@ -44,6 +44,12 @@ export function useScrollProgress<T extends HTMLElement>(range: Range = "cover")
     let frame = 0;
     let visible = false;
     let last = -1;
+    let smoothed = 0;
+    // True for exactly one frame after the section (re)enters view, so that
+    // frame snaps straight to the real position instead of easing in from
+    // wherever it last was — otherwise scrolling back into a section that was
+    // left mid-fan would visibly animate from the frozen old value.
+    let primed = false;
 
     function measure() {
       const node = ref.current;
@@ -65,13 +71,26 @@ export function useScrollProgress<T extends HTMLElement>(range: Range = "cover")
         const span = range === "cover" ? rect.height + vh : vh;
         raw = span === 0 ? 0 : (vh - rect.top) / span;
       }
-      const progress = Math.min(1, Math.max(0, raw));
+      const target = Math.min(1, Math.max(0, raw));
+
+      // A light exponential smoothing on top of the raw scroll-derived value.
+      // Without it, a quick reversal (a flick up right after a flick down) can
+      // land a single frame where the underlying scroll position hasn't
+      // caught up with the new direction yet, which reads as the fan popping
+      // or flickering instead of gliding. This damps that single-frame noise
+      // without adding any perceptible lag during normal scrolling.
+      if (!primed) {
+        smoothed = target;
+        primed = true;
+      } else {
+        smoothed += (target - smoothed) * 0.35;
+      }
 
       // Skip the write when nothing moved enough to be seen — a style write
       // invalidates, even when the value is effectively identical.
-      if (Math.abs(progress - last) > 0.0005) {
-        node.style.setProperty("--progress", progress.toFixed(4));
-        last = progress;
+      if (Math.abs(smoothed - last) > 0.0005) {
+        node.style.setProperty("--progress", smoothed.toFixed(4));
+        last = smoothed;
       }
       frame = requestAnimationFrame(measure);
     }
@@ -80,6 +99,7 @@ export function useScrollProgress<T extends HTMLElement>(range: Range = "cover")
       ([entry]) => {
         if (entry.isIntersecting && !visible) {
           visible = true;
+          primed = false;
           frame = requestAnimationFrame(measure);
         } else if (!entry.isIntersecting && visible) {
           visible = false;

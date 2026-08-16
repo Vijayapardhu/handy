@@ -25,7 +25,10 @@ export function PhoneMockup({ screen = "today" }: { screen?: ScreenId }) {
   return (
     <div className={styles.phone} role="img" aria-label={`Handy showing ${LABELS[screen]}`}>
       <div className={styles.phoneScreen}>
-        <span className={styles.phoneNotch} />
+        <svg className={styles.phoneBrandMark} viewBox="0 0 100 100" aria-hidden="true">
+          <rect width="100" height="100" rx="22" />
+          <path d="M33 26 V74 M67 26 V74 M33 50 H67" strokeWidth="11" strokeLinecap="round" fill="none" />
+        </svg>
         <div className={styles.screenBody}>{body(screen)}</div>
         <BottomNav active={screen} />
       </div>

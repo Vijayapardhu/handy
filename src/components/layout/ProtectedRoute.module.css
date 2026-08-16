@@ -1,21 +1,15 @@
 .splash {
-  height: 100vh;
+  height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--color-bg);
+  transition: background-color 0.2s ease;
 }
 
-.spinner {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+/* Used only for the Suspense fallback while the landing page's own chunk is
+   still downloading — we already know that destination is dark, so this
+   avoids a flash of the app's light background before it paints. */
+.splashDark {
+  background: #07090f;
 }

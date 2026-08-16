@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { ROUTES } from "@/constants/routes";
+import { BrandLoader } from "./BrandLoader";
 import styles from "./ProtectedRoute.module.css";
 
 // Only ever rendered for a signed-out visitor, and in its own chunk — a
@@ -30,8 +31,8 @@ export function ProtectedRoute() {
 
   if (loading) {
     return (
-      <div className={styles.splash} role="status" aria-label="Loading">
-        <div className={styles.spinner} />
+      <div className={styles.splash}>
+        <BrandLoader />
       </div>
     );
   }
@@ -39,7 +40,13 @@ export function ProtectedRoute() {
   if (!user) {
     if (location.pathname === ROUTES.home) {
       return (
-        <Suspense fallback={<div className={styles.splash} />}>
+        <Suspense
+          fallback={
+            <div className={`${styles.splash} ${styles.splashDark}`}>
+              <BrandLoader />
+            </div>
+          }
+        >
           <LandingPage />
         </Suspense>
       );
