@@ -335,10 +335,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Help content, written by whoever runs Handy and read by everyone signed
-    // in. No client write at all: an FAQ a student can edit is a notice board.
+    // Help content, written by whoever runs Handy. Publicly readable — this is
+    // the same content the marketing page's own FAQ section shows to a
+    // signed-out visitor at /faq, and none of it is student data. No client
+    // write at all: an FAQ a student can edit is a notice board.
     match /faqs/{faqId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if false;
     }
 

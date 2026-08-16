@@ -1,14 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  One entry, because there is one public page. Every other route in this app
-  is behind the auth guard and serves a student's own data; the landing page's
-  in-page anchors (#android, #extension, #faq) are part of this URL, not
-  separate ones.
+  The landing page, the static privacy policy, and /faq and /about — the two
+  in-app pages ProtectedRoute also serves to a signed-out visitor (see its own
+  comment for why). Every other route in this app is still behind the auth
+  guard and serves a student's own data; the landing page's in-page anchors
+  (#android, #extension, #faq) are part of its URL, not separate ones.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://handy-aus.vercel.app/</loc>
+    <loc>https://handy.vijayaapardhu.dev/</loc>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://handy.vijayaapardhu.dev/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://handy.vijayaapardhu.dev/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://handy.vijayaapardhu.dev/privacy.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

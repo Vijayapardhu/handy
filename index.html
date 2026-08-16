@@ -19,17 +19,17 @@
       name="description"
       content="Campus Connect gives you a percentage. Handy tells you what it means — how many classes you can miss, what a day off costs, and which subject is about to become a problem. Android app, home-screen widgets, and a web app."
     />
-    <link rel="canonical" href="https://handy-aus.vercel.app/" />
+    <link rel="canonical" href="https://handy.vijayaapardhu.dev/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Handy" />
-    <meta property="og:url" content="https://handy-aus.vercel.app/" />
+    <meta property="og:url" content="https://handy.vijayaapardhu.dev/" />
     <meta property="og:title" content="Handy — your attendance, with the answer attached" />
     <meta
       property="og:description"
       content="How many classes can you still miss? Handy works it out from your own Campus Connect data — on Android, on your home screen, and offline."
     />
-    <meta property="og:image" content="https://handy-aus.vercel.app/og-image.png" />
+    <meta property="og:image" content="https://handy.vijayaapardhu.dev/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
@@ -39,7 +39,32 @@
       name="twitter:description"
       content="How many classes can you still miss? Handy works it out from your own Campus Connect data."
     />
-    <meta name="twitter:image" content="https://handy-aus.vercel.app/og-image.png" />
+    <meta name="twitter:image" content="https://handy.vijayaapardhu.dev/og-image.png" />
+
+    <!-- Static because it describes the app itself, not any one student's
+         data — safe to hardcode rather than render client-side, so it reaches
+         crawlers that don't execute JS. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Handy",
+        "url": "https://handy.vijayaapardhu.dev/",
+        "description": "Handy turns your Campus Connect attendance percentage into an answer: how many classes you can still miss, what a day off costs, and which subject is about to become a problem. Built for Aditya University, AEC and ACET students.",
+        "applicationCategory": "EducationApplication",
+        "operatingSystem": "Android 6.0+, Web (PWA)",
+        "image": "https://handy.vijayaapardhu.dev/og-image.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "audience": {
+          "@type": "EducationalAudience",
+          "educationalRole": "student"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
