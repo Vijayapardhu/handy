@@ -3,6 +3,8 @@ import { TopHeader } from "@/components/layout/TopHeader";
 import { Card } from "@/components/ui/Card";
 import { LINKS } from "@/constants/download";
 import { APP_VERSION } from "@/services/feedback/feedbackService";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { ROUTES } from "@/constants/routes";
 import styles from "./AboutPage.module.css";
 
 const WEBSITE_LABEL = LINKS.webApp.replace(/^https?:\/\//, "");
@@ -10,6 +12,13 @@ const PORTFOLIO_LABEL = LINKS.portfolio.replace(/^https?:\/\//, "");
 const GITHUB_LABEL = LINKS.github.replace(/^https?:\/\//, "");
 
 export function AboutPage() {
+  useDocumentMeta({
+    title: "About Handy — Built by an Aditya University Student",
+    description:
+      "Why Handy exists, what it will and won't do with your attendance data, and who built it — an independent project for Aditya University, AEC and ACET students.",
+    path: ROUTES.about,
+  });
+
   return (
     <div className="page-narrow">
       <TopHeader title="About Handy" subtitle={`Version ${APP_VERSION}`} back />

@@ -6,11 +6,19 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useFaqs } from "@/hooks/useFaqs";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils/cn";
 import styles from "./FaqPage.module.css";
 
 export function FaqPage() {
+  useDocumentMeta({
+    title: "Help & FAQ — Handy for Aditya University",
+    description:
+      "Answers about signing in, syncing your Campus Connect data, how the 75% attendance rule works, widgets, and privacy — everything students ask about Handy.",
+    path: ROUTES.faq,
+  });
+
   const { data, isLoading, isError, refetch } = useFaqs();
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
