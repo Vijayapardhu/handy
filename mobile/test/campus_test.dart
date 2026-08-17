@@ -32,6 +32,24 @@ void main() {
       expect(detectCampus('23P31A0341'), Campus.acet);
     });
 
+    test('routes AGBS management rolls by the program marker', () {
+      // Same A9/P3 college code as AEC/ACET; the M (MBA) / E (MCA) marker at
+      // index 5 is the only thing that separates them.
+      for (final roll in ['23A91M0035', '22A91M0030', '14A91E0031', '18P31M0013']) {
+        expect(detectCampus(roll), Campus.agbs, reason: roll);
+      }
+      // The B.Tech rolls with the same code stay put.
+      expect(detectCampus('24A91A0501'), Campus.aec);
+      expect(detectCampus('23P31A0341'), Campus.acet);
+    });
+
+    test('leaves AGBS admission numbers for the fallback, not detection', () {
+      // Numeric and PGDM AGBS rolls match no college code.
+      for (final roll in ['240218301030', '1884110070', '13PGDM005']) {
+        expect(detectCampus(roll), isNull, reason: roll);
+      }
+    });
+
     test('does not decide on shape alone', () {
       // The seeded demo student has the identical shape to the AEC and ACET
       // rolls above and belongs to neither. A shape-based rule would send its
@@ -48,6 +66,7 @@ void main() {
     test('agrees with the web app on which campuses type a portal password', () {
       expect(Campus.aec.usesPortalLogin, isTrue);
       expect(Campus.acet.usesPortalLogin, isTrue);
+      expect(Campus.agbs.usesPortalLogin, isTrue);
       // AUS never does — its portal enforces a captcha, so those students go
       // through the extension.
       expect(Campus.aus.usesPortalLogin, isFalse);
@@ -57,6 +76,39 @@ void main() {
       expect(Campus.aus.wire, 'AUS');
       expect(Campus.aec.wire, 'AEC');
       expect(Campus.acet.wire, 'ACET');
+      expect(Campus.agbs.wire, 'AGBS');
+    });
+  });
+
+  group('fallbackCampus', () {
+    test('tries AGBS for an unrecognised, non-AUS roll', () {
+      // AGBS admission numbers match no college code, so this is the last
+      // resort that lets the phone go straight to the portal password prompt.
+      for (final roll in ['240218301030', '1884110070', '13PGDM005']) {
+        expect(fallbackCampus(roll), Campus.agbs, reason: roll);
+      }
+    });
+
+    test('never falls back to AGBS for an AUS-shaped roll', () {
+      // AUS signs in through the extension with no portal password; a roll that
+      // reads as AUS must not be sent to a portal login even when detection did
+      // not fully pin it down.
+      expect(fallbackCampus('AUS26-10819'), isNull);
+      expect(fallbackCampus('26B21CS058'), isNull);
+      // 'B' at the college-code position, but the digits did not match cleanly.
+      expect(fallbackCampus('26BX1CS058'), isNull);
+    });
+
+    test('does not override a confident detection', () {
+      // A roll detection already placed is returned by detectCampus, so the
+      // fallback stays out of it.
+      for (final roll in ['26B21CS058', '24A91A0501', '23P31A0341', '23A91M0035']) {
+        expect(fallbackCampus(roll), isNull, reason: roll);
+      }
+    });
+
+    test('waits until enough has been typed to judge', () {
+      expect(fallbackCampus('240218'), isNull);
     });
   });
 }

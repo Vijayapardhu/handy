@@ -37,6 +37,10 @@ import * as cheerio from "cheerio";
 export const CAMPUSES = {
   AEC: { baseUrl: "https://info.aec.edu.in/aec/", btnX: 41, btnY: 24 },
   ACET: { baseUrl: "https://info.aec.edu.in/ACET/", btnX: 23, btnY: 6 },
+  // Aditya Global Business School. Same Campus Connect portal, same login form
+  // and AES key as AEC/ACET — only the path differs — so it drops in here with
+  // no scraper changes beyond this line.
+  AGBS: { baseUrl: "https://info.aec.edu.in/agbs/", btnX: 10, btnY: 10 },
 };
 
 /** Raised for a bad roll number or password, so the endpoint can answer 401 rather than 500. */

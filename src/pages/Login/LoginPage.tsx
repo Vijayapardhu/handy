@@ -197,6 +197,9 @@ export function LoginPage() {
                 <button type="button" className={styles.campusOption} onClick={() => setChosenCampus("ACET")}>
                   ACET
                 </button>
+                <button type="button" className={styles.campusOption} onClick={() => setChosenCampus("AGBS")}>
+                  AGBS
+                </button>
               </div>
               <span className={styles.hint}>
                 We could not tell from that roll number, and guessing would send your password to the

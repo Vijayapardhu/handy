@@ -25,8 +25,20 @@
  * The AEC and ACET rules rest on a single sample each. They are deliberately
  * narrow for that reason: a broader pattern would swallow roll numbers we have
  * never seen and route them somewhere on no evidence at all.
+ *
+ * AGBS (Aditya Global Business School) is the exception that forces a second
+ * discriminator. It runs on the *same* Campus Connect portal but shares AEC's
+ * JNTU college code (A9) and ACET's (P3) — an MBA roll `23A91M0035` has the
+ * identical code slice to the AEC B.Tech roll above. What separates them is the
+ * program marker at index 5: B.Tech rolls carry `A` there (`24A91A0501`), while
+ * AGBS's management rolls carry `M` (MBA) or `E` (MCA) — e.g. 23A91M0035,
+ * 23A91E00I8, 18P31M0013, 14A91E0031. That marker is strong: ~40 observed AGBS
+ * rolls all show M/E, and every AEC/ACET B.Tech roll shows A. AGBS also issues
+ * non-JNTU admission numbers (numeric like 240218301030 / 1884110070, or PGDM
+ * like 13PGDM005); those match no code here and fall through to the picker,
+ * which now offers AGBS.
  */
-export type Campus = "AUS" | "AEC" | "ACET";
+export type Campus = "AUS" | "AEC" | "ACET" | "AGBS";
 
 export interface CampusGuess {
   campus: Campus | null;
@@ -38,7 +50,7 @@ export interface CampusGuess {
 }
 
 /** Campuses whose portal Handy can sign into server-side (no captcha). */
-export const PORTAL_LOGIN_CAMPUSES: Campus[] = ["AEC", "ACET"];
+export const PORTAL_LOGIN_CAMPUSES: Campus[] = ["AEC", "ACET", "AGBS"];
 
 export function usesPortalLogin(campus: Campus | null): boolean {
   return campus !== null && PORTAL_LOGIN_CAMPUSES.includes(campus);
@@ -53,6 +65,15 @@ export function detectCampus(rollNumber: string): CampusGuess {
   if (/^AUS\d{2}-\d+$/.test(roll)) return { campus: "AUS", confident: true };
 
   const code = roll.slice(2, 5);
+
+  // AGBS shares AEC's (A9) and ACET's (P3) college code; the program marker at
+  // index 5 is what tells a management roll (M/E) from a B.Tech one (A). This is
+  // checked before the B.Tech rules below so an AGBS roll is not swallowed by
+  // them. Numeric/PGDM AGBS admission numbers match no code and fall through.
+  const program = roll.charAt(5);
+  if ((/^A9\d$/.test(code) || /^P3\d$/.test(code)) && (program === "M" || program === "E")) {
+    return { campus: "AGBS", confident: true };
+  }
 
   if (/^B\d{2}$/.test(code)) return { campus: "AUS", confident: true };
   if (/^A9\d$/.test(code)) return { campus: "AEC", confident: true };

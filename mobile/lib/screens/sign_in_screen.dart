@@ -36,14 +36,25 @@ class _SignInScreenState extends State<SignInScreen> {
   /// student answered. Nobody with a recognisable roll number sees that ask.
   Campus? _chosenCampus;
 
-  Campus? get _campus => _chosenCampus ?? detectCampus(_roll.text);
+  /// Detection first; then AGBS as the automatic last resort for an
+  /// unrecognised roll (its admission numbers match no college code). The
+  /// fallback deliberately skips AUS-shaped rolls — see [fallbackCampus].
+  Campus? get _campus =>
+      _chosenCampus ?? detectCampus(_roll.text) ?? fallbackCampus(_roll.text);
 
-  /// AEC and ACET sign in against their own portal, so they type that password
-  /// rather than a Handy one.
+  /// AEC, ACET and AGBS sign in against their own portal, so they type that
+  /// password rather than a Handy one.
   bool get _portalMode => _campus?.usesPortalLogin ?? false;
 
+  /// The campus question only appears when nothing — detection or the AGBS
+  /// fallback — could place the roll. In practice that is an AUS-shaped roll
+  /// the rules did not fully recognise, so the choice is AUS/AEC/ACET; AGBS is
+  /// reached automatically and never offered as a button.
   bool get _askForCampus =>
-      _chosenCampus == null && detectCampus(_roll.text) == null && _roll.text.trim().length >= 8;
+      _chosenCampus == null &&
+      detectCampus(_roll.text) == null &&
+      fallbackCampus(_roll.text) == null &&
+      _roll.text.trim().length >= 8;
 
   @override
   void initState() {
@@ -173,7 +184,11 @@ class _SignInScreenState extends State<SignInScreen> {
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
+                      // AGBS is intentionally absent: an unrecognised roll is
+                      // tried as AGBS automatically (see fallbackCampus), so it
+                      // never needs a button here.
                       children: Campus.values
+                          .where((c) => c != Campus.agbs)
                           .map((c) => OutlinedButton(
                                 onPressed: () => setState(() => _chosenCampus = c),
                                 child: Text(c.label),

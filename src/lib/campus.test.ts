@@ -31,6 +31,26 @@ describe("detectCampus", () => {
     expect(detectCampus("23P31A0341")).toEqual({ campus: "ACET", confident: true });
   });
 
+  it("routes AGBS management rolls by the program marker, not the shared college code", () => {
+    // AGBS shares AEC's A9 and ACET's P3 college code. The M (MBA) / E (MCA)
+    // marker at index 5 is the only thing separating these from a B.Tech roll —
+    // without it, every one of these would be sent to the wrong portal.
+    for (const roll of ["23A91M0035", "22A91M0030", "14A91E0031", "23A91E00I8", "18P31M0013"]) {
+      expect(detectCampus(roll)).toEqual({ campus: "AGBS", confident: true });
+    }
+    // The B.Tech rolls with the same code must still route to AEC/ACET.
+    expect(detectCampus("24A91A0501").campus).toBe("AEC");
+    expect(detectCampus("23P31A0341").campus).toBe("ACET");
+  });
+
+  it("leaves AGBS admission numbers for the picker rather than guessing", () => {
+    // Numeric and PGDM AGBS rolls match no college code, so detection says it
+    // does not know and the UI offers the campus choice (which includes AGBS).
+    for (const roll of ["240218301030", "1884110070", "13PGDM005"]) {
+      expect(detectCampus(roll)).toEqual({ campus: null, confident: false });
+    }
+  });
+
   it("does not decide on shape alone", () => {
     // The whole reason this keys on the college code. The seeded demo student
     // has the identical shape to the AEC and ACET rolls above and belongs to
@@ -52,6 +72,7 @@ describe("detectCampus", () => {
   it("knows which campuses type a portal password", () => {
     expect(usesPortalLogin("AEC")).toBe(true);
     expect(usesPortalLogin("ACET")).toBe(true);
+    expect(usesPortalLogin("AGBS")).toBe(true);
     // AUS never does — its portal enforces a captcha, so those students go
     // through the extension and are never asked for one.
     expect(usesPortalLogin("AUS")).toBe(false);
