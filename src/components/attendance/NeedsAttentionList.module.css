@@ -40,61 +40,94 @@
   color: var(--color-primary);
 }
 
-.list {
-  padding: 0 var(--space-5);
-}
-
-.row {
+.strip {
   display: flex;
-  align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--color-border);
+  padding: 0 var(--space-5) var(--space-1);
+  overflow-x: auto;
 }
 
-.rowIcon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--status-critical-bg);
-  color: var(--status-critical);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.riskCard {
   flex-shrink: 0;
-}
-
-.rowBody {
-  flex: 1;
-  min-width: 0;
+  width: 148px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
 
-.rowName {
-  font-weight: 600;
-  font-size: 13.5px;
+/* Border tints toward the status colour, like mobile's colour.withValues(alpha: 0.45) border. */
+.riskCard[data-status="critical"] {
+  border-color: color-mix(in srgb, var(--status-critical) 45%, var(--color-border));
+}
+.riskCard[data-status="low"] {
+  border-color: color-mix(in srgb, var(--status-low) 45%, var(--color-border));
+}
+
+.riskName {
+  font-weight: 700;
+  font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.rowMeta {
+.riskPercentage {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  color: var(--status-na);
+}
+.riskCard[data-status="critical"] .riskPercentage {
+  color: var(--status-critical);
+}
+.riskCard[data-status="low"] .riskPercentage {
+  color: var(--status-low);
+}
+
+.riskNeed {
   font-size: 12px;
   color: var(--color-text-muted);
 }
 
-.chevron {
-  color: var(--color-text-faint);
-}
-
 .tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: var(--space-2) var(--space-5) var(--space-4);
   background: var(--color-primary-light);
-  color: var(--color-primary-dark);
+  /* --color-text rather than --color-primary-dark: that fixed orange-on-orange
+     combo measured 2.32:1 in dark mode once the background got fixed for
+     visibility — under the 4.5:1 AA floor for this text's size. --color-text
+     clears 7.5:1 in dark and 15.5:1 in light, in both themes at once. */
+  color: var(--color-text);
   font-size: 12.5px;
+  font-weight: 500;
   padding: var(--space-3);
   border-radius: var(--radius-sm);
+  transition: filter 0.12s ease;
+}
+
+.tip:hover {
+  filter: brightness(1.08);
+}
+
+.tipIcon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.tip span {
+  flex: 1;
+}
+
+.tipChevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
 .allGood {

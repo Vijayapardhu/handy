@@ -10,14 +10,38 @@
   gap: var(--space-3);
 }
 
+.toggleHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.toggleChevron {
+  flex-shrink: 0;
+  color: var(--color-text-faint);
+  transition: transform 0.15s ease;
+}
+
+.toggleChevronOpen {
+  transform: rotate(180deg);
+}
+
 .headerIcon {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
+  border-radius: 50%;
   background: var(--color-primary-light);
   color: var(--color-primary);
 }
@@ -28,6 +52,8 @@
 }
 
 .title {
+  flex: 1;
+  min-width: 0;
   font-size: 14px;
   font-weight: 700;
   color: var(--color-text);
@@ -44,8 +70,8 @@
   background: none;
   border: 1px solid var(--color-border);
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -64,10 +90,15 @@
   line-height: 1.5;
 }
 
+.valueRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .value {
   font-size: 28px;
   font-weight: 800;
-  color: var(--color-primary);
 }
 
 .footnote {

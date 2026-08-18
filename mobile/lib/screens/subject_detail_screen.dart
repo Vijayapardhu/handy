@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../data/app_state.dart';
 import '../logic/attendance.dart';
+import '../logic/campus_features.dart';
 import '../logic/deadlines.dart';
+import '../logic/planning.dart';
 import '../logic/timetable.dart';
 import '../models/models.dart';
 import '../models/timetable_entry.dart';
@@ -11,6 +13,7 @@ import '../widgets/detail_row.dart';
 import '../widgets/study_timer_card.dart';
 import '../widgets/subject_class_content.dart';
 import 'attendance_history_screen.dart';
+import 'attendance_planner_screen.dart';
 import 'subjects_screen.dart';
 import '../widgets/app_icon.dart';
 
@@ -149,15 +152,28 @@ class SubjectDetailScreen extends StatelessWidget {
                       colour: colour,
                     ),
                     // The same number as a decision rather than as arithmetic.
-                    // "18 more classes" is a figure; "about 5 days" is a thing
-                    // you can agree to on a Sunday night.
-                    if (daysForClasses(needed, state.classesPerDay) case final days?
-                        when days > 0) ...[
+                    // "18 more classes" is a figure; "6 days, by 14 April" is
+                    // something you can agree to on a Sunday night.
+                    //
+                    // Counted off this subject's own place in the timetable.
+                    // It used to divide by the average number of classes a day
+                    // across every subject, which answered a different question
+                    // than the one asked: thirteen classes of a subject that
+                    // meets three times a week is a month, not "about 3 days".
+                    if (daysToAttend(
+                          classes: needed,
+                          entries: state.entries,
+                          from: DateTime.now(),
+                          subjectId: subject.id,
+                        )
+                        case final plan?) ...[
                       const SizedBox(height: 8),
                       _Fact(
                         icon: HugeIcons.strokeRoundedCalendar01,
-                        text: 'At about ${state.classesPerDay!.toStringAsFixed(1)} classes a day, '
-                            'that is roughly $days more day${days == 1 ? '' : 's'} of turning up.',
+                        text: 'That is ${plan.days} more day'
+                            '${plan.days == 1 ? '' : 's'} '
+                            '${subject.shortName.isEmpty ? 'this subject' : subject.shortName} '
+                            'meets — you would get there by ${shortWhen(plan.on)}.',
                       ),
                     ],
                     const SizedBox(height: 8),
@@ -175,10 +191,15 @@ class SubjectDetailScreen extends StatelessWidget {
           const SizedBox(height: 12),
           StudyTimerCard(subject: subject),
 
-          SubjectClassContent(
-            subjectCode: subject.code,
-            facultyId: subject.facultyId,
-          ),
+          // A class group is timetable + subject + faculty, and a
+          // portal-login college names neither — so there is no room this
+          // student could be matched to, and asking costs a read that can
+          // never match. See campus_features.dart.
+          if (campusFeaturesFor(state.student?.rollNumber).hasClassGroups)
+            SubjectClassContent(
+              subjectCode: subject.code,
+              facultyId: subject.facultyId,
+            ),
 
           const SizedBox(height: 12),
           Card(
@@ -210,6 +231,48 @@ class SubjectDetailScreen extends StatelessWidget {
                                 ? 'Nothing marked yet'
                                 : '${state.marks.where((m) => m.subjectId == subject.id).length} '
                                     'marked',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    AppIcon(HugeIcons.strokeRoundedArrowRight01, size: 18),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          // The same door the web puts at /subjects/:id/planner: the card
+          // above already says what this subject needs, and this is where a
+          // student goes to see what turning up would actually do about it.
+          Card(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => AttendancePlannerScreen(subject: subject),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Row(
+                  children: [
+                    AppIcon(
+                      HugeIcons.strokeRoundedTarget02,
+                      size: 19,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Plan this subject',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          Text(
+                            'Reach your target, or see where regular attendance lands',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],

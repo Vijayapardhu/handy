@@ -33,11 +33,17 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Browsers apply their own default text color to form controls — it doesn't
+   follow body's color the way plain text does. Without this, every input,
+   select, textarea and button renders near-black text on the dark theme's
+   own dark background: illegible, and everywhere at once, since these
+   elements are on every page that has a form. */
 button,
 input,
 select,
 textarea {
   font-family: inherit;
+  color: inherit;
 }
 
 a {
@@ -71,7 +77,12 @@ p {
  * rather than each redefining the same breakpoints.
  */
 .app-shell {
-  max-width: var(--content-max-width);
+  /* No max-width below 768px: a real phone is already narrower than the old
+     480px cap, so it never showed there — the cap only ever bit on wider
+     "still technically mobile" viewports (large phones, tablets in portrait,
+     a browser window resized to something between phone and desktop), where
+     it centered a narrow column and left the bottom nav with visible gaps on
+     both sides instead of spanning the device edge to edge. */
   margin: 0 auto;
   min-height: 100vh;
   background: var(--color-bg);

@@ -1,6 +1,7 @@
-name: Android release
+name: Release
 
-# Builds the signed APK and attaches it to a GitHub release.
+# Builds the signed APK and the browser-extension zip, and attaches both to a
+# GitHub release.
 #
 # Triggered by pushing a tag like `v1.1.0`, or by hand from the Actions tab
 # when you want a build without cutting a release.
@@ -38,6 +39,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -112,21 +117,59 @@ jobs:
           echo "apk=mobile/handy-$VERSION.apk" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Pack the extension
+        # The website links to /releases/latest/download/handy-unpacked.zip,
+        # so a release without this asset is a download button that 404s. It
+        # was missing from every release until now because pack.mjs shelled
+        # out to PowerShell and could not run on this runner at all.
+        run: node extension/tool/pack.mjs
+
+      - name: Verify the zip is loadable
+        # Extract it and diff the result against what was staged.
+        #
+        # Checking the entry names instead was the obvious spelling and a
+        # useless one: `unzip -Z1` rewrites separators as it prints, so a
+        # name carrying a backslash — the exact corruption the old
+        # PowerShell packer produced — comes back looking correct. Round
+        # tripping the archive cannot be fooled that way. A backslash name
+        # extracts as one flat file where a directory should be, and the
+        # diff says so.
+        #
+        # It covers the rest of the ways this file goes wrong for free:
+        # truncated entries, a missing manifest, anything the exclusion
+        # filter let through. All of them are silent otherwise — a green
+        # run that publishes a zip Chrome answers with nothing more useful
+        # than "Manifest file is missing or unreadable".
+        run: |
+          unzip -qt dist-extension/handy-unpacked.zip
+          # unzip only creates the last missing directory, so make the path first.
+          mkdir -p "${{ runner.temp }}/zipcheck"
+          unzip -q dist-extension/handy-unpacked.zip -d "${{ runner.temp }}/zipcheck"
+          diff -r "${{ runner.temp }}/zipcheck/handy" dist-extension/handy
+          test -f "${{ runner.temp }}/zipcheck/handy/manifest.json"
+
       - uses: actions/upload-artifact@v4
         with:
           name: handy-apk
           path: ${{ steps.rename.outputs.apk }}
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: handy-extension
+          path: dist-extension/handy-unpacked.zip
+
       - name: Attach to the release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          # Both, and the second one is not optional: mobile/handy.apk is what
-          # /releases/latest/download/handy.apk resolves to, which is the link
-          # the website uses. Building it and forgetting to upload it is a
-          # green run that leaves that link 404ing — which is exactly what
-          # happened the first time.
+          # All three, and only the first is the versioned keepsake. The other
+          # two carry the stable names the website's two download buttons
+          # resolve to — /releases/latest/download/handy.apk and
+          # .../handy-unpacked.zip (see src/constants/download.ts). Building an
+          # asset and forgetting to upload it is a green run that leaves one of
+          # those buttons 404ing, which has now happened to both of them.
           files: |
             ${{ steps.rename.outputs.apk }}
             mobile/handy.apk
+            dist-extension/handy-unpacked.zip
           fail_on_unmatched_files: true

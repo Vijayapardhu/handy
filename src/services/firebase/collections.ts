@@ -19,6 +19,7 @@ import type { TimetableChangeReportDoc } from "@/types/timetableChangeReport";
 import type { TaskDoc } from "@/types/task";
 import type { FaqDoc } from "@/types/faq";
 import type { FeedbackDoc } from "@/types/feedback";
+import type { AcademicRecordDoc } from "@/types/academicRecord";
 import type {
   AnnouncementDoc,
   ClassGroupMemberDoc,
@@ -67,6 +68,7 @@ export const COLLECTIONS = {
   classNotes: "classNotes",
   faqs: "faqs",
   feedback: "feedback",
+  academicRecords: "academicRecords",
 } as const;
 
 export const studentsCol = () => typedCollection<StudentDoc>(COLLECTIONS.students);
@@ -100,3 +102,6 @@ export const studentDocRef = (studentId: string) =>
 
 export const collegeDocRef = (collegeId: string) =>
   doc(db, COLLECTIONS.colleges, collegeId).withConverter(makeConverter<CollegeConfigDoc>());
+
+export const academicRecordDocRef = (studentId: string) =>
+  doc(db, COLLECTIONS.academicRecords, studentId).withConverter(makeConverter<AcademicRecordDoc>());

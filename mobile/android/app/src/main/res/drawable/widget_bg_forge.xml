@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  CodeForge's own background, and deliberately not one of the palettes the
+  other widgets share.
+
+  Every other tile follows whatever theme the student picked in Settings,
+  because they are all views of the same attendance and should look like one
+  set. This one is a different college system entirely, with a percentage that
+  has nothing to do with the 75% a degree depends on — so it is blue where the
+  rest are not, and it stays blue whatever palette is chosen. Mistaking a
+  CodeForge figure for an attendance figure is the single most expensive
+  confusion these widgets could cause, and colour is the cheapest way to stop
+  it.
+
+  Orange stays as the accent on top (see CodeForgeWidgetProvider) so it still
+  reads as Handy rather than as somebody else's app.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:startColor="#0B2545" android:endColor="#12386B" android:angle="315" />
+    <corners android:radius="24dp" />
+</shape>

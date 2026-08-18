@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../data/app_state.dart';
 import '../logic/attendance.dart';
+import '../logic/planning.dart';
+import '../main.dart';
 import '../models/models.dart';
+import '../models/timetable_entry.dart';
 import '../theme.dart';
 import '../widgets/skeleton.dart';
 import 'subject_detail_screen.dart';
@@ -12,7 +15,20 @@ import 'subject_detail_screen.dart';
 class SubjectsScreen extends StatelessWidget {
   const SubjectsScreen({super.key});
 
-  static const target = 75.0;
+  /// The percentage every "are you safe" line on the phone is measured
+  /// against — the college's own minimum, not Handy's opinion of one.
+  ///
+  /// This was a hardcoded 75, which is right for most colleges here and wrong
+  /// for the ones that require 80: their students were being told they were
+  /// safe at 76 by an app reading their own attendance. The web has always
+  /// read `colleges/{id}.minimumAttendancePercentage` (SRS §65 — never
+  /// hardcode these), and now so does this.
+  ///
+  /// Kept here, on the screen that first needed it, so the two dozen existing
+  /// call sites did not each have to grow a state lookup. It reads the global
+  /// AppState rather than taking a context, which is why it stays usable from
+  /// small leaf widgets that never had one.
+  static double get target => appState.config.minimumAttendancePercentage;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +102,7 @@ class SubjectsScreen extends StatelessWidget {
                   summary: row.summary,
                   percent: row.percent,
                   rank: i + 1,
+                  entries: state.entries,
                 );
 
                 if (!crossesLine) return card;
@@ -237,11 +254,15 @@ class _SubjectCard extends StatelessWidget {
     required this.summary,
     required this.percent,
     required this.rank,
+    required this.entries,
   });
 
   final Subject subject;
   final AttendanceSummary? summary;
   final double? percent;
+
+  /// The whole timetable, so the card can say how long its own advice takes.
+  final List<TimetableEntry> entries;
 
   /// Position in the risk order. Shown because the list *is* a ranking, and a
   /// ranking with no numbers makes the reader count rows to place something.
@@ -339,6 +360,26 @@ class _SubjectCard extends StatelessWidget {
                               held == 0 ? Theme.of(context).textTheme.bodySmall?.color : colour,
                         ),
                       ),
+                      // What that costs in days, off this subject's own place
+                      // in the timetable. Ranked by risk, this list is read
+                      // fastest as "which of these do I owe time to, and how
+                      // much" — and a count of classes is not time.
+                      if (held > 0 && needed > 0)
+                        if (daysToAttend(
+                              classes: needed,
+                              entries: entries,
+                              from: DateTime.now(),
+                              subjectId: subject.id,
+                            )
+                            case final plan?)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              '${plan.days} day${plan.days == 1 ? '' : 's'} it meets, '
+                              'by ${shortWhen(plan.on)}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
                     ],
                   ),
                 ),

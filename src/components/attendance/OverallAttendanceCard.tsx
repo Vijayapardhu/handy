@@ -12,6 +12,13 @@ interface OverallAttendanceCardProps {
   thresholds: StatusThresholds;
   /** When set, the whole card becomes a link (e.g. Home → Overall Attendance overview tab). */
   linkTo?: string;
+  /**
+   * "17 days of classes, by 12 May" — the same gap as a plan rather than
+   * arithmetic, walked off the real timetable (see lib/calculations/planning
+   * daysToAttend). Mirrors mobile's _AttendanceHero. Omitted when the target
+   * is already met or the timetable can't answer.
+   */
+  daysNote?: string | null;
 }
 
 /** SRS §8.2 — the single most important number on the home page. */
@@ -22,6 +29,7 @@ export function OverallAttendanceCard({
   target,
   thresholds,
   linkTo,
+  daysNote,
 }: OverallAttendanceCardProps) {
   const status = getAttendanceStatus(percentage, thresholds);
   const progressToTarget = percentage === null ? 0 : Math.min(100, (percentage / target) * 100);
@@ -83,6 +91,7 @@ export function OverallAttendanceCard({
               </>
             )}
       </p>
+      {gap !== null && gap > 0 && daysNote && <p className={styles.daysNote}>{daysNote}</p>}
     </Card>
   );
 

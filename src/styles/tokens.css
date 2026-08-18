@@ -85,7 +85,16 @@
   --color-text: #f1f5f9;
   --color-text-muted: #94a3b8;
   --color-text-faint: #64748b;
-  --color-primary-light: #2a1a0c;
+  /* #2a1a0c measured at 1.02:1 contrast against --color-surface (#141c2b) —
+     the ~25 icon-badge/chip/hover backgrounds this token drives were
+     effectively invisible in dark mode, not merely "subtle" (reported
+     directly: "the coours are dark and not even able to see"). Lifted to
+     clear ~2:1 against the surface while keeping the icon/text drawn on top
+     of it comfortably legible — verified with the WCAG relative-luminance
+     formula, not eyeballed. Light mode's own low ratio (~1.15:1) was left
+     alone: it wasn't reported broken, and a white card's border + shadow
+     give the pastel chip definition dark mode's flat surface doesn't have. */
+  --color-primary-light: #6f451f;
 
   --color-skeleton-highlight: #1e293b;
   --color-desktop-backdrop: #05070d;
@@ -120,15 +129,18 @@
   --color-primary-light: #ede9fe;
 }
 
+/* Same fix as the default (orange) dark-mode value above, per accent —
+   each lifted to ~1.8-2:1 against --color-surface so the badge itself
+   reads as a distinct shape rather than matching the card underneath it. */
 [data-theme="dark"][data-accent="indigo"] {
-  --color-primary-light: #1e1b4b;
+  --color-primary-light: #453f97;
 }
 [data-theme="dark"][data-accent="teal"] {
-  --color-primary-light: #042f2e;
+  --color-primary-light: #155a56;
 }
 [data-theme="dark"][data-accent="rose"] {
-  --color-primary-light: #4c0519;
+  --color-primary-light: #812141;
 }
 [data-theme="dark"][data-accent="violet"] {
-  --color-primary-light: #2e1065;
+  --color-primary-light: #5729a8;
 }

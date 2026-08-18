@@ -26,3 +26,10 @@ scripts/
 # NOT excluded, despite being a browser extension: api/sync.js imports
 # extension/src/snapshotMapping.js so the server and the extension write
 # byte-identical documents. Excluding it breaks the function build.
+
+# Vitest suites for the functions. They sit next to the code they test (see
+# vitest.config.ts), but Vercel treats every non-underscore .js in api/ as its
+# own serverless function — the five *.test.js files pushed the deployment from
+# 9 functions to 14, past the Hobby plan's limit of 12. Ignored here rather than
+# moved so the tests stay beside their subjects and still run in CI.
+api/**/*.test.js

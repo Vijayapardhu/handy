@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../logic/attendance_marks.dart';
 import '../models/class_content.dart';
 import '../models/models.dart';
 import '../models/timetable_entry.dart';
@@ -41,6 +44,19 @@ class Repository {
   Stream<Student?> watchStudent() => _db.collection('students').doc(_uid).snapshots().map(
         (snap) => snap.exists ? Student.fromMap(snap.id, snap.data()!) : null,
       );
+
+  /// The college's own rules — the minimum percentage above all.
+  ///
+  /// Falls back to the built-in defaults only when the document has not been
+  /// provisioned, matching getCollegeConfig on the web. A missing college is
+  /// not an error worth failing a screen over: every number derived from this
+  /// still renders, it just renders against 75%.
+  Future<CollegeConfig> collegeConfig(String collegeId) async {
+    if (collegeId.isEmpty) return CollegeConfig.fallback;
+    final snap = await _db.collection('colleges').doc(collegeId).get();
+    final data = snap.data();
+    return data == null ? CollegeConfig.fallback : CollegeConfig.fromMap(data);
+  }
 
   Future<List<Subject>> subjects(String semesterId) async {
     final snap = await _db
@@ -103,30 +119,6 @@ class Repository {
     return items;
   }
 
-  /// How many classes this student had on each day the college recorded one.
-  ///
-  /// Read from `attendance` — the college's own per-day record, which only the
-  /// campuses whose portal reports days have. Empty for Aditya University,
-  /// whose portal gives running totals only.
-  ///
-  /// One record is one subject on one day, so a subject with two back-to-back
-  /// periods counts once. That makes this a slight undercount, which is the
-  /// safe direction: it says a student needs *more* days rather than fewer.
-  Future<List<int>> classesPerRecordedDay() async {
-    final snap = await _db
-        .collection('attendance')
-        .where('studentId', isEqualTo: _uid)
-        .get();
-
-    final perDay = <String, int>{};
-    for (final doc in snap.docs) {
-      final date = doc.data()['date'] as String?;
-      if (date == null) continue;
-      perDay[date] = (perDay[date] ?? 0) + 1;
-    }
-    return perDay.values.toList();
-  }
-
   Future<List<AttendanceSummary>> summaries() async {
     final snap = await _db
         .collection('attendanceSummaries')
@@ -165,6 +157,48 @@ class Repository {
           ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
         return tasks;
       });
+
+  /// This student's leave requests, newest first.
+  ///
+  /// Sorted here rather than in the query so the collection needs no composite
+  /// index alongside the studentId filter — the same trade the class content
+  /// queries above make.
+  Future<List<LeaveRequest>> leaveRequests() async {
+    final snap = await _db
+        .collection('leaveRequests')
+        .where('studentId', isEqualTo: _uid)
+        .get();
+    final requests = snap.docs.map((d) => LeaveRequest.fromMap(d.id, d.data())).toList()
+      ..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+    return requests;
+  }
+
+  /// Files a request for review.
+  ///
+  /// `status` is written as 'pending' and nothing else: the security rules
+  /// reject a create that sets anything else, and reject updates entirely, so
+  /// this is the only shape a student can ever write. Dates go over as
+  /// yyyy-MM-dd, matching LeaveRequestDoc on the web — an admin reviewing
+  /// these reads both sources.
+  Future<void> submitLeaveRequest({
+    required DateTime startDate,
+    required DateTime endDate,
+    required String reason,
+  }) async {
+    String day(DateTime d) => d.toIso8601String().substring(0, 10);
+    final ref = _db.collection('leaveRequests').doc();
+    await ref.set({
+      'id': ref.id,
+      'studentId': _uid,
+      'startDate': day(startDate),
+      'endDate': day(endDate),
+      'reason': reason.trim(),
+      'status': 'pending',
+      'submittedAt': DateTime.now().toIso8601String(),
+      'reviewedAt': null,
+      'reviewedBy': null,
+    });
+  }
 
   Future<String> addTask({
     required String title,
@@ -311,11 +345,20 @@ class Repository {
   /// A separate collection from the imported summaries, and from the
   /// admin-only `attendance` records — the college's account and the
   /// student's must never be able to overwrite one another.
+  /// Every mark this student owns, one per class.
+  ///
+  /// Deduplicated on the way out. The web and this app used to write the same
+  /// mark at two different document ids, so a class marked in both places
+  /// existed twice and every percentage built on it counted it twice. New
+  /// writes converge and tidy up as they go, but documents already written do
+  /// not, so the collapse happens on every read. See dedupeMarks.
   Stream<List<AttendanceMark>> watchMarks() => _db
       .collection('attendanceMarks')
       .where('studentId', isEqualTo: _uid)
       .snapshots()
-      .map((snap) => snap.docs.map((d) => AttendanceMark.fromMap(d.id, d.data())).toList());
+      .map((snap) => dedupeMarks(
+            snap.docs.map((d) => AttendanceMark.fromMap(d.id, d.data())).toList(),
+          ));
 
   /// Records — or corrects — one class on one day.
   ///
@@ -331,13 +374,24 @@ class Repository {
     required MarkStatus? status,
   }) async {
     final day = date.toIso8601String().substring(0, 10);
-    final id = AttendanceMark.idFor(_uid, subjectId, day, startTime);
-    final ref = _db.collection('attendanceMarks').doc(id);
+    final marks = _db.collection('attendanceMarks');
+    final ref = marks.doc(AttendanceMark.idFor(_uid, subjectId, day, startTime));
+    // What older builds of this app wrote for the same class, before the id
+    // scheme was corrected to match the web's. Removed alongside whatever we
+    // are doing here — otherwise clearing a mark deletes the canonical
+    // document, leaves the legacy one sitting there, and the mark reappears on
+    // the next read as though the tap never happened.
+    final legacy = marks.doc(AttendanceMark.legacyIdFor(_uid, subjectId, day, startTime));
 
     if (status == null) {
-      await ref.delete();
+      await Future.wait([ref.delete(), legacy.delete()]);
       return;
     }
+
+    // Best effort, and deliberately not awaited together with the write: the
+    // mark landing matters, tidying up a duplicate that the read path already
+    // collapses does not.
+    unawaited(legacy.delete().catchError((_) {}));
 
     await ref.set({
       'studentId': _uid,

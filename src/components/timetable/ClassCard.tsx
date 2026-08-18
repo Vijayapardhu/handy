@@ -23,6 +23,8 @@ export function ClassCard({
   mark,
   onMark,
   markBusy,
+  endTime,
+  periods = 1,
 }: {
   entry: TimetableEntryDoc;
   subject?: SubjectDoc;
@@ -36,6 +38,15 @@ export function ClassCard({
   mark?: MarkStatus | null;
   onMark?: (status: MarkStatus | null) => void;
   markBusy?: boolean;
+  /**
+   * Overrides `entry.endTime` — the caller passes the *last* period's end
+   * time when this card represents a merged run of consecutive periods
+   * (see classBlocksForDay), since `entry` itself is only ever the block's
+   * first period.
+   */
+  endTime?: string;
+  /** >1 when this card represents a merged run of consecutive same-subject periods. */
+  periods?: number;
 }) {
   if (entry.type === "break") {
     return (
@@ -52,12 +63,19 @@ export function ClassCard({
     <Card className={styles.card}>
       <div className={styles.timeCol}>
         <span className={styles.time}>{formatTime12h(entry.startTime)}</span>
-        <span className={styles.timeEnd}>{formatTime12h(entry.endTime)}</span>
+        <span className={styles.timeEnd}>{formatTime12h(endTime ?? entry.endTime)}</span>
       </div>
       <div className={styles.body}>
         <div className={styles.titleRow}>
           <p className={styles.subjectName}>{subject?.name ?? "Unknown subject"}</p>
-          <span className={styles.typeBadge}>{TYPE_LABELS[entry.type]}</span>
+          <span className={styles.badgeGroup}>
+            <span className={styles.typeBadge}>{TYPE_LABELS[entry.type]}</span>
+            {periods > 1 && (
+              <span className={styles.periodsBadge}>
+                {periods} periods
+              </span>
+            )}
+          </span>
         </div>
         <p className={styles.faculty}>{entry.facultyName}</p>
         {entry.room && (

@@ -90,7 +90,10 @@
 .updateBannerTitle {
   font-weight: 600;
   font-size: 13px;
-  color: var(--color-text);
+  /* Not --color-text: --color-info-bg behind this banner doesn't adapt to
+     dark theme, so the theme-adaptive text colour went near-white on a pale
+     blue background there (1.17:1) — invisible. Inherits --color-info from
+     .updateBanner instead, which was set for exactly this and never overridden. */
 }
 
 .updateBannerSubtitle {

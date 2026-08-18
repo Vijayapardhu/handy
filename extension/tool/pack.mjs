@@ -11,6 +11,11 @@
 //                         tidy directory instead of scattering files. This is
 //                         the file to attach to a GitHub release.
 //
+// Runs anywhere Node does. The zip used to be written by shelling out to
+// PowerShell, which meant this script could only run on Windows — so the
+// release workflow could not produce the extension zip at all, and the
+// download link the website points at 404'd on every release. See tool/zip.mjs.
+//
 // Handy ships unpacked and open source. There is no signing step, because
 // nothing checks a signature on this path: Chrome refuses self-signed .crx
 // installs (blocked since Chrome 33, and a policy install additionally demands
@@ -24,11 +29,12 @@
 // app talk to the extension at all.
 //
 // See INSTALL.md for what students are told to do with the zip.
-import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { zipFiles } from './zip.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const extensionRoot = resolve(here, '..');
@@ -99,26 +105,35 @@ cpSync(extensionRoot, staging, {
 
 const zip = join(dist, 'handy-unpacked.zip');
 rmSync(zip, { force: true });
-// Entries are added one at a time with their names forced to forward slashes.
-// Both Compress-Archive and ZipFile.CreateFromDirectory have, on Windows
-// PowerShell, written entry names containing backslashes — the ZIP format
-// specifies "/" regardless of platform, and an archive like that unpacks on a
-// student's machine as one file literally named "src\background.js" rather
-// than a src directory, which Chrome then refuses to load.
-execFileSync('powershell', [
-  '-NoProfile',
-  '-Command',
-  [
-    `Add-Type -AssemblyName System.IO.Compression.FileSystem`,
-    `$root = '${staging}'`,
-    `$zip = [System.IO.Compression.ZipFile]::Open('${zip}', 'Create')`,
-    `Get-ChildItem -LiteralPath $root -Recurse -File | ForEach-Object {`,
-    `  $name = 'handy/' + $_.FullName.Substring($root.Length + 1).Replace('\\', '/')`,
-    `  [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $name)`,
-    `}`,
-    `$zip.Dispose()`,
-  ].join('; '),
-], { stdio: 'inherit' });
+
+/** Every file under a folder, recursively. */
+function filesUnder(directory) {
+  const found = [];
+  for (const item of readdirSync(directory, { withFileTypes: true })) {
+    const full = join(directory, item.name);
+    if (item.isDirectory()) found.push(...filesUnder(full));
+    else if (item.isFile()) found.push(full);
+  }
+  return found;
+}
+
+// Everything lands under a top-level handy/ so extracting the zip anywhere
+// gives one tidy directory instead of scattering files across a downloads
+// folder. Entry names are joined with "/" explicitly: the ZIP format specifies
+// forward slashes on every platform, and an archive carrying backslashes
+// extracts on a student's machine as one file literally named
+// "src\background.js" rather than a src directory, which Chrome then refuses
+// to load.
+const entries = filesUnder(staging)
+  .map((path) => ({
+    path,
+    name: 'handy/' + relative(staging, path).split(sep).join('/'),
+  }))
+  // Sorted, so two builds of the same source produce the same archive rather
+  // than one that differs by whatever order the filesystem listed things in.
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+writeFileSync(zip, zipFiles(entries));
 
 if (!existsSync(zip)) {
   console.error('The zip was not written. Check the output above.');

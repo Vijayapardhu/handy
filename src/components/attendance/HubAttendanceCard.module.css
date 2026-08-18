@@ -5,42 +5,101 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
-.header {
+.top {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
+  justify-content: space-between;
+  gap: var(--space-4);
 }
 
-.headerIcon {
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+.label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.valueRow {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.title {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.subtitle {
-  font-size: 12.5px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
+  gap: var(--space-2);
 }
 
 .value {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 800;
   line-height: 1.1;
+}
+
+.meta {
+  margin-top: var(--space-2);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.ring {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ringCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.ringAttended {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.ringHeld {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.ringLabel {
+  color: var(--color-text-faint);
+  font-size: 9px;
+}
+
+.progressTrack {
+  position: relative;
+  height: 8px;
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+  overflow: visible;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+.progressFill[data-status="critical"] {
+  background: var(--status-critical);
+}
+.progressFill[data-status="low"] {
+  background: var(--status-low);
+}
+.progressFill[data-status="average"] {
+  background: var(--status-average);
+}
+.progressFill[data-status="good"] {
+  background: var(--status-good);
+}
+.progressFill[data-status="excellent"] {
+  background: var(--status-excellent);
 }
 
 .footnote {
@@ -48,12 +107,37 @@
   color: var(--color-text-muted);
 }
 
-.errorText {
-  font-size: 13px;
-  color: var(--color-text-muted);
+/* Loading/error/not-connected states have no ring to anchor their height, so
+   they get their own centered layout with generous vertical padding — close
+   enough to the connected card's ~220px that swiping to them doesn't jump. */
+.centeredState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-5) 0;
 }
 
-.hint {
+.headerIcon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  margin-bottom: var(--space-1);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.stateText {
   font-size: 13px;
   color: var(--color-text-muted);
+  max-width: 260px;
 }

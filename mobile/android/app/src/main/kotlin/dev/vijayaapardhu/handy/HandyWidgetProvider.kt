@@ -36,8 +36,14 @@ abstract class HandyBaseWidget : AppWidgetProvider() {
     abstract val layoutId: Int
     abstract fun render(context: Context, views: RemoteViews, data: SharedPreferences, size: WidgetSize)
 
-    /** Widgets can't read the app's theme, so appearance arrives as saved values. */
-    protected fun background(data: SharedPreferences): Int = lookOf(data).background
+    /**
+     * Widgets can't read the app's theme, so appearance arrives as saved values.
+     *
+     * Open because CodeForge overrides it: that tile is deliberately outside the
+     * shared palette, so a student cannot mistake its percentage for their
+     * attendance. See CodeForgeWidgetProvider.
+     */
+    protected open fun background(data: SharedPreferences): Int = lookOf(data).background
 
     /** The student's cap on list rows (2-4, default 4); the size caps it further. */
     protected fun rowLimit(data: SharedPreferences): Int =
@@ -50,6 +56,24 @@ abstract class HandyBaseWidget : AppWidgetProvider() {
     ) {
         val data = HomeWidgetPlugin.getData(context)
         appWidgetIds.forEach { draw(context, appWidgetManager, it, data) }
+        // Aimed at the next thing that happens rather than at whatever was
+        // next when the alarm was last set: after a sync, the timetable it was
+        // aimed at may not be the one now being drawn. See WidgetTick.
+        WidgetTick.arm(context)
+    }
+
+    /** First one placed — start ticking. */
+    override fun onEnabled(context: Context) {
+        WidgetTick.arm(context)
+    }
+
+    /**
+     * Last one of *this* kind removed. arm() cancels rather than schedules when
+     * nothing is left on the home screen at all, so a student who keeps the
+     * attendance tile and drops the timetable one keeps their ticks.
+     */
+    override fun onDisabled(context: Context) {
+        WidgetTick.arm(context)
     }
 
     /**
@@ -78,8 +102,15 @@ abstract class HandyBaseWidget : AppWidgetProvider() {
         views.setInt(R.id.widget_root, "setBackgroundResource", background(data))
 
         // Padding scales too: 16dp of margin inside a one-cell tile is most of
-        // the tile.
-        val pad = dp(context, if (size.height <= 70) 10 else 14)
+        // the tile, and a tile can now be resized down to one cell.
+        val pad = dp(
+            context,
+            when {
+                size.height <= 50 || size.width <= 50 -> 6
+                size.height <= 70 -> 10
+                else -> 14
+            },
+        )
         views.setViewPadding(R.id.widget_root, pad, pad, pad, pad)
 
         render(context, views, data, size)
@@ -172,10 +203,18 @@ abstract class HandyBaseWidget : AppWidgetProvider() {
         setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_SP, sp)
     }
 
-    /** Rows that fit below a header, at roughly 24dp each. */
+    /**
+     * Rows that fit below a header.
+     *
+     * A row is one line on a wide tile and two on a narrow one, because that is
+     * where a long class name wraps rather than being cut off — so the height a
+     * row needs depends on the width. Assuming one line everywhere is how four
+     * rows were promised and three-and-a-half were drawn.
+     */
     protected fun rowsThatFit(size: WidgetSize, max: Int): Int {
         val usable = size.height - 42 // header + padding
-        return (usable / 24).coerceIn(0, max)
+        val perRow = if (size.width >= 250) 24 else 38
+        return (usable / perRow).coerceIn(0, max)
     }
 }
 
@@ -293,20 +332,24 @@ class TodayWidgetProvider : HandyBaseWidget() {
         )
 
         val limit = minOf(rowLimit(data), rowsThatFit(size, rows.size).coerceAtLeast(1))
+        val agenda = schedule.agenda
         rows.forEachIndexed { i, (rowId, timeId, subjectId) ->
-            val subject = data.getString("day${i}Subject", "")
-            if (subject.isNullOrEmpty() || i >= limit) {
+            val slot = agenda.getOrNull(i)
+            if (slot == null || i >= limit) {
                 views.show(rowId, false)
             } else {
                 views.show(rowId, true)
-                views.setTextViewText(timeId, look.secondary(data.getString("day${i}Time", "")))
-                val venue = data.getString("day${i}Venue", "")
+                views.setTextViewText(timeId, look.secondary(slot.start))
                 // The room is the first thing to drop on a narrow tile: it's
                 // the least useful half of the line when read at a glance.
                 views.setTextViewText(
                     subjectId,
                     look.primary(
-                        if (venue.isNullOrEmpty() || size.width < 180) subject else "$subject · $venue",
+                        if (slot.venue.isEmpty() || size.width < 180) {
+                            slot.subject
+                        } else {
+                            "${slot.subject} · ${slot.venue}"
+                        },
                     ),
                 )
                 views.setInt(subjectId, "setMaxLines", if (size.width >= 250) 1 else 2)
@@ -348,22 +391,25 @@ class DuesWidgetProvider : HandyBaseWidget() {
         )
 
         val limit = minOf(rowLimit(data), rowsThatFit(size, rows.size).coerceAtLeast(1))
+        val due = Dues.from(data)
+        val today = Dues.today()
         rows.forEachIndexed { i, (rowId, titleId, whenId) ->
-            val title = data.getString("due${i}Title", "")
-            if (title.isNullOrEmpty() || i >= limit) {
+            val item = due.getOrNull(i)
+            if (item == null || i >= limit) {
                 views.show(rowId, false)
             } else {
                 views.show(rowId, true)
                 // Steps ride with the title rather than taking a column of
                 // their own: most deadlines have none, and an empty column on
                 // every row costs more than it ever shows.
-                val steps = data.getString("due${i}Steps", "") ?: ""
                 views.setTextViewText(
                     titleId,
-                    look.primary(if (steps.isEmpty()) title else "$title  ·  $steps"),
+                    look.primary(
+                        if (item.steps.isEmpty()) item.title else "${item.title}  ·  ${item.steps}",
+                    ),
                 )
                 views.setInt(titleId, "setMaxLines", if (size.width >= 250) 1 else 2)
-                views.setTextViewText(whenId, look.secondary(data.getString("due${i}When", "")))
+                views.setTextViewText(whenId, look.secondary(item.label(today)))
                 // The countdown is the point of this widget; on a narrow tile
                 // it keeps its place and the title gives way instead.
                 views.show(whenId, size.width >= 140)

@@ -1,8 +1,37 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The widgets re-arm their redraw alarm after a reboot; without this the
+         boot broadcast never arrives and they sit frozen until something else
+         happens to redraw them. See WidgetTick. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Handy updates itself, because nothing else will: it is not on the Play
+         Store, so there is no store to do it on a student's behalf. Without
+         this the app can only send someone to a browser and hope they finish
+         the job in the Downloads folder.
+
+         Android still gates it behind a per-app grant the student gives once
+         (Settings → Install unknown apps), and Installer.kt refuses to install
+         anything not signed with this app's own key. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- The download itself. Everything Handy talks to is HTTPS; cleartext is
+         off by default at targetSdk 35 and nothing here turns it back on. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- android:label is the name on the launcher and, more to the point, in
+         the install confirmation dialog — the exact moment somebody decides
+         whether this is the thing they meant to install. It read "handy",
+         lowercase, because that is the Flutter project name and nothing ever
+         changed it, while the website, the About screen and every notification
+         say "Handy". A name that does not match the site it was downloaded
+         from is the sort of small inconsistency that reads as suspicious. -->
     <application
-        android:label="handy"
+        android:label="Handy"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:allowBackup="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -96,6 +125,70 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/overview_widget_info" />
+        </receiver>
+
+        <!-- CodeForge, on its own tile and in its own colours so its
+             percentage cannot be read as an attendance one. -->
+        <receiver
+            android:name=".CodeForgeWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/codeforge_widget_info" />
+        </receiver>
+
+        <!-- Where PackageInstaller reports an update's progress. Not exported:
+             the only thing that ever sends to it is the system, on behalf of a
+             session this app created. -->
+        <receiver
+            android:name=".InstallStatusReceiver"
+            android:exported="false" />
+
+        <!-- What actually keeps the widgets current with the app closed.
+             updatePeriodMillis is capped at half an hour and is the first thing
+             the system defers while dozing, which is not a clock: it left a
+             minute-by-minute countdown redrawn about once an hour. This fires
+             at the minute the tiles would read differently and re-aims itself
+             each time. -->
+        <receiver
+            android:name=".WidgetTickReceiver"
+            android:exported="false" />
+
+        <!-- Fires the daily CodeForge refresh alarm: re-arms the next one,
+             then hands off to home_widget's background receiver below. Not
+             exported — only our own AlarmManager alarm targets it. -->
+        <receiver
+            android:name=".CodeForgeRefreshReceiver"
+            android:exported="false" />
+
+        <!-- home_widget's background dispatcher. It spins up a headless Flutter
+             isolate and calls the callback registered in main() — which is how
+             the CodeForge fetch runs with the app closed. The plugin ships no
+             manifest of its own, so the app has to declare this. -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
+
+        <!-- A reboot clears every pending alarm, and so does replacing the
+             package on an update. Exported because these come from the system,
+             which is a different uid. -->
+        <receiver
+            android:name=".WidgetBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
         </receiver>
 
     </application>

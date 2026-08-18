@@ -21,6 +21,11 @@
   font-size: 13px;
 }
 
+.timeEnd {
+  font-size: 10.5px;
+  color: var(--color-text-faint);
+}
+
 .body {
   flex: 1;
   min-width: 0;
@@ -38,6 +43,13 @@
   font-size: 14.5px;
 }
 
+.badgeGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .typeBadge {
   font-size: 11px;
   font-weight: 600;
@@ -46,6 +58,21 @@
   padding: 2px 10px;
   border-radius: var(--radius-pill);
   flex-shrink: 0;
+}
+
+/* A merged multi-period block (see classBlocksForDay) — distinct from
+   .typeBadge's lecture/lab/technical label, so it reads as "how long" rather
+   than "what kind". */
+.periodsBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .faculty {
@@ -68,7 +95,10 @@
   align-items: center;
   justify-content: space-between;
   background: var(--color-primary-light);
-  color: var(--color-primary-dark);
+  /* Not --color-primary-dark: that measured well under AA contrast against
+     this background in dark mode (same issue fixed on Home's tip banner —
+     see NeedsAttentionList.module.css). --color-text adapts per theme instead. */
+  color: var(--color-text);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-sm);
   font-size: 13px;

@@ -151,21 +151,19 @@ class OverviewWidgetProvider : HandyBaseWidget() {
             "today" -> {
                 header(views, slot, schedule.dayLabel(), look)
                 views.show(slot.table, true)
-                var shown = 0
-                for (i in 0 until slot.rows.size) {
-                    val subject = data.getString("day${i}Subject", "")
-                    if (subject.isNullOrEmpty()) break
+                val agenda = schedule.agenda
+                for (i in 0 until minOf(slot.rows.size, agenda.size)) {
+                    val entry = agenda[i]
                     views.show(slot.rowRoots[i], true)
                     row(
                         views, slot, i, look,
-                        data.getString("day${i}Time", "")?.substringBefore(" ") ?: "",
-                        subject,
-                        data.getString("day${i}Venue", "") ?: "",
+                        entry.start,
+                        entry.subject,
+                        entry.venue,
                         bold = true,
                     )
-                    shown++
                 }
-                if (shown == 0) {
+                if (agenda.isEmpty()) {
                     views.show(slot.table, false)
                     views.show(slot.sub, true)
                     views.setTextViewText(slot.sub, look.secondary("Nothing scheduled today"))
@@ -196,22 +194,23 @@ class OverviewWidgetProvider : HandyBaseWidget() {
             "dues" -> {
                 header(views, slot, data.getString("tasks", "Due"), look)
                 views.show(slot.table, true)
-                var shown = 0
-                for (i in 0 until slot.rows.size) {
-                    val title = data.getString("due${i}Title", "")
-                    if (title.isNullOrEmpty()) break
+                val due = Dues.from(data)
+                val today = Dues.today()
+                for (i in 0 until minOf(slot.rows.size, due.size)) {
+                    val item = due[i]
                     views.show(slot.rowRoots[i], true)
-                    val steps = data.getString("due${i}Steps", "") ?: ""
                     row(
                         views, slot, i, look,
-                        steps,
-                        title,
-                        data.getString("due${i}When", "") ?: "",
+                        item.steps,
+                        item.title,
+                        // Phrased now, not when the app last ran: a deadline
+                        // saved as "2 days left" was still saying so on the
+                        // morning it was due. See Dues.
+                        item.label(today),
                         bold = false,
                     )
-                    shown++
                 }
-                if (shown == 0) {
+                if (due.isEmpty()) {
                     views.show(slot.table, false)
                     views.show(slot.sub, true)
                     views.setTextViewText(slot.sub, look.secondary("Nothing due"))

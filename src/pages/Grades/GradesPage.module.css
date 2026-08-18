@@ -1,0 +1,260 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.refreshButton {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.refreshButton:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.refreshCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.refreshTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.refreshHint {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.refreshForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.passwordWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.passwordWrap .input {
+  padding-right: 40px;
+}
+
+.togglePassword {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.refreshError {
+  font-size: 13px;
+  color: var(--status-critical);
+}
+
+.cgpaCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cgpaLabel {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.cgpaValue {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.cgpaMeta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.calcCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.calcTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.calcHint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.calcRow {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.calcField {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.calcInput {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.calcInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.calcResult {
+  font-size: 13.5px;
+  color: var(--color-text);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.calcResult strong {
+  color: var(--color-primary);
+}
+
+.semesterList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.semesterCard {
+  overflow: hidden;
+}
+
+.semesterHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.12s ease;
+}
+
+.semesterHeader:hover {
+  background: var(--color-bg);
+}
+
+.semesterName {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.semesterSgpa {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.semesterSgpaWarn {
+  color: var(--status-critical);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-text-faint);
+  transition: transform 0.15s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.subjectList {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.subjectRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+}
+
+.subjectRow:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.subjectName {
+  flex: 1;
+  min-width: 0;
+}
+
+.subjectGrade {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.subjectGradeFail {
+  color: var(--status-critical);
+}

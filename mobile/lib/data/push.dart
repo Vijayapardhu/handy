@@ -67,6 +67,11 @@ class Push {
   /// Call once the student is signed in — the token is stored against their
   /// uid, so registering earlier would have nowhere to put it.
   Future<String?> register() async {
+    // On Android the answer is already in by the time this runs — HomeShell
+    // asks through Reminders first, and a second request against a decision
+    // Android has already recorded shows no dialog and just reports it. This
+    // stays because it is the only thing that asks on iOS, where there is no
+    // local-notifications permission to piggyback on.
     final settings = await _messaging.requestPermission();
     if (settings.authorizationStatus == AuthorizationStatus.denied) return null;
 

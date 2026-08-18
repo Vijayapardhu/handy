@@ -20,10 +20,10 @@ export class HubAttendanceError extends Error {
 
 const MESSAGES: Record<string, string> = {
   invalid_credentials:
-    "That roll number and password didn't work on the Hub. This is your Maya/CodeForge login, not your Handy one.",
-  missing_credentials: "Enter both your Hub roll number and password.",
+    "That roll number and password didn't work on CodeForge. This is your Maya/CodeForge login, not your Handy one.",
+  missing_credentials: "Enter both your CodeForge roll number and password.",
   rate_limited: "Too many attempts. Wait a few minutes before trying again.",
-  hub_failed: "Could not reach the Hub. Try again shortly.",
+  hub_failed: "Could not reach CodeForge. Try again shortly.",
 };
 
 async function readError(response: Response, fallback: string): Promise<HubAttendanceError> {
@@ -58,10 +58,14 @@ export interface HubAttendanceResult {
   snapshot: HubAttendanceSnapshot | null;
 }
 
-export async function fetchHubAttendance(idToken: string): Promise<HubAttendanceResult> {
+export async function fetchHubAttendance(
+  idToken: string,
+  forceRefresh = false,
+): Promise<HubAttendanceResult> {
   const response = await fetch("/api/hub-attendance", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ forceRefresh }),
   });
   if (!response.ok) throw await readError(response, "Could not load Hub attendance.");
   const data = (await response.json()) as { linked: boolean; snapshot?: HubAttendanceSnapshot };

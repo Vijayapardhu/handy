@@ -6,12 +6,14 @@ import 'package:flutter/services.dart';
 import '../data/app_state.dart';
 import '../main.dart';
 import '../logic/attendance.dart';
+import '../logic/campus_features.dart';
 import '../logic/deadlines.dart';
 import '../logic/planning.dart';
 import '../logic/timetable.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import '../widgets/class_sheet.dart';
+import '../widgets/hub_card.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/student_photo.dart';
 import 'deadline_detail_screen.dart';
@@ -74,6 +76,7 @@ class _TodayScreenState extends State<TodayScreen> {
         .firstOrNull;
     final done = blocks.where((b) => b.endTime.compareTo(nowHm) < 0).length;
     final free = freePeriods(state.entries, now.weekday % 7);
+    final features = campusFeaturesFor(state.student?.rollNumber);
 
     final dueSoon =
         state.tasks
@@ -140,7 +143,7 @@ class _TodayScreenState extends State<TodayScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                 sliver: SliverList.list(
                   children: [
-                    _AttendanceHero(state: state),
+                    _AttendanceCards(state: state),
                     const SizedBox(height: 12),
 
                     if (next != null) ...[
@@ -186,19 +189,27 @@ class _TodayScreenState extends State<TodayScreen> {
 
                     _AtRiskStrip(state: state),
 
-                    const _Label('Today'),
-                    const SizedBox(height: 10),
-                    if (blocks.isEmpty)
-                      _Quiet(
-                        'No classes scheduled today.'
-                        '${free.isEmpty ? '' : ' The whole day is yours.'}',
-                      )
-                    else
-                      _DayTimeline(blocks: blocks, state: state, nowHm: nowHm),
+                    // The day's timeline is read off the timetable, which a
+                    // portal-login college does not publish. Left in, it would
+                    // say "No classes scheduled today" — which is a claim
+                    // about this student's week rather than about what Handy
+                    // can see for their college. See campus_features.dart, and
+                    // HomePage.tsx, which drops the same two cards.
+                    if (features.hasTimetable) ...[
+                      const _Label('Today'),
+                      const SizedBox(height: 10),
+                      if (blocks.isEmpty)
+                        _Quiet(
+                          'No classes scheduled today.'
+                          '${free.isEmpty ? '' : ' The whole day is yours.'}',
+                        )
+                      else
+                        _DayTimeline(blocks: blocks, state: state, nowHm: nowHm),
 
-                    if (free.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      _FreeTimeNote(free: free),
+                      if (free.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        _FreeTimeNote(free: free),
+                      ],
                     ],
                   ],
                 ),
@@ -298,6 +309,100 @@ class _Bell extends StatelessWidget {
 }
 
 /// The number that decides everything, at the size that says so.
+/// The attendance card, and — for a student whose timetable has a Technical
+/// Hour — CodeForge behind it, swiped to from the left.
+///
+/// Two figures that answer different questions and must never be mistaken for
+/// one another: the first is the percentage a degree depends on, the second is
+/// a separate system's session count. Stacking them as two faces of one card
+/// is the web's arrangement (see CardSwiper), and it works for the same reason
+/// here — they occupy one slot, so neither implies the other is a component of
+/// it, and the second costs no room on a screen most students never need it on.
+///
+/// The dots are not decoration. A single card with something hidden behind it
+/// is a card with nothing behind it as far as anyone can tell.
+class _AttendanceCards extends StatefulWidget {
+  const _AttendanceCards({required this.state});
+
+  final AppState state;
+
+  @override
+  State<_AttendanceCards> createState() => _AttendanceCardsState();
+}
+
+class _AttendanceCardsState extends State<_AttendanceCards> {
+  final _pages = PageController();
+  int _index = 0;
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    // Same gate as the web: no Technical Hour, no CodeForge, and then there is
+    // only one card and nothing to swipe.
+    final hasCodeForge = state.entries.any((e) => e.type == 'technical');
+    if (!hasCodeForge) return _AttendanceHero(state: state);
+
+    final faces = [
+      _AttendanceHero(state: state),
+      CodeForgeCard(state: state),
+    ];
+
+    return Column(
+      children: [
+        // A PageView is a viewport and has no height of its own to be
+        // measured — IntrinsicHeight around one throws rather than fitting it.
+        // So the height is stated, and stated once for both faces so neither
+        // resizes the row as it scrolls past. The two are built to the same
+        // structure precisely so one number suits both.
+        //
+        // Scaled by the reader's text size, because a fixed height is a
+        // guarantee of clipping for anyone who has turned font size up. Capped,
+        // because past a point the card would push everything else off screen.
+        SizedBox(
+          height: 208 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.5),
+          child: PageView(
+            controller: _pages,
+            onPageChanged: (i) => setState(() => _index = i),
+            children: faces,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < faces.length; i++)
+              GestureDetector(
+                onTap: () => _pages.animateToPage(
+                  i,
+                  duration: const Duration(milliseconds: 260),
+                  curve: Curves.easeOutCubic,
+                ),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: i == _index ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: i == _index
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).dividerColor,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _AttendanceHero extends StatelessWidget {
   const _AttendanceHero({required this.state});
 
@@ -388,7 +493,12 @@ class _AttendanceHero extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            // A Spacer rather than a gap: this card is one face of a fixed-height
+            // pair (see _AttendanceCards), and whichever face is shorter would
+            // otherwise leave its slack in a heap at the bottom. Putting it
+            // above the bar keeps the bar and its footnote on the same line on
+            // both faces, so swiping moves the number and nothing else.
+            const Spacer(),
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: LinearProgressIndicator(
@@ -433,6 +543,28 @@ class _AttendanceHero extends StatelessWidget {
                 ),
               ],
             ),
+            // The same figure as a date. "Attend the next 34" is arithmetic
+            // nobody can act on; "17 days, by 12 May" is a plan — and it is
+            // counted off the whole timetable rather than guessed from an
+            // average, so it is a date the student can actually hold Handy to.
+            // See daysToAttend.
+            if (needed > 0 && held > 0)
+              if (daysToAttend(
+                    classes: needed,
+                    entries: state.entries,
+                    from: DateTime.now(),
+                  )
+                  case final plan?) ...[
+                const SizedBox(height: 5),
+                Padding(
+                  padding: const EdgeInsets.only(left: 24),
+                  child: Text(
+                    '${plan.days} day${plan.days == 1 ? '' : 's'} of classes, '
+                    'by ${shortWhen(plan.on)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
           ],
         ),
       ),

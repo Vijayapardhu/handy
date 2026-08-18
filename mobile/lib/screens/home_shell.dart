@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../data/app_state.dart';
+import '../logic/campus_features.dart';
 import '../logic/deadlines.dart';
 import '../main.dart';
 import '../widgets/form_sheet.dart';
@@ -35,13 +36,66 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   final _pages = PageController();
 
-  static final _tabs = [
-    (icon: HugeIcons.strokeRoundedCalendar03, active: HugeIcons.strokeRoundedCalendar03, label: 'Today'),
-    (icon: HugeIcons.strokeRoundedPieChart, active: HugeIcons.strokeRoundedPieChart, label: 'Subjects'),
-    (icon: HugeIcons.strokeRoundedCalendar01, active: HugeIcons.strokeRoundedCalendar01, label: 'Timetable'),
-    (icon: HugeIcons.strokeRoundedTaskDone01, active: HugeIcons.strokeRoundedTaskDone01, label: 'Deadlines'),
-    (icon: HugeIcons.strokeRoundedUser, active: HugeIcons.strokeRoundedUserCircle, label: 'You'),
+  /// Every tab, in order, with the screen behind it.
+  ///
+  /// Identified by [HandyTab] rather than by position, because the list is no
+  /// longer the same length for everyone: a college whose portal publishes no
+  /// timetable loses that tab, and a badge pinned to "index 3" would then land
+  /// on the wrong one. See _visibleTabs.
+  /// Matched to the web's BottomNav — same five destinations, same order, same
+  /// words, and the nearest HugeIcons equivalent of each lucide icon it uses.
+  ///
+  /// The names were the real divergence: this bar said Today / Deadlines / You
+  /// where the website says Home / Tasks / Profile, for the same screens. A
+  /// student who uses both then has to learn two vocabularies for one app, and
+  /// any instruction one of us gives ("open Tasks") is wrong on the other.
+  static final _allTabs = <_TabSpec>[
+    (
+      tab: HandyTab.today,
+      icon: HugeIcons.strokeRoundedHome01,
+      active: HugeIcons.strokeRoundedHome01,
+      label: 'Home',
+      page: const TodayScreen(),
+    ),
+    (
+      tab: HandyTab.subjects,
+      icon: HugeIcons.strokeRoundedBookOpen01,
+      active: HugeIcons.strokeRoundedBookOpen01,
+      label: 'Subjects',
+      page: const SubjectsScreen(),
+    ),
+    (
+      tab: HandyTab.timetable,
+      icon: HugeIcons.strokeRoundedCalendar03,
+      active: HugeIcons.strokeRoundedCalendar03,
+      label: 'Timetable',
+      page: const TimetableScreen(),
+    ),
+    (
+      tab: HandyTab.deadlines,
+      icon: HugeIcons.strokeRoundedTask01,
+      active: HugeIcons.strokeRoundedTask01,
+      label: 'Tasks',
+      page: const DeadlinesScreen(),
+    ),
+    (
+      tab: HandyTab.you,
+      icon: HugeIcons.strokeRoundedUser,
+      active: HugeIcons.strokeRoundedUserCircle,
+      label: 'Profile',
+      page: const ProfileScreen(),
+    ),
   ];
+
+  /// The tabs this student actually gets.
+  ///
+  /// A tab leading to a permanently empty screen is worse than no tab, which
+  /// is the same call the web makes in BottomNav.tsx.
+  List<_TabSpec> get _visibleTabs {
+    final features = campusFeaturesFor(appState.student?.rollNumber);
+    if (features.hasTimetable) return _allTabs;
+    return _allTabs.where((t) => t.tab != HandyTab.timetable).toList();
+  }
 
   StreamSubscription<Uri?>? _widgetTaps;
 
@@ -51,9 +105,22 @@ class _HomeShellState extends State<HomeShell> {
     // One load for the whole shell: every tab reads the same snapshot, and
     // reminders are rescheduled from it once it arrives.
     appState.load();
-    // Registered here rather than at startup: the token is stored against
-    // the student's uid, so there is nowhere to put it until they sign in.
-    push.register();
+    // Asked for here, on opening the app, rather than in main() — which is
+    // where it used to happen, before runApp() and therefore before there was
+    // anything on screen to explain it. Android allows two attempts at this
+    // dialog and then stops offering it, so the moment it is asked decides
+    // whether a student ever gets a class reminder.
+    //
+    // After the first frame so the question arrives over Handy rather than
+    // over a launch screen, and not awaited by anything: a student who says no
+    // gets the whole app anyway, just quietly.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await reminders.requestPermission();
+      // Only once there is a decision. The token is what the server pushes to,
+      // and registering one for a device that cannot show a notification is
+      // how the inbox fills with things nobody was told about.
+      await push.register();
+    });
 
     // Handy is not on the Play Store, so nothing updates it on a student's
     // behalf. Checked after the first frame so a slow network cannot delay the
@@ -94,8 +161,10 @@ class _HomeShellState extends State<HomeShell> {
     if (uri == null || !mounted) return;
     if (uri.host != 'deadline' || uri.path != '/new') return;
 
-    setState(() => _index = _HandyNavBar.tasksTab);
-    _pages.jumpToPage(_HandyNavBar.tasksTab);
+    final deadlines = _visibleTabs.indexWhere((t) => t.tab == HandyTab.deadlines);
+    if (deadlines < 0) return;
+    setState(() => _index = deadlines);
+    _pages.jumpToPage(deadlines);
 
     // After the frame, so the Deadlines tab exists to host the sheet.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -109,6 +178,12 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Read once per build: the student arrives asynchronously, so the tab list
+    // can change from five to four on the frame their record lands. Clamping
+    // the index keeps that from selecting a page that no longer exists.
+    final tabs = _visibleTabs;
+    if (_index >= tabs.length) _index = tabs.length - 1;
+
     // The scope itself lives above the Navigator (see main.dart), so pushed
     // routes can read app state too.
     return Scaffold(
@@ -120,17 +195,13 @@ class _HomeShellState extends State<HomeShell> {
       body: PageView(
         controller: _pages,
         onPageChanged: (i) => setState(() => _index = i),
-        children: const [
-          _KeepAlive(child: TodayScreen()),
-          _KeepAlive(child: SubjectsScreen()),
-          _KeepAlive(child: TimetableScreen()),
-          _KeepAlive(child: DeadlinesScreen()),
-          _KeepAlive(child: ProfileScreen()),
+        children: [
+          for (final tab in tabs) _KeepAlive(child: tab.page),
         ],
       ),
       bottomNavigationBar: _HandyNavBar(
         index: _index,
-        tabs: _tabs,
+        tabs: tabs,
         onSelect: (i) {
           if (i == _index) return;
           // The bar is the one control a student hits dozens of times a day;
@@ -154,6 +225,17 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 }
+
+/// Which tab, independent of where it happens to sit.
+enum HandyTab { today, subjects, timetable, deadlines, you }
+
+typedef _TabSpec = ({
+  HandyTab tab,
+  AppIconData icon,
+  AppIconData active,
+  String label,
+  Widget page,
+});
 
 /// Keeps a tab's state — and its scroll position — while another is on screen.
 class _KeepAlive extends StatefulWidget {
@@ -199,15 +281,8 @@ class _HandyNavBar extends StatefulWidget {
   const _HandyNavBar({required this.index, required this.tabs, required this.onSelect});
 
   final int index;
-  final List<({AppIconData icon, AppIconData active, String label})> tabs;
+  final List<_TabSpec> tabs;
   final ValueChanged<int> onSelect;
-
-  /// Index of the Tasks tab, which is the only one that carries a badge.
-  static const tasksTab = 3;
-
-  /// Where the notifications inbox lives. Badged too, because an inbox you
-  /// only find by going looking is one nobody looks in.
-  static const youTab = 4;
 
   @override
   State<_HandyNavBar> createState() => _HandyNavBarState();
@@ -304,9 +379,12 @@ class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderSta
                           onTap: () => widget.onSelect(i),
                           muted: muted,
                           onPill: scheme.primary,
-                          badge: switch (i) {
-                            _HandyNavBar.tasksTab => pending,
-                            _HandyNavBar.youTab => state.unreadNotifications,
+                          // Deadlines carries what's overdue or due today;
+                          // You carries the unread inbox, because an inbox you
+                          // only find by going looking is one nobody looks in.
+                          badge: switch (widget.tabs[i].tab) {
+                            HandyTab.deadlines => pending,
+                            HandyTab.you => state.unreadNotifications,
                             _ => 0,
                           },
                         ),
@@ -353,7 +431,7 @@ class _NavTab extends StatelessWidget {
     required this.badge,
   });
 
-  final ({AppIconData icon, AppIconData active, String label}) tab;
+  final _TabSpec tab;
   final bool selected;
   final VoidCallback onTap;
   final Color? muted;

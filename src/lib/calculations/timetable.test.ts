@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getFreePeriods, getWeeklyFreePeriods } from "./timetable";
+import { classBlocksForDay, getFreePeriods, getWeeklyFreePeriods } from "./timetable";
 import type { DayOfWeek, TimetableEntryDoc } from "@/types/timetable";
 
 /**
@@ -13,6 +13,7 @@ function entry(
   periodNo: number,
   startTime: string,
   endTime: string,
+  subjectId = "sub1",
 ): TimetableEntryDoc {
   return {
     id: `d${dayOfWeek}-p${periodNo}`,
@@ -21,7 +22,7 @@ function entry(
     periodNo,
     startTime,
     endTime,
-    subjectId: "sub1",
+    subjectId,
     facultyId: "1",
     facultyName: "Faculty",
     room: "RB-221",
@@ -70,5 +71,58 @@ describe("getWeeklyFreePeriods", () => {
     expect([...weekly.keys()]).toEqual([1, 2]);
     expect(weekly.get(1)).toEqual([]);
     expect(weekly.get(2)?.map((f) => f.periodNo)).toEqual([2]);
+  });
+});
+
+describe("classBlocksForDay", () => {
+  it("merges back-to-back periods of the same subject into one block", () => {
+    const day: TimetableEntryDoc[] = [
+      entry(3, 1, "09:00", "09:50", "lab101"),
+      entry(3, 2, "09:50", "10:40", "lab101"),
+      entry(3, 3, "10:40", "11:30", "lab101"),
+    ];
+    const blocks = classBlocksForDay(day, 3);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].entries).toHaveLength(3);
+  });
+
+  it("keeps a subject change as a separate block, even with no gap", () => {
+    const day: TimetableEntryDoc[] = [
+      entry(3, 1, "09:00", "09:50", "maths"),
+      entry(3, 2, "09:50", "10:40", "physics"),
+    ];
+    const blocks = classBlocksForDay(day, 3);
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0].entries).toHaveLength(1);
+    expect(blocks[1].entries).toHaveLength(1);
+  });
+
+  it("keeps a morning and afternoon sitting of the same subject apart across a real gap", () => {
+    const day: TimetableEntryDoc[] = [
+      entry(3, 1, "09:00", "09:50", "maths"),
+      entry(3, 5, "14:00", "14:50", "maths"),
+    ];
+    const blocks = classBlocksForDay(day, 3);
+    expect(blocks).toHaveLength(2);
+  });
+
+  it("tolerates a short changeover gap (portal periods rarely butt up to the exact minute)", () => {
+    const day: TimetableEntryDoc[] = [
+      entry(3, 1, "09:00", "09:50", "maths"),
+      entry(3, 2, "10:00", "10:50", "maths"), // 10 minute gap
+    ];
+    expect(classBlocksForDay(day, 3)).toHaveLength(1);
+  });
+
+  it("does not merge across a gap longer than the tolerance", () => {
+    const day: TimetableEntryDoc[] = [
+      entry(3, 1, "09:00", "09:50", "maths"),
+      entry(3, 2, "10:20", "11:10", "maths"), // 30 minute gap
+    ];
+    expect(classBlocksForDay(day, 3)).toHaveLength(2);
+  });
+
+  it("returns nothing for a day with no classes", () => {
+    expect(classBlocksForDay(WEEK, 4)).toEqual([]);
   });
 });

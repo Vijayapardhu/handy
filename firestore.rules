@@ -177,6 +177,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Semester grades and CGPA, scraped alongside attendance during an
+    // AEC/ACET/AGBS portal sign-in (api/verify.js) — AUS's portal exposes no
+    // equivalent, so this stays empty for those students rather than guessing.
+    // Written only by that one server-side path; a client reads its own doc
+    // and nothing else, same shape as `attendance`.
+    match /academicRecords/{studentId} {
+      allow read: if isAdmin() || isOwner(studentId);
+      allow write: if false;
+    }
+
     // What the student says about their own attendance, day by day.
     //
     // Deliberately a *separate* collection from `attendance` above, which

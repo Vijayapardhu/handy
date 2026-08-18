@@ -41,6 +41,10 @@ const AttendanceHistoryPage = lazyPage(() =>
 const HubAttendancePage = lazyPage(() =>
   import("@/pages/HubAttendance/HubAttendancePage").then((m) => ({ default: m.HubAttendancePage })),
 );
+const AttendanceTrendPage = lazyPage(() =>
+  import("@/pages/AttendanceTrend/AttendanceTrendPage").then((m) => ({ default: m.AttendanceTrendPage })),
+);
+const GradesPage = lazyPage(() => import("@/pages/Grades/GradesPage").then((m) => ({ default: m.GradesPage })));
 const ProfilePage = lazyPage(() => import("@/pages/Profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const PersonalInfoPage = lazyPage(() =>
   import("@/pages/Profile/PersonalInfoPage").then((m) => ({ default: m.PersonalInfoPage })),
@@ -94,6 +98,8 @@ const router = createBrowserRouter([
               { path: ROUTES.attendancePlanner, element: <AttendancePlannerPage /> },
               { path: ROUTES.attendanceHistory, element: <AttendanceHistoryPage /> },
               { path: ROUTES.hubAttendance, element: <HubAttendancePage /> },
+              { path: ROUTES.attendanceTrend, element: <AttendanceTrendPage /> },
+              { path: ROUTES.grades, element: <GradesPage /> },
               { path: ROUTES.profile, element: <ProfilePage /> },
               { path: ROUTES.profilePersonal, element: <PersonalInfoPage /> },
               { path: ROUTES.profileAcademic, element: <AcademicInfoPage /> },

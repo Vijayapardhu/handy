@@ -1,6 +1,15 @@
 import { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { History, Target, TrendingUp, ChevronRight } from "@/components/ui/icons";
+import {
+  AlertTriangle,
+  CalendarClock,
+  ChevronRight,
+  History,
+  ShieldAlert,
+  Target,
+  TrendingDown,
+  TrendingUp,
+} from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -16,8 +25,17 @@ import { useSubject } from "@/hooks/useSubjects";
 import { useAttendanceSummaryForSubject } from "@/hooks/useAttendanceSummaryForSubject";
 import { useCollegeConfig } from "@/hooks/useCollegeConfig";
 import { useSubjectTrend } from "@/hooks/useSubjectTrend";
+import { useActiveTimetable } from "@/hooks/useTimetable";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { calculateAttendance, getAttendanceStatus, roundPercentage } from "@/lib/calculations/attendance";
+import {
+  calculateAttendance,
+  calculateRequiredClasses,
+  calculateSafeAbsences,
+  getAttendanceStatus,
+  roundPercentage,
+} from "@/lib/calculations/attendance";
+import { daysToAttend, shortWhen } from "@/lib/calculations/planning";
+import { todayIso } from "@/lib/date";
 import { ROUTES } from "@/constants/routes";
 import styles from "./SubjectDetailPage.module.css";
 
@@ -28,6 +46,7 @@ export function SubjectDetailPage() {
   const summaryQuery = useAttendanceSummaryForSubject(subjectId);
   const configQuery = useCollegeConfig(student?.collegeId);
   const trendQuery = useSubjectTrend(subjectId);
+  const timetableQuery = useActiveTimetable();
 
   const isLoading = subjectQuery.isLoading || summaryQuery.isLoading || configQuery.isLoading;
   const isError = subjectQuery.isError || summaryQuery.isError || configQuery.isError;
@@ -39,6 +58,36 @@ export function SubjectDetailPage() {
 
   const target = subjectQuery.data?.targetAttendance ?? configQuery.data?.minimumAttendancePercentage ?? 75;
   const status = configQuery.data ? getAttendanceStatus(percentage, configQuery.data.statusThresholds) : "na";
+  const today = todayIso();
+
+  /**
+   * The actionable half of the percentage — what it lets you do, or costs —
+   * mirrors mobile's "What this means" card (subject_detail_screen.dart).
+   */
+  const meaning = useMemo(() => {
+    const attended = summaryQuery.data?.attended ?? 0;
+    const held = summaryQuery.data?.held ?? 0;
+    if (held === 0) return null;
+
+    const safe = calculateSafeAbsences(attended, held, target);
+    if (safe.status === "can_miss" && safe.maxAbsences > 0) {
+      return {
+        kind: "can-miss" as const,
+        canSkip: safe.maxAbsences,
+        afterOneMiss: roundPercentage(calculateAttendance(attended, held + 1)),
+      };
+    }
+
+    const required = calculateRequiredClasses(attended, held, target);
+    const needed = required.status === "needs_classes" ? required.classesNeeded : null;
+    const plan = needed ? daysToAttend(needed, timetableQuery.data?.entries ?? [], today, { subjectId }) : null;
+    return {
+      kind: "below-target" as const,
+      needed,
+      plan,
+      afterOneAttend: roundPercentage(calculateAttendance(attended + 1, held + 1)),
+    };
+  }, [summaryQuery.data, target, timetableQuery.data, today, subjectId]);
 
   if (isError) {
     return (
@@ -97,6 +146,47 @@ export function SubjectDetailPage() {
           Target: <strong>{target}%</strong>
         </p>
       </Card>
+
+      {meaning && (
+        <Card className={styles.meaningCard}>
+          <p className={styles.meaningLabel}>What this means</p>
+          {meaning.kind === "can-miss" ? (
+            <>
+              <p className={styles.meaningFact}>
+                <ShieldAlert size={16} />
+                You can miss {meaning.canSkip} more class{meaning.canSkip === 1 ? "" : "es"} and stay above {target}%.
+              </p>
+              <p className={styles.meaningFact}>
+                <TrendingDown size={16} />
+                Missing the next one takes you to{" "}
+                {meaning.afterOneMiss === null ? "N/A" : `${meaning.afterOneMiss.toFixed(2)}%`}.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className={`${styles.meaningFact} ${styles.meaningWarn}`}>
+                <AlertTriangle size={16} />
+                {meaning.needed === null
+                  ? `Below ${target}%. This target isn't reachable by attendance alone this semester.`
+                  : `Below ${target}%. Attend the next ${meaning.needed} in a row to get back above it.`}
+              </p>
+              {meaning.plan && (
+                <p className={styles.meaningFact}>
+                  <CalendarClock size={16} />
+                  That&rsquo;s {meaning.plan.days} more day{meaning.plan.days === 1 ? "" : "s"}{" "}
+                  {subject.shortName || "this subject"} meets — you&rsquo;d get there by{" "}
+                  {shortWhen(meaning.plan.on, today)}.
+                </p>
+              )}
+              <p className={styles.meaningFact}>
+                <TrendingUp size={16} />
+                Attending the next one takes you to{" "}
+                {meaning.afterOneAttend === null ? "N/A" : `${meaning.afterOneAttend.toFixed(2)}%`}.
+              </p>
+            </>
+          )}
+        </Card>
+      )}
 
       <div className={styles.actions}>
         <Link to={ROUTES.subjectHistory(subject.id)} className={styles.actionRow}>

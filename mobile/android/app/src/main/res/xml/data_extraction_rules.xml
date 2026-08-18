@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nothing leaves the device.
+
+  `allowBackup="false"` already turns cloud backup off, but from Android 12 the
+  device-to-device transfer path is configured separately, and a rule file that
+  is absent means "copy everything". What "everything" covers here is the
+  reason to say otherwise: the shared_preferences that hold the signed-in
+  Firebase session, and the widget data written alongside it. A phone handed on
+  or restored onto someone else's device should not carry a logged-in account
+  with it.
+
+  The portal password is not in scope either way — that lives in the Android
+  Keystore via flutter_secure_storage, which no backup path can read.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

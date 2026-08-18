@@ -35,15 +35,18 @@ const SAMPLE_ROWS = [
   },
 ];
 
+const REQUEST_META = { batchId: "6a56fdaaa08ffb441058015a", technologyId: "6a56f848a08ffb441057d481" };
+
 describe("aggregateHubCourse", () => {
   it("returns null for no rows", () => {
-    expect(aggregateHubCourse([])).toBeNull();
-    expect(aggregateHubCourse(undefined)).toBeNull();
+    expect(aggregateHubCourse([], REQUEST_META)).toBeNull();
+    expect(aggregateHubCourse(undefined, REQUEST_META)).toBeNull();
   });
 
   it("sums sessions across modules and topics, and computes a percentage", () => {
-    const course = aggregateHubCourse(SAMPLE_ROWS);
-    expect(course.batchId).toBe("6a56fdaaa08ffb441058015a");
+    const course = aggregateHubCourse(SAMPLE_ROWS, REQUEST_META);
+    expect(course.batchId).toBe(REQUEST_META.batchId);
+    expect(course.technologyId).toBe(REQUEST_META.technologyId);
     expect(course.courseName).toBe("CODEFORGE");
     expect(course.technologyName).toBe("CodeForge-Intermediate");
     expect(course.modules).toHaveLength(2);
@@ -54,17 +57,28 @@ describe("aggregateHubCourse", () => {
     expect(course.percentage).toBe(50);
   });
 
+  it("keys a course by the requested batch/technology pair, not the response's own _id — two separate enrollments of the same course share an _id", () => {
+    const batchA = aggregateHubCourse(SAMPLE_ROWS, { batchId: "batch-A", technologyId: "tech-1" });
+    const batchB = aggregateHubCourse(SAMPLE_ROWS, { batchId: "batch-B", technologyId: "tech-1" });
+    expect(batchA.batchId).toBe("batch-A");
+    expect(batchB.batchId).toBe("batch-B");
+    expect(batchA.batchId).not.toBe(batchB.batchId);
+  });
+
   it("reports a null percentage rather than dividing by zero when nothing has been held", () => {
-    const course = aggregateHubCourse([
-      {
-        _id: "batch1",
-        course_name: "CODEFORGE",
-        technology_name: "CodeForge-Intermediate",
-        module_id: "m1",
-        module_name: "Upcoming module",
-        topic: [{ topic_name: "Not started", total_sessions: 0, attended_count: 0 }],
-      },
-    ]);
+    const course = aggregateHubCourse(
+      [
+        {
+          _id: "batch1",
+          course_name: "CODEFORGE",
+          technology_name: "CodeForge-Intermediate",
+          module_id: "m1",
+          module_name: "Upcoming module",
+          topic: [{ topic_name: "Not started", total_sessions: 0, attended_count: 0 }],
+        },
+      ],
+      REQUEST_META,
+    );
     expect(course.totalSessions).toBe(0);
     expect(course.percentage).toBeNull();
   });

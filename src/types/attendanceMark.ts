@@ -19,7 +19,7 @@
  *
  * "cancelled" is a real third state, not a boolean present/absent — a
  * cancelled class counts toward neither attended nor held, so it must never
- * be treated as an absence in any percentage or streak calculation. See
+ * be treated as an absence in any percentage or day-status calculation. See
  * src/lib/calculations/attendanceMarks.ts.
  */
 export type MarkStatus = "present" | "absent" | "cancelled";
@@ -35,15 +35,46 @@ export interface AttendanceMarkDoc {
   startTime: string;
   /** How many consecutive periods this class block covers, for a multi-period lab/lecture. */
   periods: number;
+  /**
+   * ISO 8601, when this mark was last written. Optional because marks written
+   * before the field existed do not carry one.
+   *
+   * Its only job is to settle a disagreement between two documents describing
+   * the same class — see dedupeMarks in lib/calculations/attendanceMarks.ts.
+   */
+  updatedAt?: string;
 }
 
 /**
  * Deterministic doc id — marking the same class twice edits the existing
  * mark instead of creating a duplicate, and re-marking the same status twice
  * is what a caller uses to detect "clear this mark" (tap-to-toggle-off).
- * Mirrors `AttendanceMark.idFor` in the Flutter app exactly, so a future
- * cross-platform read never has to reconcile two id schemes.
+ *
+ * This comment used to claim it mirrored `AttendanceMark.idFor` in the Flutter
+ * app exactly. It did not: the app wrote `uid-subject-date-HHmm`, hyphenated
+ * with the colon stripped, against this file's `uid_subject_date_HH:mm`. Both
+ * were stable, at two different ids — so a class marked on a phone and again on
+ * a laptop became two documents and every percentage counted it twice, while
+ * the comment asserting they agreed is exactly why nobody looked. The app now
+ * writes this form; the claim is true as of that change and not before it.
  */
 export function attendanceMarkId(studentId: string, subjectId: string, date: string, startTime: string): string {
   return `${studentId}_${subjectId}_${date}_${startTime}`;
+}
+
+/**
+ * What older builds of the Flutter app wrote for the same class.
+ *
+ * Kept only so a write or a clear from here can delete that document too.
+ * Without it, clearing a mark a student made on their phone before the fix
+ * would remove the canonical document, leave the legacy one, and the mark
+ * would reappear on the next read as though the click never happened.
+ */
+export function legacyAndroidMarkId(
+  studentId: string,
+  subjectId: string,
+  date: string,
+  startTime: string,
+): string {
+  return `${studentId}-${subjectId}-${date}-${startTime.replace(/:/g, "")}`;
 }

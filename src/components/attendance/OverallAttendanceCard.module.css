@@ -99,3 +99,9 @@
 .footnote strong {
   color: var(--color-primary);
 }
+
+.daysNote {
+  font-size: 12px;
+  color: var(--color-text-faint);
+  margin-top: -2px;
+}

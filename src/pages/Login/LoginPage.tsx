@@ -173,7 +173,6 @@ export function LoginPage() {
               type="text"
               inputMode="text"
               autoComplete="username"
-              placeholder="26B21CS058"
               autoCapitalize="characters"
               autoFocus={!extensionAccount}
               {...register("rollNumber")}

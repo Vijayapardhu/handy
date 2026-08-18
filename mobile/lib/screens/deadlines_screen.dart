@@ -54,7 +54,7 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
 
     if (state.loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Deadlines')),
+        appBar: AppBar(title: const Text('Tasks')),
         body: const ListSkeleton(rows: 4, height: 84),
       );
     }
@@ -104,7 +104,7 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar.large(
-            title: const Text('Deadlines'),
+            title: const Text('Tasks'),
             expandedHeight: 118,
           ),
 

@@ -171,7 +171,6 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     decoration: const InputDecoration(
                       labelText: 'Roll number',
-                      hintText: '26B21CS058',
                     ),
                     onSubmitted: (_) => _submit(),
                   ),

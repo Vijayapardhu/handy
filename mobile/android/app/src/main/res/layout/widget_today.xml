@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Today's sessions. Rows are hidden rather than blanked when the day is
-     shorter than four blocks (see TodayWidgetProvider). -->
+     shorter than four blocks (see TodayWidgetProvider).
+
+     The subject column is 0dp + weight, not match_parent. Inside a horizontal
+     LinearLayout, match_parent means the *parent's* whole width — so starting
+     after the time column it ran off the right edge, and a long class name was
+     clipped at the tile boundary instead of wrapping inside it. That was the
+     "subject names don't wrap" bug; weight gives it exactly the space that is
+     left, which is what maxLines can then wrap within. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -25,20 +32,25 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:gravity="top"
         android:layout_marginTop="7dp">
         <TextView
             android:id="@+id/today_time_0"
-            android:layout_width="52dp"
+            android:layout_width="wrap_content"
+            android:minWidth="42dp"
+            android:layout_marginEnd="8dp"
             android:layout_height="wrap_content"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="#F97316" />
         <TextView
             android:id="@+id/today_subject_0"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:maxLines="1"
+            android:maxLines="2"
             android:ellipsize="end"
             android:textColor="#F1F5F9" />
     </LinearLayout>
@@ -48,20 +60,25 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:gravity="top"
         android:layout_marginTop="7dp">
         <TextView
             android:id="@+id/today_time_1"
-            android:layout_width="52dp"
+            android:layout_width="wrap_content"
+            android:minWidth="42dp"
+            android:layout_marginEnd="8dp"
             android:layout_height="wrap_content"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="#F97316" />
         <TextView
             android:id="@+id/today_subject_1"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:maxLines="1"
+            android:maxLines="2"
             android:ellipsize="end"
             android:textColor="#F1F5F9" />
     </LinearLayout>
@@ -71,20 +88,25 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:gravity="top"
         android:layout_marginTop="7dp">
         <TextView
             android:id="@+id/today_time_2"
-            android:layout_width="52dp"
+            android:layout_width="wrap_content"
+            android:minWidth="42dp"
+            android:layout_marginEnd="8dp"
             android:layout_height="wrap_content"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="#F97316" />
         <TextView
             android:id="@+id/today_subject_2"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:maxLines="1"
+            android:maxLines="2"
             android:ellipsize="end"
             android:textColor="#F1F5F9" />
     </LinearLayout>
@@ -94,20 +116,25 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:gravity="top"
         android:layout_marginTop="7dp">
         <TextView
             android:id="@+id/today_time_3"
-            android:layout_width="52dp"
+            android:layout_width="wrap_content"
+            android:minWidth="42dp"
+            android:layout_marginEnd="8dp"
             android:layout_height="wrap_content"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="#F97316" />
         <TextView
             android:id="@+id/today_subject_3"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:maxLines="1"
+            android:maxLines="2"
             android:ellipsize="end"
             android:textColor="#F1F5F9" />
     </LinearLayout>

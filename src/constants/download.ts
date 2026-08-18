@@ -23,9 +23,9 @@ const REPO = "https://github.com/Vijayapardhu/handy";
  */
 export const ANDROID = {
   url: `${REPO}/releases/latest/download/handy.apk`,
-  version: "1.0.1",
+  version: "1.0.4",
   /** Shown next to the button so nobody starts a download blind. */
-  size: "24 MB",
+  size: "59 MB",
   minAndroid: "Android 6.0",
   releasedOn: "August 2026",
 } as const;

@@ -64,7 +64,19 @@ class Reminders {
 
     final android = _plugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    await android?.requestNotificationsPermission();
+
+    // Deliberately no permission request here. init() is awaited by main()
+    // before runApp(), so asking at this point put Android's dialog on top of
+    // a blank launch screen — before the student had seen a single thing about
+    // what Handy is or why it would ever notify them. Worse, the await meant
+    // startup sat there until they answered: the app could not draw its first
+    // frame until somebody had made a decision about a feature they had not
+    // been shown.
+    //
+    // Android gives an app two chances at that dialog and then never shows it
+    // again, so a reflexive "don't allow" on a blank screen is close to
+    // permanent. It is asked for once the app is on screen instead — see
+    // requestPermission and HomeShell.
 
     // Every channel is created up front, before anything needs one.
     //
@@ -79,6 +91,25 @@ class Reminders {
     for (final channel in _channels) {
       await android?.createNotificationChannel(channel);
     }
+  }
+
+  /// Asks for the notification permission, once the student can see what they
+  /// are agreeing to.
+  ///
+  /// One OS permission covers both halves of this app's notifications — the
+  /// reminders raised on-device and the pushes the server sends — so it is
+  /// asked for in one place rather than by each plugin that happens to want
+  /// it. Returns whether notifications may now be posted; false is a normal
+  /// answer, not an error, and every caller has to keep working without them.
+  Future<bool> requestPermission() async {
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return true;
+    // Already granted, or a version of Android with no runtime permission for
+    // this at all: asking again would be a dialog that never appears and a
+    // false negative if it did not.
+    if (await android.areNotificationsEnabled() ?? false) return true;
+    return await android.requestNotificationsPermission() ?? false;
   }
 
   /// The full set, kept in one place so the app and the server cannot drift:

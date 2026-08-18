@@ -9,8 +9,9 @@
   bottom: 0;
   left: 0;
   right: 0;
-  max-width: var(--content-max-width);
-  margin: 0 auto;
+  /* No max-width: matches .app-shell above it — both used to cap at 480px
+     and center, which left visible gaps on either side of the bar on any
+     mobile viewport wider than that (see global.css's note on .app-shell). */
   height: var(--bottom-nav-height);
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
@@ -37,7 +38,15 @@
   color: var(--color-primary);
 }
 
+.desktopOnly {
+  display: none;
+}
+
 @media (min-width: 768px) {
+  .desktopOnly {
+    display: flex;
+  }
+
   .nav {
     top: 0;
     bottom: 0;

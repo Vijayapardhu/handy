@@ -61,6 +61,7 @@ class Subject {
     required this.shortName,
     required this.facultyName,
     this.facultyId = '',
+    this.targetAttendance,
   });
 
   final String id;
@@ -76,6 +77,15 @@ class Subject {
   /// in different rooms with different reps, and only this tells them apart.
   final String facultyId;
 
+  /// This subject's own minimum, when it has been given one.
+  ///
+  /// Null is the normal answer and means "whatever the college requires" — the
+  /// caller resolves it against the college config rather than this defaulting
+  /// to 75, because a subject that quietly claimed a target it had not been
+  /// given would be indistinguishable from one that really had it. See
+  /// AppState.targetFor, which mirrors subjectService.ts.
+  final double? targetAttendance;
+
   factory Subject.fromMap(String id, Map<String, dynamic> d) => Subject(
         id: id,
         code: d['code'] as String? ?? '',
@@ -83,6 +93,7 @@ class Subject {
         shortName: d['shortName'] as String? ?? '',
         facultyName: d['facultyName'] as String? ?? '',
         facultyId: d['facultyId'] as String? ?? '',
+        targetAttendance: (d['targetAttendance'] as num?)?.toDouble(),
       );
 }
 
@@ -294,6 +305,7 @@ class AttendanceMark {
     required this.status,
     required this.startTime,
     required this.periods,
+    this.updatedAt,
   });
 
   final String id;
@@ -310,8 +322,37 @@ class AttendanceMark {
   /// sat through is three classes to the register, not one.
   final int periods;
 
+  /// When this mark was last written, ISO 8601, or null for one written before
+  /// the field existed — or by the web, which did not send it.
+  ///
+  /// Only used to settle a disagreement between two documents describing the
+  /// same class. See dedupeMarks.
+  final String? updatedAt;
+
   /// Stable id, so marking the same class twice edits rather than duplicates.
+  ///
+  /// Underscore-separated, and identical to attendanceMarkId in
+  /// src/types/attendanceMark.ts — which is the whole point. It used to be
+  /// `uid-subject-date-HHmm`, hyphenated with the colon stripped, while the web
+  /// wrote `uid_subject_date_HH:mm`. Both are stable; they are stable at *two
+  /// different ids*, so the same class marked on a phone and on a laptop became
+  /// two documents, and every percentage counted it twice. The web's type file
+  /// claimed the two schemes matched exactly, which is how it went unnoticed.
+  ///
+  /// The separator matters and is not arbitrary: a date already contains
+  /// hyphens, so the old form could not be told apart from a subject id with a
+  /// hyphen in it. Nothing parses these, but a scheme that cannot be read back
+  /// is a scheme nobody can debug.
   static String idFor(String uid, String subjectId, String date, String startTime) =>
+      '${uid}_${subjectId}_${date}_$startTime';
+
+  /// What this app wrote before [idFor] was corrected.
+  ///
+  /// Kept so a write or a clear can delete the old document as well as the new
+  /// one. Without that, clearing a mark made before the fix would delete the
+  /// canonical id, leave the legacy one untouched, and the mark would come
+  /// straight back on the next read.
+  static String legacyIdFor(String uid, String subjectId, String date, String startTime) =>
       '$uid-$subjectId-$date-${startTime.replaceAll(':', '')}';
 
   factory AttendanceMark.fromMap(String id, Map<String, dynamic> d) => AttendanceMark(
@@ -324,5 +365,103 @@ class AttendanceMark {
         ),
         startTime: d['startTime'] as String? ?? '',
         periods: (d['periods'] as num?)?.toInt() ?? 1,
+        updatedAt: d['updatedAt'] as String?,
       );
+}
+
+/// College-wide configuration — `colleges/{collegeId}`.
+///
+/// A port of src/types/config.ts, and the reason the phone stopped hardcoding
+/// 75%: that number belongs to the college, not to Handy, and a college that
+/// requires 80% was being told by its own students' app that they were safe at
+/// 76. The default below is a fallback for a college whose document has not
+/// been provisioned yet, exactly as DEFAULT_COLLEGE_CONFIG is on the web — not
+/// a value any live screen should be reading.
+class CollegeConfig {
+  const CollegeConfig({
+    required this.minimumAttendancePercentage,
+    required this.condonationPercentage,
+    required this.workingDaysPerWeek,
+    required this.classDurationMinutes,
+  });
+
+  final double minimumAttendancePercentage;
+  final double? condonationPercentage;
+  final int workingDaysPerWeek;
+  final int classDurationMinutes;
+
+  static const fallback = CollegeConfig(
+    minimumAttendancePercentage: 75,
+    condonationPercentage: null,
+    workingDaysPerWeek: 6,
+    classDurationMinutes: 50,
+  );
+
+  factory CollegeConfig.fromMap(Map<String, dynamic> d) => CollegeConfig(
+        minimumAttendancePercentage:
+            (d['minimumAttendancePercentage'] as num?)?.toDouble() ??
+                fallback.minimumAttendancePercentage,
+        condonationPercentage: (d['condonationPercentage'] as num?)?.toDouble(),
+        workingDaysPerWeek:
+            (d['workingDaysPerWeek'] as num?)?.toInt() ?? fallback.workingDaysPerWeek,
+        classDurationMinutes:
+            (d['classDurationMinutes'] as num?)?.toInt() ?? fallback.classDurationMinutes,
+      );
+}
+
+/// Where a leave request stands with the administration.
+enum LeaveStatus { pending, approved, rejected }
+
+/// A leave request — `leaveRequests/{id}`.
+///
+/// A distinct thing from the Leave *Planner*, and the one place the two are
+/// easy to confuse: the planner works out what a day off would cost your
+/// attendance, and computing that a Thursday is "safe" is not permission to
+/// take it. This is the half that goes to a human. Ported from
+/// src/types/leave.ts.
+///
+/// Students may create one and never touch it again — the security rules
+/// reject any write that sets a status other than `pending`, and reject
+/// updates outright, so approval only ever comes from the other side.
+class LeaveRequest {
+  const LeaveRequest({
+    required this.id,
+    required this.startDate,
+    required this.endDate,
+    required this.reason,
+    required this.status,
+    required this.submittedAt,
+    required this.reviewedAt,
+    required this.reviewedBy,
+  });
+
+  final String id;
+  final DateTime startDate;
+  final DateTime endDate;
+  final String reason;
+  final LeaveStatus status;
+  final DateTime submittedAt;
+  final DateTime? reviewedAt;
+  final String? reviewedBy;
+
+  /// Inclusive, because a one-day leave is one day and not zero.
+  int get days => endDate.difference(startDate).inDays + 1;
+
+  factory LeaveRequest.fromMap(String id, Map<String, dynamic> d) => LeaveRequest(
+        id: id,
+        startDate: _date(d['startDate']) ?? DateTime.now(),
+        endDate: _date(d['endDate']) ?? _date(d['startDate']) ?? DateTime.now(),
+        reason: d['reason'] as String? ?? '',
+        status: switch (d['status'] as String?) {
+          'approved' => LeaveStatus.approved,
+          'rejected' => LeaveStatus.rejected,
+          _ => LeaveStatus.pending,
+        },
+        submittedAt: _date(d['submittedAt']) ?? DateTime.now(),
+        reviewedAt: _date(d['reviewedAt']),
+        reviewedBy: d['reviewedBy'] as String?,
+      );
+
+  static DateTime? _date(Object? value) =>
+      value is String ? DateTime.tryParse(value)?.toLocal() : null;
 }

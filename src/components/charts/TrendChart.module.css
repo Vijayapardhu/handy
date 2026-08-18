@@ -42,6 +42,17 @@
   text-overflow: ellipsis;
 }
 
+/* A caller with more points than reasonably fit (AttendanceTrendPage's 30/90
+   day views) leaves most labels blank rather than truncating all of them —
+   collapsing those to zero width lets the labels actually kept share the
+   row, instead of every point still claiming an equal, too-narrow slice.
+   Every point SubjectDetailPage's 8-week trend passes has a label, so this
+   never applies there. */
+.label:empty {
+  flex: 0;
+  padding: 0;
+}
+
 .empty {
   font-size: 12.5px;
   color: var(--color-text-muted);

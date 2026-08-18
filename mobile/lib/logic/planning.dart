@@ -362,3 +362,97 @@ Task? nextExam(List<Task> tasks, DateTime today, {int withinDays = 30}) {
 
   return exams.firstOrNull;
 }
+
+/// How long it actually takes to attend [classes] more, walked off the
+/// timetable rather than divided by an average.
+///
+/// This replaces dividing by classesPerActiveDay, which was wrong in a way that
+/// mattered most where it was used: the subject screen asked "how many days to
+/// attend 13 more ADSAA classes" and answered it with the average number of
+/// classes a day across *every* subject. Thirteen classes of a subject that
+/// meets three times a week is a month; the old answer was "about 3 days",
+/// because 13 divided by 5.2 is 3. Right units, wrong quantity, and it read as
+/// authoritative.
+///
+/// So this counts the real thing. Walk forward a day at a time; on each day sum
+/// the periods the timetable actually holds for [subjectId] (or for every
+/// subject, when it is null); stop once [classes] have been held. What comes
+/// back is the number of days the student has to turn up on and the date of the
+/// last one — a plan, not a ratio.
+///
+/// Starts from tomorrow. Today's classes have either happened or are happening,
+/// and neither is something a student can now decide to attend.
+///
+/// [subjectId] narrows it to one subject; [type] narrows it to a kind of
+/// period, which is how the CodeForge card finds the next Technical Hour — that
+/// platform's sessions are not subjects and have no percentage to reach, but the
+/// period they happen in is on the timetable like anything else.
+///
+/// Returns null when the timetable cannot answer: no entries at all (the
+/// portal-login colleges publish none), or the subject never meets, or it would
+/// take longer than [horizonDays]. Null is honest and the caller hides the line
+/// — a guess dressed as a date is worse than saying nothing.
+({int days, DateTime on})? daysToAttend({
+  required int classes,
+  required List<TimetableEntry> entries,
+  required DateTime from,
+  String? subjectId,
+  String? type,
+  int horizonDays = 180,
+}) {
+  if (classes <= 0) return null;
+
+  final relevant = entries
+      .where((e) =>
+          e.active &&
+          (subjectId == null || e.subjectId == subjectId) &&
+          (type == null || e.type == type))
+      .toList();
+  if (relevant.isEmpty) return null;
+
+  var held = 0;
+  var days = 0;
+  final start = DateTime(from.year, from.month, from.day);
+
+  for (var offset = 1; offset <= horizonDays; offset++) {
+    final day = start.add(Duration(days: offset));
+    // Sunday is 0 here, matching how entries store dayOfWeek and how the rest
+    // of the app converts (DateTime.weekday % 7).
+    final weekday = day.weekday % 7;
+    final periods = relevant
+        .where((e) => e.dayOfWeek == weekday)
+        .fold<int>(0, (sum, e) => sum + 1);
+    if (periods == 0) continue;
+
+    days++;
+    held += periods;
+    if (held >= classes) return (days: days, on: day);
+  }
+
+  // Beyond the horizon. A subject meeting once a fortnight can genuinely need
+  // longer than a semester, and "212 days" is not a plan either.
+  return null;
+}
+
+const _shortMonths = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+const _shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/// "tomorrow" / "Thu" / "12 May" — whichever is shortest and still unambiguous.
+///
+/// Lives next to daysToAttend because it exists to render what that returns,
+/// and every screen showing one of those dates should word it the same way. A
+/// weekday name only inside the coming week: past that, "Thursday" is a
+/// question rather than an answer.
+String shortWhen(DateTime date, {DateTime? now}) {
+  final today = now ?? DateTime.now();
+  final days = DateTime(date.year, date.month, date.day)
+      .difference(DateTime(today.year, today.month, today.day))
+      .inDays;
+  if (days == 1) return 'tomorrow';
+  if (days > 1 && days < 7) return _shortDays[date.weekday % 7];
+  return '${date.day} ${_shortMonths[date.month - 1]}';
+}

@@ -128,6 +128,30 @@ export default async function handler(req, res) {
     const uid = await ensureAuthUser(rollNumber);
     const written = await ingestSnapshot(db, uid, rollNumber, snapshot);
 
+    // Semester grades and CGPA — scraped right alongside attendance, but until
+    // now discarded the moment this response was sent. AEC/ACET/AGBS expose no
+    // ongoing grades endpoint the way attendance has one, so a sign-in (or a
+    // student re-entering their password from the Grades page to refresh) is
+    // the only moment this data is ever available at all; not persisting it
+    // here would mean it never existed anywhere past this one response.
+    if (data.grades.length > 0) {
+      try {
+        await db.doc(`academicRecords/${uid}`).set({
+          studentId: uid,
+          campus,
+          cgpa: data.cgpa,
+          grades: data.grades,
+          capturedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        // Best-effort: a write failure here shouldn't fail a sign-in that
+        // otherwise worked, it just means the Grades page stays on whatever
+        // it last had (or empty, the first time).
+        console.error(`[verify] academicRecords write failed for ${rollNumber}:`, error.message);
+      }
+    }
+
     // A custom token rather than the Handy password. The client exchanges it
     // for a session with signInWithCustomToken, so no password for the account
     // we just created ever has to travel back over the wire or be typed.

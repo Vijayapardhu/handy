@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The light-theme CodeForge tile: still unmistakably blue, but a wash rather
+     than a slab, so black text sits on it legibly. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:startColor="#E8F1FC" android:endColor="#D3E4F7" android:angle="315" />
+    <corners android:radius="24dp" />
+    <stroke android:width="1dp" android:color="#B6D2EE" />
+</shape>

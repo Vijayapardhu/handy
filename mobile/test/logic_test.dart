@@ -712,36 +712,4 @@ void pinningTests() {
 }
 
 void _daysGroup() {
-  group('classesPerActiveDay', () {
-    test('averages only the days the subject actually met', () {
-      // Days with no class are excluded, or the average collapses toward zero
-      // and every "how many days" answer becomes nonsense.
-      expect(classesPerActiveDay([2, 0, 1, 0, 3]), closeTo(2.0, 0.001));
-    });
-
-    test('returns null when there is nothing to average', () {
-      expect(classesPerActiveDay([]), isNull);
-      expect(classesPerActiveDay([0, 0]), isNull);
-    });
-  });
-
-  group('daysForClasses', () {
-    test('converts classes into whole days, rounding up', () {
-      // 9 classes at 2 a day is four and a half days, and you cannot attend
-      // half a day — rounding down would say "safe" a day too early.
-      expect(daysForClasses(9, 2.0), 5);
-      expect(daysForClasses(8, 2.0), 4);
-      expect(daysForClasses(1, 3.0), 1);
-    });
-
-    test('nothing to attend is zero days, not one', () {
-      expect(daysForClasses(0, 2.0), 0);
-      expect(daysForClasses(-3, 2.0), 0);
-    });
-
-    test('says nothing rather than guessing without a rate', () {
-      expect(daysForClasses(10, null), isNull);
-      expect(daysForClasses(10, 0), isNull);
-    });
-  });
 }

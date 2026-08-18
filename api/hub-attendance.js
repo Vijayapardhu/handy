@@ -1,12 +1,19 @@
 // Vercel serverless function: POST /api/hub-attendance
 //
-// Body:    { idToken }
-// Returns: { ok, linked, snapshot? }
+// Body:    { idToken, forceRefresh? }
+// Returns: { ok, linked, snapshot?, cached? }
 //
 // Reads back what hub-connect.js stored, silently refreshes the Maya token
 // when it's within a minute of its hour-long expiry (decrypting the stored
 // password only for that one re-login call), then fetches and aggregates
 // attendance for every course the login response named.
+//
+// The aggregated snapshot is itself cached in Firestore (`lastSnapshot`,
+// `lastFetchedAt` on the same hubAccounts doc) for SNAPSHOT_CACHE_TTL_MS —
+// Maya's own round trip is a login-if-expired plus one call per course,
+// which is the slow part on a cold load; most loads hit this cache and skip
+// it entirely, only touching Maya every ~15 minutes or when the student taps
+// the explicit refresh button (`forceRefresh: true`, which bypasses this).
 //
 // `linked: false` (not an error) is the answer for a student who has never
 // connected the Hub — same shape ConnectPortalPage expects from its own
@@ -26,6 +33,9 @@ import {
 
 /** Refresh a little before the token actually dies, not exactly on the second. */
 const EXPIRY_BUFFER_MS = 60_000;
+
+/** How long a cached snapshot is trusted before a load pays for a live Maya round trip again. */
+const SNAPSHOT_CACHE_TTL_MS = 15 * 60_000;
 
 function app() {
   if (getApps().length) return getApps()[0];
@@ -60,6 +70,16 @@ export default async function handler(req, res) {
   if (!snap.exists) return res.status(200).json({ ok: true, linked: false });
 
   let account = snap.data();
+  const forceRefresh = Boolean(payload?.forceRefresh);
+
+  if (
+    !forceRefresh &&
+    account.lastSnapshot &&
+    account.lastFetchedAt &&
+    Date.now() - account.lastFetchedAt < SNAPSHOT_CACHE_TTL_MS
+  ) {
+    return res.status(200).json({ ok: true, linked: true, snapshot: account.lastSnapshot, cached: true });
+  }
 
   if (!account.token || !account.tokenExp || account.tokenExp - EXPIRY_BUFFER_MS <= Date.now()) {
     try {
@@ -101,7 +121,7 @@ export default async function handler(req, res) {
         batchId: course.batchId,
         technologyId: course.technologyId,
       })
-        .then((rows) => aggregateHubCourse(rows))
+        .then((rows) => aggregateHubCourse(rows, { batchId: course.batchId, technologyId: course.technologyId }))
         .catch((error) => {
           console.error(
             `[hub-attendance] course fetch failed for ${account.rollNumber}/${course.batchId}:`,
@@ -116,19 +136,26 @@ export default async function handler(req, res) {
   const totalSessions = hubCourses.reduce((sum, c) => sum + c.totalSessions, 0);
   const attendedSessions = hubCourses.reduce((sum, c) => sum + c.attendedSessions, 0);
 
-  return res.status(200).json({
-    ok: true,
-    linked: true,
-    snapshot: {
-      studentName: account.hubName ?? null,
-      rollNumber: account.rollNumber,
-      courses: hubCourses,
-      totalSessions,
-      attendedSessions,
-      percentage: totalSessions > 0 ? Math.round((attendedSessions / totalSessions) * 10000) / 100 : null,
-      fetchedAt: new Date().toISOString(),
-    },
-  });
+  const snapshot = {
+    studentName: account.hubName ?? null,
+    rollNumber: account.rollNumber,
+    courses: hubCourses,
+    totalSessions,
+    attendedSessions,
+    percentage: totalSessions > 0 ? Math.round((attendedSessions / totalSessions) * 10000) / 100 : null,
+    fetchedAt: new Date().toISOString(),
+  };
+
+  // Best-effort: a write failure here shouldn't fail a request that already
+  // has a perfectly good answer for the student waiting on it. The next
+  // request just pays for another live fetch instead of finding a cache.
+  try {
+    await ref.set({ lastSnapshot: snapshot, lastFetchedAt: Date.now() }, { merge: true });
+  } catch (error) {
+    console.error(`[hub-attendance] snapshot cache write failed for ${account.rollNumber}:`, error?.message ?? error);
+  }
+
+  return res.status(200).json({ ok: true, linked: true, snapshot });
 }
 
 function safeParse(body) {

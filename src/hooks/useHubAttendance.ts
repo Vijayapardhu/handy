@@ -50,3 +50,21 @@ export function useDisconnectHub() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: hubAttendanceKey(user?.uid) }),
   });
 }
+
+/**
+ * The explicit "Refresh" button's path — bypasses the server's Firestore
+ * cache (see api/hub-attendance.js's forceRefresh) rather than just re-asking
+ * for the same cached snapshot useHubAttendance would otherwise still be
+ * within its window to return.
+ */
+export function useRefreshHubAttendance() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const idToken = await user!.getIdToken();
+      return fetchHubAttendance(idToken, true);
+    },
+    onSuccess: (result) => queryClient.setQueryData(hubAttendanceKey(user?.uid), result),
+  });
+}

@@ -36,6 +36,69 @@ export function getEntriesForDay(
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
+function minutesBetween(from: string, to: string): number {
+  const toMinutes = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+  return toMinutes(to) - toMinutes(from);
+}
+
+/**
+ * A run of consecutive periods of the same subject, shown as one block.
+ *
+ * The portal models a three-hour lab as three separate period rows. Listing
+ * them separately is technically faithful and practically useless — a student
+ * reading "Technical Hour" three times in a row has to work out for
+ * themselves that it's one long session. Mirrors mobile's ClassBlock
+ * (mobile/lib/logic/timetable.dart), which is where this was first ported to.
+ */
+export interface ClassBlock {
+  entries: TimetableEntryDoc[];
+}
+
+export function classBlockPeriods(block: ClassBlock): number {
+  return block.entries.length;
+}
+
+export function classBlockStartTime(block: ClassBlock): string {
+  return block.entries[0].startTime;
+}
+
+export function classBlockEndTime(block: ClassBlock): string {
+  return block.entries[block.entries.length - 1].endTime;
+}
+
+/**
+ * Groups a day's classes into blocks, merging neighbours that share a
+ * subject and are actually adjacent — the portal's own periods butt up
+ * against each other, give or take a ten-minute changeover, but a lunch gap
+ * or a second session later in the day doesn't, and a morning and afternoon
+ * sitting of the same subject stays separate rather than merging on subject
+ * alone.
+ */
+export function classBlocksForDay(entries: TimetableEntryDoc[], dayOfWeek: number): ClassBlock[] {
+  const day = getEntriesForDay(entries, dayOfWeek);
+  if (day.length === 0) return [];
+
+  const blocks: ClassBlock[] = [];
+  let current: TimetableEntryDoc[] = [day[0]];
+
+  for (const entry of day.slice(1)) {
+    const previous = current[current.length - 1];
+    const adjacent = entry.subjectId === previous.subjectId && minutesBetween(previous.endTime, entry.startTime) <= 15;
+
+    if (adjacent) {
+      current.push(entry);
+    } else {
+      blocks.push({ entries: current });
+      current = [entry];
+    }
+  }
+  blocks.push({ entries: current });
+  return blocks;
+}
+
 /** Finds the next upcoming (or currently running) entry for "today" from `nowTime` onward. */
 export function getNextEntry(
   entries: TimetableEntryDoc[],

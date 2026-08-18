@@ -9,7 +9,9 @@ import '../widgets/detail_row.dart';
 import '../widgets/student_photo.dart';
 import 'account_screens.dart';
 import 'attendance_history_screen.dart';
-import 'leave_planner_screen.dart';
+import 'attendance_planner_screen.dart';
+import 'hub_attendance_screen.dart';
+import 'leaves_screen.dart';
 import 'notifications_inbox_screen.dart';
 import 'onboarding_screen.dart';
 import 'settings_screen.dart';
@@ -130,12 +132,32 @@ class ProfileScreen extends StatelessWidget {
                         detail: 'Every class you have marked',
                         onTap: () => _push(context, const AttendanceHistoryScreen()),
                       ),
+                      // Only for a timetable that carries a Technical Hour:
+                      // CodeForge is Maya's skills-hour platform, and offering
+                      // it to a student whose course has none is offering a
+                      // login they do not have. Same gate as ProfilePage.tsx.
+                      if (state.entries.any((e) => e.type == 'technical')) ...[
+                        const _Rule(),
+                        _ActionRow(
+                          icon: HugeIcons.strokeRoundedCode,
+                          label: 'CodeForge Attendance',
+                          detail: 'CodeForge and skills-hour sessions from Maya',
+                          onTap: () => _push(context, const HubAttendanceScreen()),
+                        ),
+                      ],
+                      const _Rule(),
+                      _ActionRow(
+                        icon: HugeIcons.strokeRoundedTarget02,
+                        label: 'Attendance Planner',
+                        detail: 'What it would take to reach your target',
+                        onTap: () => _push(context, const AttendancePlannerScreen()),
+                      ),
                       const _Rule(),
                       _ActionRow(
                         icon: HugeIcons.strokeRoundedCoffee02,
-                        label: 'Leave Planner',
-                        detail: 'What a day off would cost you',
-                        onTap: () => _push(context, const LeavePlannerScreen()),
+                        label: 'Leaves',
+                        detail: 'Request a day off, and what one would cost',
+                        onTap: () => _push(context, const LeavesScreen()),
                       ),
                       const _Rule(),
                       _ActionRow(

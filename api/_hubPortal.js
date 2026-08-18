@@ -43,6 +43,22 @@ export function decodeJwtExpiryMs(token) {
   }
 }
 
+async function postSecureLogin(rollNumber, password, forceLogin) {
+  let response;
+  try {
+    response = await fetch(`${HUB_API_BASE}/secure-login`, {
+      method: "POST",
+      headers: hubHeaders(),
+      body: JSON.stringify({ roll_no: rollNumber, password, forcelogin: forceLogin }),
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch {
+    throw new Error("Could not reach the Hub. Try again shortly.");
+  }
+  const data = await response.json().catch(() => null);
+  return { response, data };
+}
+
 /**
  * Signs in as the student against Maya and reports back what a token is good
  * for and which courses (batch + technology pairs) attendance can be read for.
@@ -51,19 +67,17 @@ export function decodeJwtExpiryMs(token) {
  * as _campusPortal.js's scrapeCampus, never returned or logged.
  */
 export async function hubSecureLogin(rollNumber, password) {
-  let response;
-  try {
-    response = await fetch(`${HUB_API_BASE}/secure-login`, {
-      method: "POST",
-      headers: hubHeaders(),
-      body: JSON.stringify({ roll_no: rollNumber, password, forcelogin: false }),
-      signal: AbortSignal.timeout(20000),
-    });
-  } catch {
-    throw new Error("Could not reach the Hub. Try again shortly.");
-  }
+  let { response, data } = await postSecureLogin(rollNumber, password, false);
 
-  const data = await response.json().catch(() => null);
+  // 423 Locked is Maya's answer to "already signed in somewhere else" — the
+  // `forcelogin` field exists for exactly this, to sign that other session
+  // out. Handy is acting on the student's own behalf here (they just typed
+  // their own password into their own Profile page), so retrying with it set
+  // is the same choice a student would make themselves rather than a
+  // silent escalation of what was asked for.
+  if (response.status === 423) {
+    ({ response, data } = await postSecureLogin(rollNumber, password, true));
+  }
 
   if (!response.ok || !data?.token) {
     if (response.status === 401 || response.status === 400 || response.status === 403) {
@@ -130,8 +144,19 @@ export async function hubFetchCourseModules({ studentId, rollNumber, batchId, te
   return Array.isArray(data) ? data.flat() : [];
 }
 
-/** Module rows for one course into the HubCourse shape the client renders. */
-export function aggregateHubCourse(rows) {
+/**
+ * Module rows for one course into the HubCourse shape the client renders.
+ *
+ * `batchId`/`technologyId` come from the request that produced `rows` — the
+ * pair every course is keyed by everywhere else (hub-connect.js's stored
+ * course list, the request this function's caller just made) — not from the
+ * response's own `_id` field. That field turned out to be a curriculum id
+ * shared across separate enrollments of the same course (two different
+ * "Arithmetic Ability" batches both echoed the same `_id`), which collided
+ * both the React key and the open/closed state on the breakdown page: opening
+ * one batch opened every batch of the same course.
+ */
+export function aggregateHubCourse(rows, { batchId, technologyId }) {
   if (!rows || rows.length === 0) return null;
 
   const modules = rows.map((row) => {
@@ -157,7 +182,8 @@ export function aggregateHubCourse(rows) {
   const first = rows[0];
 
   return {
-    batchId: first._id,
+    batchId,
+    technologyId,
     courseName: first.course_name ?? null,
     technologyName: first.technology_name ?? null,
     technologyIcon: first.technology_icon ?? null,

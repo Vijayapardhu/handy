@@ -9,13 +9,6 @@ import '../theme.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_icon.dart';
 
-/// Version shown in About and attached to every piece of feedback.
-///
-/// A single constant rather than package_info_plus: this needs to be the same
-/// string in both places and readable from a background isolate, and one line
-/// beats a plugin for that.
-const handyVersion = '0.1.0';
-
 /// Help, answered from Firestore.
 ///
 /// The entries live in the `faqs` collection (seeded by scripts/seed-faqs.mjs)

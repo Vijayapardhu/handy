@@ -90,4 +90,11 @@ flutter {
 dependencies {
     // Required by flutter_local_notifications (see isCoreLibraryDesugaringEnabled above).
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // The widgets do their own clock work now — which class is next, when the
+    // tile would next read differently, how many days a deadline has left. It
+    // is wrong at 23:59 or during the one lecture nobody is looking at their
+    // home screen, so it is worth a test rather than a demo. Plain JUnit: the
+    // logic is deliberately free of the Android framework so it can be.
+    testImplementation("junit:junit:4.13.2")
 }

@@ -3,7 +3,7 @@ import { feedbackCol } from "@/services/firebase/collections";
 import type { FeedbackDoc, FeedbackKind } from "@/types/feedback";
 
 /** Mirrors handyVersion in mobile/lib/screens/support_screens.dart — attached to every piece of feedback. */
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION = "1.0.3";
 
 export async function submitFeedback(
   studentId: string,

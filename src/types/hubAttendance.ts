@@ -26,6 +26,9 @@ export interface HubModule {
 }
 
 export interface HubCourse {
+  /** batchId + technologyId together are the unique key for a course — a student can
+   *  be enrolled in the same course (e.g. "Arithmetic Ability") across separate
+   *  batches, and only the pair distinguishes them (see aggregateHubCourse in api/_hubPortal.js). */
   batchId: string;
   technologyId: string;
   courseName: string;

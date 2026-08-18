@@ -13,7 +13,7 @@ import { useActiveTimetable } from "@/hooks/useTimetable";
 import { useActiveSubjectsMap } from "@/hooks/useActiveSubjectsMap";
 import { useTasks } from "@/hooks/useTasks";
 import { useMarksForRange, useSetAttendanceMark } from "@/hooks/useAttendanceMarks";
-import { getEntriesForDay, getFreePeriods } from "@/lib/calculations/timetable";
+import { classBlockEndTime, classBlockPeriods, classBlocksForDay, getFreePeriods } from "@/lib/calculations/timetable";
 import { addDaysIso, dayOfWeekFromIso, formatDisplayDate, nowTimeHHmm, todayIso } from "@/lib/date";
 import type { MarkStatus } from "@/types/attendanceMark";
 import styles from "./TimetablePage.module.css";
@@ -43,14 +43,15 @@ export function TimetablePage() {
   const { set: setMark, clear: clearMark } = useSetAttendanceMark();
 
   const dates = useMemo(() => weekDates(selectedDate), [selectedDate]);
-  const dayEntries = useMemo(() => {
+  const dayBlocks = useMemo(() => {
     if (!timetableQuery.data) return [];
-    return getEntriesForDay(timetableQuery.data.entries, dayOfWeekFromIso(selectedDate));
+    return classBlocksForDay(timetableQuery.data.entries, dayOfWeekFromIso(selectedDate));
   }, [timetableQuery.data, selectedDate]);
 
   /**
    * Classes and free periods merged into one time-ordered list, so the day
    * reads as a day rather than as a list of classes with silent holes in it.
+   * Consecutive same-subject periods are merged into one block (classBlocksForDay).
    */
   const dayItems = useMemo(() => {
     if (!timetableQuery.data) return [];
@@ -58,11 +59,11 @@ export function TimetablePage() {
     const free = getFreePeriods(timetableQuery.data.entries, dayOfWeek);
 
     const items = [
-      ...dayEntries.map((entry) => ({ kind: "class" as const, at: entry.startTime, entry })),
+      ...dayBlocks.map((block) => ({ kind: "class" as const, at: block.entries[0].startTime, block })),
       ...free.map((f) => ({ kind: "free" as const, at: f.startTime, free: f })),
     ];
     return items.sort((a, b) => a.at.localeCompare(b.at));
-  }, [timetableQuery.data, selectedDate, dayEntries]);
+  }, [timetableQuery.data, selectedDate, dayBlocks]);
 
   /** Open tasks grouped by subject, so each class can show its own. */
   const openTasksBySubject = useMemo(() => {
@@ -166,11 +167,11 @@ export function TimetablePage() {
       {!timetableQuery.isError &&
         !timetableQuery.isLoading &&
         timetableQuery.data?.version &&
-        dayEntries.length === 0 && (
+        dayBlocks.length === 0 && (
           <EmptyState title="No classes" description="Nothing scheduled on this day." />
         )}
 
-      {!timetableQuery.isError && !timetableQuery.isLoading && dayEntries.length > 0 && (
+      {!timetableQuery.isError && !timetableQuery.isLoading && dayBlocks.length > 0 && (
         // Wrapper exists so the day's classes can lay out in columns on wider
         // screens; on mobile it's still a plain stack.
         <div className={styles.classList}>
@@ -179,26 +180,34 @@ export function TimetablePage() {
               return <FreePeriodRow key={`free-${item.free.periodNo}`} free={item.free} />;
             }
 
+            const firstEntry = item.block.entries[0];
+            const periods = classBlockPeriods(item.block);
+
             // Marking is only ever offered for a class that has actually
             // started, today — marking a class that hasn't happened yet is a
-            // guess, not a record (mirrors mobile's Today-timeline rule).
-            const hasStarted = isToday && item.entry.startTime <= currentTime;
-            const key = `${item.entry.subjectId}_${item.entry.startTime}`;
+            // guess, not a record (mirrors mobile's Today-timeline rule). A
+            // merged block is marked once, for all its periods together —
+            // mirrors mobile's _MarkRow, which writes one mark carrying the
+            // block's period count rather than one mark per period.
+            const hasStarted = isToday && firstEntry.startTime <= currentTime;
+            const key = `${firstEntry.subjectId}_${firstEntry.startTime}`;
 
             return (
               <ClassCard
-                key={item.entry.id}
-                entry={item.entry}
-                subject={subjectsMap.bySubjectId.get(item.entry.subjectId)}
-                tasks={openTasksBySubject.get(item.entry.subjectId) ?? []}
+                key={firstEntry.id}
+                entry={firstEntry}
+                endTime={classBlockEndTime(item.block)}
+                periods={periods}
+                subject={subjectsMap.bySubjectId.get(firstEntry.subjectId)}
+                tasks={openTasksBySubject.get(firstEntry.subjectId) ?? []}
                 mark={hasStarted ? (marksByKey.get(key) ?? null) : undefined}
                 markBusy={setMark.isPending || clearMark.isPending}
                 onMark={
                   hasStarted
                     ? (status) => {
-                        const vars = { subjectId: item.entry.subjectId, date: selectedDate, startTime: item.entry.startTime };
+                        const vars = { subjectId: firstEntry.subjectId, date: selectedDate, startTime: firstEntry.startTime };
                         if (status === null) clearMark.mutate(vars);
-                        else setMark.mutate({ ...vars, status });
+                        else setMark.mutate({ ...vars, status, periods });
                       }
                     : undefined
                 }

@@ -1,15 +1,20 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, ChevronRight, PartyPopper } from "@/components/ui/icons";
+import { AlertTriangle, ChevronRight, PartyPopper, TrendingUp } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
-import { StatusBadge } from "@/components/ui/StatusBadge";
-import { SUBJECT_ICONS } from "@/constants/subjectIcons";
 import { ROUTES } from "@/constants/routes";
+import { calculateRequiredClasses } from "@/lib/calculations/attendance";
 import type { SubjectWithStatus } from "@/services/subjects/subjectService";
 import styles from "./NeedsAttentionList.module.css";
 
-const MAX_ITEMS = 3;
+const MAX_ITEMS = 5;
 
-/** SRS §8.3 — only the most urgent 2-3 subjects, never the full list, on the home page. */
+/**
+ * Percentage-first, like mobile's _AtRiskStrip (today_screen.dart) — the
+ * number a student is worried about, and what it costs to fix it, rather
+ * than a raw attended/held count. A horizontal strip for the same reason
+ * mobile uses one: home-screen space is for the two or three subjects
+ * nearest the line, not the full list (SRS §8.3).
+ */
 export function NeedsAttentionList({ subjects }: { subjects: SubjectWithStatus[] }) {
   const atRisk = subjects
     .filter((s) => s.status === "critical" || s.status === "low")
@@ -36,31 +41,36 @@ export function NeedsAttentionList({ subjects }: { subjects: SubjectWithStatus[]
           <span>Nothing urgent — every subject is on track.</span>
         </div>
       ) : (
-        <ul className={styles.list}>
+        <div className={styles.strip}>
           {atRisk.map((subject) => {
-            const Icon = SUBJECT_ICONS[subject.icon];
+            const required = calculateRequiredClasses(subject.attended, subject.held, subject.targetAttendance);
             return (
-              <li key={subject.subjectId}>
-                <Link to={ROUTES.subjectDetail(subject.subjectId)} className={styles.row}>
-                  <span className={styles.rowIcon}>
-                    <Icon size={18} />
-                  </span>
-                  <span className={styles.rowBody}>
-                    <span className={styles.rowName}>{subject.subjectName}</span>
-                    <span className={styles.rowMeta}>
-                      {subject.attended} / {subject.held} Classes
-                    </span>
-                  </span>
-                  <StatusBadge status={subject.status} />
-                  <ChevronRight size={16} className={styles.chevron} />
-                </Link>
-              </li>
+              <Link
+                key={subject.subjectId}
+                to={ROUTES.subjectDetail(subject.subjectId)}
+                className={styles.riskCard}
+                data-status={subject.status}
+              >
+                <span className={styles.riskName}>{subject.shortName || subject.subjectName}</span>
+                <span className={styles.riskPercentage}>
+                  {subject.percentage === null ? "N/A" : `${subject.percentage.toFixed(2)}%`}
+                </span>
+                <span className={styles.riskNeed}>
+                  {required.status === "unreachable"
+                    ? "target out of reach"
+                    : `need ${required.classesNeeded} more`}
+                </span>
+              </Link>
             );
           })}
-        </ul>
+        </div>
       )}
 
-      <p className={styles.tip}>Focus on attending next classes to improve your percentage.</p>
+      <Link to={ROUTES.attendanceTrend} className={styles.tip}>
+        <TrendingUp size={16} className={styles.tipIcon} />
+        <span>Focus on attending next classes to improve your percentage.</span>
+        <ChevronRight size={16} className={styles.tipChevron} />
+      </Link>
     </Card>
   );
 }

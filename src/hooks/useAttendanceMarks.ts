@@ -32,7 +32,7 @@ export function useMarksForRange(startIso: string, endIso: string, subjectId?: s
  * The inline mark/clear mutation — used by TimetablePage's class rows. Tapping
  * the currently-set status again clears it (see the `TimetablePage` call
  * site); this hook just exposes both operations and invalidates every query
- * above so the History page and Streak card pick the change up immediately.
+ * above so the History page picks the change up immediately.
  */
 export function useSetAttendanceMark() {
   const { student } = useAuth();

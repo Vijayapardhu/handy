@@ -1,6 +1,7 @@
 package dev.vijayaapardhu.handy
 
 import android.content.SharedPreferences
+import org.json.JSONArray
 import java.util.Calendar
 
 /**
@@ -11,9 +12,14 @@ import java.util.Calendar
  * the last time the app was open. A countdown computed in the app is correct
  * for the instant it is written and wrong from then on; a student who has not
  * opened Handy since yesterday would be looking at yesterday's next class. The
- * app now saves the raw schedule and this picks the next class and phrases the
- * countdown at draw time — which happens on the update timer, on resize, and
- * after a reboot, with the app closed throughout.
+ * app saves the whole week and this picks today, picks the next class and
+ * phrases the countdown at draw time — which happens on the tick alarm, on
+ * resize, and after a reboot, with the app closed throughout.
+ *
+ * The *week* rather than the day, because the day is the part that expires. A
+ * widget handed Wednesday's list has nothing to show on Thursday and no app
+ * running at midnight to hand it a new one, so it went on showing Wednesday.
+ * See WidgetTick, which is what makes sure something redraws at midnight.
  */
 data class ClassSlot(
     val start: String,
@@ -22,6 +28,7 @@ data class ClassSlot(
     val short: String,
     val venue: String,
     val faculty: String,
+    val type: String = "lecture",
 ) {
     val startMinutes get() = minutesOf(start)
     val endMinutes get() = minutesOf(end)
@@ -40,7 +47,7 @@ fun minutesOf(hhmm: String): Int {
     return h * 60 + m
 }
 
-class Schedule(private val slots: List<ClassSlot>, private val nowMinutes: Int) {
+class Schedule(val slots: List<ClassSlot>, private val nowMinutes: Int) {
 
     val count get() = slots.size
     val finished get() = slots.count { it.endMinutes in 0..nowMinutes }
@@ -68,12 +75,25 @@ class Schedule(private val slots: List<ClassSlot>, private val nowMinutes: Int) 
         get() = next?.let { nowMinutes in it.startMinutes until it.endMinutes } ?: false
 
     /**
-     * "IN 41 MIN" / "NOW · ENDS 12:10" / "STARTS 09:30 TOMORROW".
+     * The day's list as it is worth reading at this moment.
      *
-     * Deliberately coarse past an hour: the widget redraws on a timer, so a
-     * minute-accurate figure three hours out would be visibly wrong most of
-     * the time. Under an hour it is worth the precision and the redraws are
-     * close enough together to keep it honest.
+     * A tile that fits three rows and spends the afternoon showing the three
+     * classes that are already over is a record, not a timetable — so the list
+     * advances past what has finished. Once the whole day has, it falls back
+     * to the whole day: "Day done" over an empty box says less than "Day done"
+     * over what the day was.
+     */
+    val agenda: List<ClassSlot>
+        get() = if (remaining == 0) slots else slots.filter { it.endMinutes > nowMinutes }
+
+    /**
+     * "IN 41 MIN" / "ONGOING · ENDS 12:10" / "AT 14:00".
+     *
+     * Minute-accurate under an hour, because that is the hour in which the
+     * figure is worth reading and the tick alarm redraws every minute to keep
+     * it honest. Past that the tile is only redrawn at the points where the
+     * phrasing turns over, so the phrasing is deliberately coarse enough not
+     * to need more. See nextChangeMinutes, which is the other half of this.
      */
     fun countdown(): String {
         val slot = next ?: return if (count == 0) "" else "DONE FOR TODAY"
@@ -97,12 +117,103 @@ class Schedule(private val slots: List<ClassSlot>, private val nowMinutes: Int) 
         else -> "$remaining of $count left"
     }
 
+    /**
+     * Minutes past midnight at which any of the above would read differently,
+     * or null when nothing more changes today.
+     *
+     * This is what the tick alarm is set to, so a widget is redrawn exactly
+     * when it has something new to say and not once in between. Every minute
+     * within the hour before a class, because that is when the countdown
+     * counts down; otherwise only at the moments the phrasing turns over.
+     */
+    fun nextChangeMinutes(): Int? {
+        val candidates = sortedSetOf<Int>()
+        // Every class ending moves the day label on and drops a row off the
+        // list, whichever class it is.
+        slots.forEach { candidates += it.endMinutes }
+        next?.let { slot ->
+            // The countdown is about one class only, so only that class's
+            // approach is worth waking for. Adding every class's would have
+            // redrawn an unchanged "ONGOING · ENDS 10:20" at 10:00 because the
+            // 11:00 lecture was then an hour off.
+            candidates += slot.startMinutes - 120 // "AT 11:00" -> "IN ABOUT AN HOUR"
+            candidates += slot.startMinutes - 60 // -> "IN 59 MIN", and minutely from there
+            candidates += slot.startMinutes // -> "ONGOING"
+            // Ticking every minute for the whole day would spend the same
+            // battery redrawing text that had not changed since the last one.
+            if (!isRunning && slot.startMinutes - nowMinutes in 1..60) {
+                candidates += nowMinutes + 1
+            }
+        }
+        return candidates.firstOrNull { it > nowMinutes }
+    }
+
     companion object {
         private const val MAX = 8
 
         fun from(data: SharedPreferences, calendar: Calendar = Calendar.getInstance()): Schedule {
+            val now = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+            // Calendar counts Sunday as 1; the app writes the week with Sunday
+            // at index 0, matching Dart's `weekday % 7`.
+            val today = calendar.get(Calendar.DAY_OF_WEEK) - 1
+            val slots = week(data, today) ?: legacy(data)
+            return Schedule(slots.sortedBy { it.startMinutes }, now)
+        }
+
+        /**
+         * Whether [weekday] (0=Sunday) holds a CodeForge session — a Technical
+         * Hour — on the published timetable.
+         *
+         * Read for the daily refresh alarm, which fires only on the days a
+         * CodeForge session actually falls, rather than every morning. Returns
+         * false when the week cannot be read, which stops the alarm rather than
+         * firing it blind.
+         */
+        fun hasTechnicalOn(data: SharedPreferences, weekday: Int): Boolean {
+            val day = week(data, weekday) ?: return false
+            return day.any { it.type == "technical" }
+        }
+
+        /** Today's classes out of the week the app published. */
+        private fun week(data: SharedPreferences, day: Int): List<ClassSlot>? {
+            val raw = data.getString("week", null) ?: return null
+            return try {
+                val days = JSONArray(raw)
+                if (day !in 0 until days.length()) return emptyList()
+                val today = days.getJSONArray(day)
+                (0 until minOf(today.length(), MAX)).mapNotNull { i ->
+                    val slot = today.getJSONObject(i)
+                    val start = slot.optString("s")
+                    val end = slot.optString("e")
+                    if (start.isEmpty() || end.isEmpty()) return@mapNotNull null
+                    ClassSlot(
+                        start = start,
+                        end = end,
+                        subject = slot.optString("n"),
+                        short = slot.optString("a"),
+                        venue = slot.optString("v"),
+                        faculty = slot.optString("f"),
+                        type = slot.optString("t", "lecture"),
+                    )
+                }
+            } catch (_: Exception) {
+                // A widget that throws shows "Problem loading widget" until it
+                // is removed and placed again, which is a worse failure than
+                // anything it could have drawn. Malformed data falls back.
+                null
+            }
+        }
+
+        /**
+         * The single day the previous version of the app used to save.
+         *
+         * Only reachable between installing an update and next opening Handy:
+         * the new key is written on the first publish. Without this the widgets
+         * would sit blank for however long that gap turns out to be.
+         */
+        private fun legacy(data: SharedPreferences): List<ClassSlot> {
             val count = data.getInt("schedCount", 0).coerceIn(0, MAX)
-            val slots = (0 until count).mapNotNull { i ->
+            return (0 until count).mapNotNull { i ->
                 val start = data.getString("sched${i}Start", "") ?: ""
                 val end = data.getString("sched${i}End", "") ?: ""
                 if (start.isEmpty() || end.isEmpty()) return@mapNotNull null
@@ -114,10 +225,7 @@ class Schedule(private val slots: List<ClassSlot>, private val nowMinutes: Int) 
                     venue = data.getString("sched${i}Venue", "") ?: "",
                     faculty = data.getString("sched${i}Faculty", "") ?: "",
                 )
-            }.sortedBy { it.startMinutes }
-
-            val now = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
-            return Schedule(slots, now)
+            }
         }
     }
 }
