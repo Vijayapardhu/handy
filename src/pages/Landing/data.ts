@@ -9,10 +9,12 @@ import {
   Calendar03Icon,
   ChartLineData02Icon,
   Clock01Icon,
+  DownloadCircle01Icon,
   Grid02Icon,
   Notification03Icon,
-  Task01Icon,
+  SourceCodeIcon,
   Target01Icon,
+  Task01Icon,
   Wifi01Icon,
 } from "@hugeicons/core-free-icons";
 
@@ -34,7 +36,7 @@ export const WIDGET_THEMES = [
 
 export type WidgetTheme = (typeof WIDGET_THEMES)[number];
 
-/** The five home-screen widgets, in the order they appear on the rail. */
+/** The six home-screen widgets, in the order they appear on the rail. */
 export const WIDGETS = [
   {
     id: "next",
@@ -65,6 +67,12 @@ export const WIDGETS = [
     icon: Grid02Icon,
     name: "Overview",
     blurb: "Build your own — pick the rows and their order.",
+  },
+  {
+    id: "codeforge",
+    icon: SourceCodeIcon,
+    name: "CodeForge",
+    blurb: "Your skills-hour sessions, in their own blue tile.",
   },
 ] as const;
 
@@ -103,9 +111,14 @@ export const FEATURES = [
     body: "Enter the dates you want to be away and see exactly what it costs each subject before you commit to it.",
   },
   {
+    icon: SourceCodeIcon,
+    title: "CodeForge attendance",
+    body: "For courses with a skills hour, your CodeForge sessions from Maya sit alongside your regular attendance — its own percentage, counting CodeForge only, refreshed for you each morning.",
+  },
+  {
     icon: Grid02Icon,
     title: "Home-screen widgets",
-    body: "Five widgets in eight palettes and four typefaces, sized to fit the space you give them. Answers without unlocking anything.",
+    body: "Six widgets in eight palettes and four typefaces, sized to fit the space you give them. They keep themselves current with the app closed — answers without unlocking anything.",
   },
   {
     icon: Notification03Icon,
@@ -116,6 +129,11 @@ export const FEATURES = [
     icon: Wifi01Icon,
     title: "Works offline",
     body: "The last sync is cached and readable with no signal. When you are offline you are told, never quietly shown stale numbers as if they were live.",
+  },
+  {
+    icon: DownloadCircle01Icon,
+    title: "Updates itself",
+    body: "Not on the Play Store, so it updates in place: it downloads the new version and installs it from inside the app, checking the file was signed by Handy before it does. No hunting in your downloads folder.",
   },
 ] as const;
 

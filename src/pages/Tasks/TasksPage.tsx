@@ -77,11 +77,13 @@ export function TasksPage() {
       )}
 
       {!tasksQuery.isError && !tasksQuery.isLoading && open.length === 0 && done.length === 0 && (
-        <EmptyState
-          icon={ClipboardList}
-          title="Nothing to remember yet"
-          description="Add a presentation, an assignment deadline, or anything else you need to keep track of."
-        />
+        <div className={styles.emptyWrap}>
+          <EmptyState
+            icon={ClipboardList}
+            title="Nothing to remember yet"
+            description="Add a presentation, an assignment deadline, or anything else you need to keep track of."
+          />
+        </div>
       )}
 
       {open.length > 0 && (

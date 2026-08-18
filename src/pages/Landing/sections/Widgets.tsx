@@ -20,7 +20,7 @@ import { useCarouselSnap } from "../hooks/useCarouselSnap";
  * .widgetSlide) — each slide works out its own position from its index, so
  * adding a sixth widget means adding it to WIDGETS and nothing else.
  *
- * The rail this replaced showed all five at once at a size where you could not
+ * The rail this replaced showed all six at once at a size where you could not
  * read any of them, and on a wide screen it had nothing to pan.
  */
 export function Widgets({ lenis }: { lenis: MutableRefObject<Lenis | null> }) {
@@ -38,7 +38,7 @@ export function Widgets({ lenis }: { lenis: MutableRefObject<Lenis | null> }) {
         <SectionHead
           centered
           eyebrow="Home screen"
-          title="Five widgets. Eight palettes. No unlocking."
+          title="Six widgets. Eight palettes. No unlocking."
           lede={
             <>
               Most days the only question is &ldquo;where am I meant to be, and am I still

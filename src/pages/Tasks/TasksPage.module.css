@@ -4,6 +4,15 @@
   gap: var(--space-3);
 }
 
+/* Centered in the middle of the page rather than sitting right under the
+   header — with nothing else on the page, that read as stuck to the top. */
+.emptyWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 55vh;
+}
+
 .list {
   display: flex;
   flex-direction: column;
