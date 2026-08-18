@@ -30,10 +30,12 @@ import java.util.Calendar
  * a class, the end of a running one, midnight otherwise. Between those there
  * is nothing to redraw and no alarm pending.
  *
- * Deliberately RTC and not RTC_WAKEUP: a widget nobody can see does not need
- * redrawing, so the alarm rides along with the next time the device is awake
- * rather than waking it. And deliberately setWindow rather than setExact,
- * which from Android 12 needs a permission that a home-screen tile has no
+ * The redraw tick is deliberately RTC and not RTC_WAKEUP: a widget nobody can
+ * see does not need redrawing, so it rides along with the next time the device
+ * is awake rather than waking it. (The separate once-a-day CodeForge refresh
+ * below does wake the device — see armDailyRefresh — because "daily at ten"
+ * means ten.) And deliberately setWindow rather than setExact, which from
+ * Android 12 needs a permission that a home-screen tile has no
  * business asking for.
  */
 object WidgetTick {
@@ -99,9 +101,11 @@ object WidgetTick {
      *
      * A separate alarm from the redraw one: that fires every minute or two to
      * keep the countdown honest and only redraws from saved data, while this
-     * fires once a day and reaches across the network. setAndAllowWhileIdle
-     * rather than setWindow, because a once-a-day fetch is exactly what Doze
-     * lets through and a redraw's loose window would let it slip past ten.
+     * fires once a day and reaches across the network. RTC_WAKEUP, not RTC:
+     * "daily at ten" means ten, so this wakes a dozing device rather than
+     * waiting for the next time it happens to come on — a once-a-day wake is a
+     * negligible battery cost, unlike the every-minute redraw tick, which stays
+     * non-waking. setAndAllowWhileIdle is what lets it through Doze at all.
      *
      * Re-armed after every draw and, crucially, by the refresh receiver itself
      * before it triggers the fetch — so a network failure at ten never stops
@@ -120,7 +124,7 @@ object WidgetTick {
             return
         }
         try {
-            alarms.setAndAllowWhileIdle(AlarmManager.RTC, at, refreshPending(context))
+            alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, refreshPending(context))
         } catch (_: SecurityException) {
         }
     }
