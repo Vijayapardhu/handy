@@ -22,12 +22,14 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { CollegePortalSyncCard } from "@/components/profile/CollegePortalSyncCard";
+import { HubPortalCard } from "@/components/profile/HubPortalCard";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useTheme } from "@/app/providers/ThemeProvider";
 import { useAccent } from "@/app/providers/AccentProvider";
 import { useClassRepRooms } from "@/hooks/useClassRep";
 import { useSubjectsWithAttendance } from "@/hooks/useSubjects";
 import { useLeaveRequests } from "@/hooks/useLeaves";
+import { useActiveTimetable } from "@/hooks/useTimetable";
 import { aggregateAttendance } from "@/lib/calculations/attendance";
 import { updateNotifyNewData } from "@/services/students/studentService";
 import { ACCENT_CHOICES } from "@/constants/accent";
@@ -43,7 +45,12 @@ export function ProfilePage() {
   const subjectsQuery = useSubjectsWithAttendance();
   const leavesQuery = useLeaveRequests();
   const classRepRooms = useClassRepRooms();
+  const timetableQuery = useActiveTimetable();
   const [notifyBusy, setNotifyBusy] = useState(false);
+
+  // Same Technical Hour gate as Home's swipe card — no point offering to
+  // connect the Hub to a student whose program never meets there.
+  const hasTechnicalHour = (timetableQuery.data?.entries ?? []).some((e) => e.type === "technical");
 
   // Missing (undefined) reads as enabled — matches every other student doc
   // written before this field existed.
@@ -154,6 +161,13 @@ export function ProfilePage() {
 
       <p className={styles.sectionTitle}>College Portal</p>
       <CollegePortalSyncCard />
+
+      {hasTechnicalHour && (
+        <>
+          <p className={styles.sectionTitle}>Hub Attendance</p>
+          <HubPortalCard />
+        </>
+      )}
 
       <p className={styles.sectionTitle}>Account</p>
       <Card padded={false} className={styles.linkGroup}>

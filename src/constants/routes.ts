@@ -17,6 +17,7 @@ export const ROUTES = {
   leaveDetail: (id: string = ":leaveId") => `/leaves/${id}`,
   attendancePlanner: "/planner",
   attendanceHistory: "/attendance/history",
+  hubAttendance: "/hub-attendance",
   profile: "/profile",
   profilePersonal: "/profile/personal",
   profileAcademic: "/profile/academic",

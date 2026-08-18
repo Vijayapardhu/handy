@@ -9,6 +9,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useTasks } from "@/hooks/useTasks";
 import { useCampusFeatures } from "@/hooks/useCampusFeatures";
 import { OverallAttendanceCard } from "@/components/attendance/OverallAttendanceCard";
+import { HubAttendanceCard } from "@/components/attendance/HubAttendanceCard";
 import { NeedsAttentionList } from "@/components/attendance/NeedsAttentionList";
 import { NextClassCard } from "@/components/attendance/NextClassCard";
 import { DueSoonCard } from "@/components/tasks/DueSoonCard";
@@ -16,6 +17,7 @@ import { LeavePlannerCta } from "@/components/attendance/LeavePlannerCta";
 import { StreakCard } from "@/components/attendance/StreakCard";
 import { DayProgressRow } from "@/components/home/DayProgressRow";
 import { ExamCountdownCard } from "@/components/home/ExamCountdownCard";
+import { CardSwiper } from "@/components/home/CardSwiper";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { aggregateAttendance } from "@/lib/calculations/attendance";
@@ -81,6 +83,14 @@ export function HomePage() {
     return aggregateAttendance(subjectsQuery.data.map((s) => ({ attended: s.attended, held: s.held })));
   }, [subjectsQuery.data]);
 
+  // Technical Hour (CodeForge/skills-hour) is a Maya-tracked period, separate
+  // from Campus Connect — only students whose timetable actually carries one
+  // have anything to swipe to, so the card only appears for them.
+  const hasTechnicalHour = useMemo(
+    () => (timetableQuery.data?.entries ?? []).some((e) => e.type === "technical"),
+    [timetableQuery.data],
+  );
+
   const isLoading = subjectsQuery.isLoading || configQuery.isLoading;
   const isError = subjectsQuery.isError || configQuery.isError;
 
@@ -121,14 +131,31 @@ export function HomePage() {
 
       {!isError && !isLoading && subjectsQuery.data && configQuery.data && (
         <div className={styles.stack}>
-          <OverallAttendanceCard
-            percentage={overall?.percentage ?? null}
-            attended={overall?.attended ?? 0}
-            held={overall?.held ?? 0}
-            target={configQuery.data.minimumAttendancePercentage}
-            thresholds={configQuery.data.statusThresholds}
-            linkTo={`${ROUTES.subjects}?tab=overview`}
-          />
+          {hasTechnicalHour ? (
+            <CardSwiper labels={["Overall Attendance", "Hub Attendance"]}>
+              {[
+                <OverallAttendanceCard
+                  key="overall"
+                  percentage={overall?.percentage ?? null}
+                  attended={overall?.attended ?? 0}
+                  held={overall?.held ?? 0}
+                  target={configQuery.data.minimumAttendancePercentage}
+                  thresholds={configQuery.data.statusThresholds}
+                  linkTo={`${ROUTES.subjects}?tab=overview`}
+                />,
+                <HubAttendanceCard key="hub" />,
+              ]}
+            </CardSwiper>
+          ) : (
+            <OverallAttendanceCard
+              percentage={overall?.percentage ?? null}
+              attended={overall?.attended ?? 0}
+              held={overall?.held ?? 0}
+              target={configQuery.data.minimumAttendancePercentage}
+              thresholds={configQuery.data.statusThresholds}
+              linkTo={`${ROUTES.subjects}?tab=overview`}
+            />
+          )}
 
           {/* Both of these are read off the timetable, which AEC and ACET's
               portal does not expose. Shown empty they would claim this student

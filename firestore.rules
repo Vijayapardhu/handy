@@ -424,6 +424,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // `hubAccounts/{uid}` is deliberately absent from this file. It holds a
+    // student's encrypted Hub (Maya/CodeForge) portal password and cached
+    // auth token — see api/hub-connect.js and api/hub-attendance.js — and has
+    // no client SDK access whatsoever: no match block means Firestore's
+    // default-deny applies to every client, full stop. Only those two Admin
+    // SDK endpoints, which verify the caller's own ID token before touching
+    // the doc, ever read or write it.
+
     // --------------------------------------------------------------------
     // Why isAdmin() only ever appears on a `read` line, never a `write`,
     // `create`, `update`, or `delete` line, anywhere in this file:

@@ -142,6 +142,28 @@ The endpoint is guarded by that shared key plus a per-roll-number rate limit (40
 in `syncRateLimits/{rollNumber}`). The key ships inside the extension, so it stops casual abuse
 rather than a determined person; the rate limit is the durable part.
 
+### Hub attendance (`api/hub-connect.js`, `api/hub-attendance.js`)
+
+A second, unrelated college system: Aditya University's Maya platform (`maya.adityauniversity.in`)
+tracks CodeForge and skills-hour ("Technical Hour") attendance separately from Campus Connect. A
+student with a Technical Hour period in their timetable sees a second card on Home (swipe left on
+Overall Attendance) offering to connect it.
+
+Maya's CORS answer locks `access-control-allow-origin` to its own origin, so the browser can't call
+it directly from Handy — both calls are proxied server-side, the same shape as `api/verify.js`.
+Unlike the campus portal password, the Hub password *is* stored (at the student's request, so Handy
+can silently refresh the hour-long Maya token instead of asking them to sign in every session) —
+encrypted with `HUB_CRED_KEY` in a Firestore collection (`hubAccounts/{uid}`) with no client-side
+rule at all, reachable only by these two endpoints with the Admin SDK.
+
+| Variable | Value |
+| --- | --- |
+| `HUB_CRED_KEY` | 64 hex characters (32 bytes) — see `.env.example` for how to generate one |
+
+If the stored password stops working (changed on the Hub since connecting), `hub-attendance.js`
+drops the stored credential and reports `linked: false` rather than failing the same way forever —
+the student just reconnects from Home.
+
 ### ⚠️ Two things to be clear-eyed about
 
 **The shared default password is a real access-control weakness.** Roll numbers are public and

@@ -1,0 +1,59 @@
+.linkWrap {
+  display: block;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.headerIcon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.value {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.footnote {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.errorText {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}

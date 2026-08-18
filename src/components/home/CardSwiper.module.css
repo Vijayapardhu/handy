@@ -1,0 +1,40 @@
+.viewport {
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    width 0.2s ease,
+    background 0.2s ease;
+}
+
+.dotActive {
+  width: 18px;
+  background: var(--color-primary);
+}
