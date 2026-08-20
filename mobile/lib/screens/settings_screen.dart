@@ -7,6 +7,7 @@ import '../main.dart';
 import '../theme.dart';
 import 'widget_settings_screen.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/update_sheet.dart';
 
 /// Appearance and account. The two things a student can actually change —
 /// everything else in Handy comes from the college's record.
@@ -156,10 +157,79 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 22),
+            Text('APP UPDATES', style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 10),
+            Card(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => _checkForUpdates(context),
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Row(
+                    children: [
+                      const AppIcon(HugeIcons.strokeRoundedDownload01, size: 20),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Check for updates',
+                                style: TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text(
+                              handyVersion.isEmpty ? 'Tap to check' : 'Version $handyVersion',
+                              style: const TextStyle(fontSize: 12.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const AppIcon(HugeIcons.strokeRoundedArrowRight01, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  static Future<void> _checkForUpdates(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Checking for updates...'),
+          ],
+        ),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final update = await updates.check(ignoreDismissed: true);
+    if (!context.mounted) return;
+
+    messenger.hideCurrentSnackBar();
+
+    if (update != null) {
+      await showUpdateSheet(context, update);
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Handy is up to date ($handyVersion)'),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 }
 

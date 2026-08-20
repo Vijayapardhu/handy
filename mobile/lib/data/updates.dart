@@ -70,7 +70,7 @@ class Updates {
   /// Never throws: an update check is the least important thing the app does on
   /// launch, and it must not be able to stop the app opening. A failed check
   /// just means asking again next time.
-  Future<AppUpdate?> check() async {
+  Future<AppUpdate?> check({bool ignoreDismissed = false}) async {
     try {
       final info = await PackageInfo.fromPlatform();
       final installed = info.version;
@@ -100,7 +100,7 @@ class Updates {
       // A dismissed version stays dismissed until a newer one arrives — asking
       // again every launch is how an update prompt becomes something people
       // learn to tap through without reading. A required update ignores this.
-      if (!mustUpdate) {
+      if (!mustUpdate && !ignoreDismissed) {
         final prefs = await SharedPreferences.getInstance();
         if (prefs.getString(_dismissedKey) == version) return null;
       }
