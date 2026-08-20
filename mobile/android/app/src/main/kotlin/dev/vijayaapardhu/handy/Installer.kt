@@ -9,6 +9,9 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import androidx.core.app.NotificationCompat
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
@@ -49,6 +52,9 @@ object Installer {
     /** Set by the session commit, read back by the receiver. */
     const val ACTION_INSTALL_STATUS = "dev.vijayaapardhu.handy.INSTALL_STATUS"
 
+    private const val DOWNLOAD_NOTIFICATION_ID = 998811
+    private const val DOWNLOAD_CHANNEL_ID = "handy_update_downloads"
+
     fun handle(context: Context, call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             // Where to put the download: app-private cache, so it needs no
@@ -64,6 +70,18 @@ object Installer {
 
             "openInstallSettings" -> {
                 openInstallSettings(context)
+                result.success(null)
+            }
+
+            "showDownloadProgress" -> {
+                val version = call.argument<String>("version") ?: ""
+                val progress = call.argument<Int>("progress") ?: 0
+                showDownloadProgress(context, version, progress)
+                result.success(null)
+            }
+
+            "cancelDownloadProgress" -> {
+                cancelDownloadProgress(context)
                 result.success(null)
             }
 
@@ -92,6 +110,52 @@ object Installer {
 
             else -> result.notImplemented()
         }
+    }
+
+    private fun showDownloadProgress(context: Context, version: String, progress: Int) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                DOWNLOAD_CHANNEL_ID,
+                "App Updates",
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply {
+                description = "Shows update download progress"
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(context, DOWNLOAD_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setOnlyAlertOnce(true)
+
+        if (progress < 0) {
+            builder.setContentTitle("Downloading Handy v$version")
+                .setContentText("Downloading update...")
+                .setProgress(0, 0, true)
+                .setOngoing(true)
+        } else if (progress >= 100) {
+            builder.setContentTitle("Handy v$version")
+                .setContentText("Download complete. Starting install...")
+                .setProgress(100, 100, false)
+                .setOngoing(false)
+                .setAutoCancel(true)
+        } else {
+            builder.setContentTitle("Downloading Handy v$version")
+                .setContentText("$progress%")
+                .setProgress(100, progress, false)
+                .setOngoing(true)
+        }
+
+        notificationManager.notify(DOWNLOAD_NOTIFICATION_ID, builder.build())
+    }
+
+    private fun cancelDownloadProgress(context: Context) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(DOWNLOAD_NOTIFICATION_ID)
     }
 
     private fun openInstallSettings(context: Context) {

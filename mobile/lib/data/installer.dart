@@ -49,12 +49,6 @@ class Installer {
       throw const InstallerException('No download link was published with this update.');
     }
 
-    // The link is a field in Firestore typed by a person in the admin panel,
-    // so it is checked rather than trusted. An http:// URL would put the APK on
-    // the wire in the clear, where anyone on the same cafe network could swap
-    // it — and the whole point of installing in-app is that nobody has to
-    // inspect what they are installing. Android blocks cleartext at this
-    // targetSdk anyway; this fails with a reason instead of a socket error.
     final uri = Uri.tryParse(url);
     if (uri == null || uri.scheme.toLowerCase() != 'https') {
       throw const InstallerException(
@@ -62,28 +56,28 @@ class Installer {
       );
     }
 
-    final file = await _download(uri, version, onProgress);
-
-    // Checked before anything is installed, and this is the point of doing it
-    // here rather than letting Android find out: an update is an APK fetched
-    // from a URL held in Firestore, so anyone able to change that field — or
-    // to sit between the phone and the file — could otherwise offer something
-    // that merely looks like Handy to a device already signed in as this
-    // student. Android would refuse a mismatched signature too, but only after
-    // the fact and only with "App not installed".
-    final trusted = await _channel.invokeMethod<bool>('verify', {'path': file.path});
-    if (trusted != true) {
-      await file.delete().catchError((_) => file);
-      throw const InstallerException(
-        'That download was not signed by Handy, so it was not installed. '
-        'Get the update from the Handy website instead.',
-      );
-    }
-
     try {
+      await _channel.invokeMethod('showDownloadProgress', {'version': version, 'progress': -1});
+      final file = await _download(uri, version, onProgress);
+
+      final trusted = await _channel.invokeMethod<bool>('verify', {'path': file.path});
+      if (trusted != true) {
+        await file.delete().catchError((_) => file);
+        await _channel.invokeMethod('cancelDownloadProgress');
+        throw const InstallerException(
+          'That download was not signed by Handy, so it was not installed. '
+          'Get the update from the Handy website instead.',
+        );
+      }
+
+      await _channel.invokeMethod('showDownloadProgress', {'version': version, 'progress': 100});
       await _channel.invokeMethod('install', {'path': file.path});
     } on PlatformException catch (e) {
+      await _channel.invokeMethod('cancelDownloadProgress');
       throw InstallerException(e.message ?? 'Android would not start the install.');
+    } catch (e) {
+      await _channel.invokeMethod('cancelDownloadProgress');
+      rethrow;
     }
   }
 
@@ -96,12 +90,7 @@ class Installer {
     if (directory == null) {
       throw const InstallerException('Nowhere to save the download.');
     }
-    // Named for the version so a half-finished download of an older update is
-    // never mistaken for this one.
     final file = File('$directory/handy-$version.apk');
-    // Written beside the target and renamed at the end. A download interrupted
-    // halfway leaves a .part behind rather than a truncated file with the real
-    // name, which the next attempt would happily try to install.
     final part = File('${file.path}.part');
 
     http.StreamedResponse response;
@@ -122,28 +111,29 @@ class Installer {
     final total = response.contentLength;
     var received = 0;
     var broke = false;
+    var lastPct = -1;
     final sink = part.openWrite();
     try {
       await for (final chunk in response.stream) {
         sink.add(chunk);
         received += chunk.length;
-        onProgress?.call(total == null || total == 0 ? null : received / total);
+        final progress = (total == null || total == 0) ? null : received / total;
+        onProgress?.call(progress);
+        if (progress != null) {
+          final pct = (progress * 100).round();
+          if (pct != lastPct) {
+            lastPct = pct;
+            _channel.invokeMethod('showDownloadProgress', {'version': version, 'progress': pct});
+          }
+        }
       }
       await sink.flush();
     } catch (_) {
       broke = true;
     } finally {
-      // Closed exactly once, and before the file is touched again: deleting a
-      // file with a sink still open on it is a no-op on some platforms and an
-      // error on others, and either way leaves the half-written download to be
-      // found by the next attempt.
       await sink.close();
     }
 
-    // A server that closes early leaves a plausible-looking file rather than
-    // an obviously broken one. The signature check would reject it too, but
-    // "the download stopped" is a truer answer than "this was not signed by
-    // Handy" — the file is not forged, it is incomplete.
     if (broke || (total != null && total > 0 && received != total)) {
       await part.delete().catchError((_) => part);
       throw const InstallerException('The download stopped partway. Try again.');
