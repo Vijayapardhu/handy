@@ -1,143 +1,116 @@
-import { useMemo, useState } from "react";
-import { CalendarClock, ClipboardList, Plus } from "@/components/ui/icons";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { ClipboardList, Code2, Plus, Target } from "@/components/ui/icons";
 import { TopHeader } from "@/components/layout/TopHeader";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Skeleton } from "@/components/ui/Skeleton";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { TaskRow } from "@/components/tasks/TaskRow";
 import { TaskForm } from "@/components/tasks/TaskForm";
-import { useTasks, useSetTaskDone, useDeleteTask } from "@/hooks/useTasks";
+import { DeadlinesTab } from "./DeadlinesTab";
+import { PracticeTab } from "./PracticeTab";
+import { GoalsTab } from "./GoalsTab";
+import { useTasks } from "@/hooks/useTasks";
+import { useCodingProfile } from "@/hooks/useCoding";
 import { useActiveSubjectsMap } from "@/hooks/useActiveSubjectsMap";
-import { useActiveTimetable } from "@/hooks/useTimetable";
-import { sortByUrgency } from "@/lib/calculations/deadlines";
-import { getWeeklyFreePeriods } from "@/lib/calculations/timetable";
-import { todayIso } from "@/lib/date";
+import { cn } from "@/lib/utils/cn";
+import type { IconComponent } from "@/components/ui/icons";
 import styles from "./TasksPage.module.css";
 
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+type TabId = "deadlines" | "practice" | "goals";
+
+const TABS: { id: TabId; label: string; icon: IconComponent }[] = [
+  { id: "deadlines", label: "Deadlines", icon: ClipboardList },
+  { id: "practice", label: "Practice", icon: Code2 },
+  { id: "goals", label: "Goals", icon: Target },
+];
+
+function isTabId(value: string | null): value is TabId {
+  return value === "deadlines" || value === "practice" || value === "goals";
+}
 
 /**
- * Everything a student has to remember that the college portal doesn't know
- * about — assignments, presentations, lab records — with the free periods
- * they could actually use to do it.
+ * One screen for "what should I be doing" — coursework and coding practice.
+ *
+ * These were always the same question. A student with a free period on
+ * Wednesday is choosing between the lab record due Friday and the problems
+ * they meant to solve this week, and until now those two lived on different
+ * screens (one of which did not exist).
+ *
+ * The tab lives in the query string rather than in component state so a
+ * refresh, a back button and a shared link all land where the student was —
+ * and so a notification can point straight at /tasks?tab=practice.
  */
 export function TasksPage() {
-  const today = todayIso();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get("tab");
+  const tab: TabId = isTabId(rawTab) ? rawTab : "deadlines";
+
   const tasksQuery = useTasks();
+  const codingQuery = useCodingProfile();
   const subjectsMap = useActiveSubjectsMap();
-  const timetableQuery = useActiveTimetable(today);
-  const setDone = useSetTaskDone();
-  const removeTask = useDeleteTask();
   const [showForm, setShowForm] = useState(false);
 
-  const open = useMemo(() => sortByUrgency(tasksQuery.data ?? [], today), [tasksQuery.data, today]);
-  const done = useMemo(() => (tasksQuery.data ?? []).filter((t) => t.done), [tasksQuery.data]);
+  const openCount = (tasksQuery.data ?? []).filter((task) => !task.done).length;
 
-  /** Free periods per weekday — the honest answer to "when can I get this done?". */
-  const freeByDay = useMemo(() => {
-    if (!timetableQuery.data) return null;
-    return getWeeklyFreePeriods(timetableQuery.data.entries);
-  }, [timetableQuery.data]);
+  function selectTab(next: TabId) {
+    // `replace` so tabbing around does not fill the back stack with the same
+    // page — Back should leave Tasks, not walk the tabs backwards.
+    setSearchParams(next === "deadlines" ? {} : { tab: next }, { replace: true });
+    setShowForm(false);
+  }
 
-  const totalFree = freeByDay
-    ? [...freeByDay.values()].reduce((sum, periods) => sum + periods.length, 0)
-    : 0;
+  const subtitle =
+    tab === "deadlines"
+      ? openCount > 0
+        ? `${openCount} to do`
+        : "Nothing pending"
+      : tab === "practice"
+        ? `${codingQuery.data?.profile.totalSolved ?? 0} problems solved`
+        : "Targets, class board and contests";
 
   return (
     <div>
       <TopHeader
         title="Tasks"
-        subtitle={open.length > 0 ? `${open.length} to do` : "Nothing pending"}
+        subtitle={subtitle}
         action={
-          <Button size="sm" onClick={() => setShowForm((v) => !v)}>
-            <Plus size={14} /> Add
-          </Button>
+          // Only the deadlines tab has a header action; practice has its own
+          // "Log" button next to the solve log, where the list it adds to is.
+          tab === "deadlines" ? (
+            <Button size="sm" onClick={() => setShowForm((value) => !value)}>
+              <Plus size={14} /> Add
+            </Button>
+          ) : undefined
         }
       />
 
-      {showForm && (
-        <TaskForm
-          subjects={[...subjectsMap.bySubjectId.values()]}
-          onClose={() => setShowForm(false)}
-        />
-      )}
+      <div className={styles.tabs} role="tablist" aria-label="Tasks sections">
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            className={cn(styles.tab, tab === id && styles.selected)}
+            onClick={() => selectTab(id)}
+          >
+            <Icon size={15} />
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {tasksQuery.isError && (
-        <ErrorState message="Unable to load your tasks." onRetry={() => tasksQuery.refetch()} />
-      )}
-
-      {!tasksQuery.isError && tasksQuery.isLoading && (
-        <div className={styles.loadingStack}>
-          <Skeleton height={72} />
-          <Skeleton height={72} />
-          <Skeleton height={72} />
-        </div>
-      )}
-
-      {!tasksQuery.isError && !tasksQuery.isLoading && open.length === 0 && done.length === 0 && (
-        <div className={styles.emptyWrap}>
-          <EmptyState
-            icon={ClipboardList}
-            title="Nothing to remember yet"
-            description="Add a presentation, an assignment deadline, or anything else you need to keep track of."
-          />
-        </div>
-      )}
-
-      {open.length > 0 && (
-        <div className={styles.list}>
-          {open.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              subjectName={task.subjectId ? subjectsMap.bySubjectId.get(task.subjectId)?.name : undefined}
-              onToggle={(isDone) => setDone.mutate({ taskId: task.id, done: isDone, task })}
-              onDelete={() => removeTask.mutate(task.id)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Free periods sit below the list on purpose: they're the answer to a
-          question the list has just raised. */}
-      {totalFree > 0 && (
-        <Card className={styles.freeCard}>
-          <p className={styles.freeTitle}>
-            <CalendarClock size={15} /> {totalFree} free periods this week
-          </p>
-          <div className={styles.freeGrid}>
-            {[...freeByDay!.entries()].map(([day, periods]) => (
-              <div key={day} className={styles.freeDay}>
-                <span className={styles.freeDayName}>{DAY_NAMES[day]}</span>
-                <span className={styles.freeDayCount}>
-                  {periods.length === 0 ? "—" : `${periods.length} free`}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {done.length > 0 && (
+      {tab === "deadlines" && (
         <>
-          <p className={styles.sectionTitle}>Completed</p>
-          <div className={styles.list}>
-            {done.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                subjectName={
-                  task.subjectId ? subjectsMap.bySubjectId.get(task.subjectId)?.name : undefined
-                }
-                onToggle={(isDone) => setDone.mutate({ taskId: task.id, done: isDone, task })}
-                onDelete={() => removeTask.mutate(task.id)}
-              />
-            ))}
-          </div>
+          {showForm && (
+            <TaskForm
+              subjects={[...subjectsMap.bySubjectId.values()]}
+              onClose={() => setShowForm(false)}
+            />
+          )}
+          <DeadlinesTab />
         </>
       )}
+
+      {tab === "practice" && <PracticeTab />}
+      {tab === "goals" && <GoalsTab />}
     </div>
   );
 }

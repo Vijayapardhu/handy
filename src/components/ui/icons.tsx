@@ -25,6 +25,7 @@ import {
   Clock01Icon,
   CloudDownloadIcon,
   Coffee01Icon,
+  CpuIcon,
   Database01Icon,
   Delete02Icon,
   Download01Icon,
@@ -49,6 +50,7 @@ import {
   Logout01Icon,
   MailSend01Icon,
   Megaphone01Icon,
+  Medal01Icon,
   Menu01Icon,
   Message01Icon,
   MessageAdd01Icon,
@@ -69,11 +71,14 @@ import {
   Shield01Icon,
   Shield02Icon,
   SmartPhone01Icon,
+  Settings01Icon,
   SourceCodeIcon,
+  SparklesIcon,
   Sun01Icon,
   Target01Icon,
   Tick01Icon,
   TickDouble01Icon,
+  Timer01Icon,
   UserIcon,
   UserMultipleIcon,
   ViewOffIcon,
@@ -214,3 +219,14 @@ export const BarChart3 = icon(ChartColumnIcon, "BarChart3");
 export const TrendingUp = icon(ChartUpIcon, "TrendingUp");
 export const TrendingDown = icon(ChartDownIcon, "TrendingDown");
 export const Activity = icon(Pulse01Icon, "Activity");
+
+/* Coding practice ---------------------------------------------------------- */
+// Trophy is a medal: HugeIcons has no trophy in the free set, and a medal
+// says "placed on a board" just as plainly.
+export const Trophy = icon(Medal01Icon, "Trophy");
+export const Timer = icon(Timer01Icon, "Timer");
+export const Cpu = icon(CpuIcon, "Cpu");
+// Used only on the "work out the complexity" button, where the answer comes
+// from a model rather than from the platform — the sparkle is the tell.
+export const Sparkle = icon(SparklesIcon, "Sparkle");
+export const Settings = icon(Settings01Icon, "Settings");

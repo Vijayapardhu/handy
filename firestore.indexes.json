@@ -141,6 +141,23 @@
         { "fieldPath": "platform", "order": "ASCENDING" },
         { "fieldPath": "publishedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "codingSolutions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "studentId", "order": "ASCENDING" },
+        { "fieldPath": "solvedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "codingProfiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "peerKey", "order": "ASCENDING" },
+        { "fieldPath": "shareToLeaderboard", "order": "ASCENDING" },
+        { "fieldPath": "totalSolved", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

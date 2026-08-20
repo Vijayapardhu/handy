@@ -164,6 +164,59 @@ If the stored password stops working (changed on the Hub since connecting), `hub
 drops the stored credential and reports `linked: false` rather than failing the same way forever —
 the student just reconnects from Home.
 
+### Coding practice (`api/coding.js`, `api/coding-complexity.js`)
+
+The Tasks screen is three tabs — **Deadlines** (coursework, unchanged), **Practice**, and **Goals**.
+Practice reads a student's public profiles on five sites from one place:
+
+| Platform | Source | Gives |
+| --- | --- | --- |
+| LeetCode | GraphQL (`leetcode.com/graphql`) | solved + difficulty split, contest rating, submission calendar, recent accepted, problem of the day |
+| Codeforces | official REST API | distinct problems solved, rating/max, rank, recent accepted with tags |
+| CodeChef | profile page, parsed with cheerio | rating, highest, stars, global rank, total solved |
+| GeeksforGeeks | `authapi.geeksforgeeks.org` profile JSON | solved, score, POTD streak, institute rank |
+| HackerRank | `/rest` profile + badges | per-track solved and stars |
+
+**Usernames only — no passwords.** Every one of these pages is public, so unlike the Hub there is no
+credential to store. Handles are typed by the student and can be cleared at any time by blanking the
+field and saving.
+
+Three of the five have no API contract, so each fetcher catches its own failure into a per-platform
+`error` field instead of throwing: a CodeChef markup change blanks one card, never the page.
+`api/_codingPlatforms.test.js` pins all five parsers against real trimmed payloads — that suite is
+the thing that will tell you a scraper broke before a student does.
+
+Writes go through `api/coding.js` with the Admin SDK only. `codingProfiles/{uid}` is read-only to its
+owner and unreadable by anyone else, because `totalSolved` and `peerKey` decide leaderboard position
+— a client that could write its own solved count could win. The class board is scoped to college +
+department + year + section taken from the *student document*, is opt-out, and returns names and
+totals only: never a classmate's handles, streak or solutions.
+
+Upcoming contests (Codeforces, LeetCode, CodeChef) and LeetCode's problem of the day are shared by
+every student, so both are cached in `codingCache/*` — six hours and one hour respectively — and can
+be added to the deadline list in one tap, which is what puts them into the existing reminder path.
+
+#### Time and space complexity
+
+No platform publishes it. LeetCode reports a runtime in milliseconds and a "beats 84%" percentile,
+which is one machine on one day against one test set — not a complexity. So it is read off the
+pasted code by a model via **OpenRouter**, and the student can overwrite any part of the verdict:
+`source` records whether the stored answer is theirs or the model's, and the row is labelled
+`estimate` for as long as it is the latter.
+
+The key lives in Firestore at `appConfig/ai` — a document with no rule block, therefore unreadable by
+any browser — rather than in an environment variable, and never in a `VITE_` one:
+
+```bash
+node scripts/set-ai-key.mjs sk-or-v1-...  [model]
+```
+
+`--status` prints a masked check, `--disable` is a kill switch that needs no redeploy. Analysis is
+capped at 15 runs per student per hour (`codingAiLimits/{uid}`, deliberately tighter than the 40/hour
+in `sync.js`, because each one costs money) and at 20,000 characters of code. With no key configured
+anywhere the endpoint answers `ai_unconfigured` and the UI falls back to typing the complexity in by
+hand — the solve log keeps working either way.
+
 ### ⚠️ Two things to be clear-eyed about
 
 **The shared default password is a real access-control weakness.** Roll numbers are public and
@@ -202,6 +255,12 @@ OS setting on first visit), an 8-week attendance trend chart per subject (Subjec
 day-streak + this-week-vs-last-week insight card on Home, CSV export of your attendance history,
 and route-level code splitting (each page ships as its own chunk, fetched on first visit rather
 than all up front) for a faster initial load.
+
+**Coding practice:** the Tasks screen is now Deadlines / Practice / Goals. Practice tracks solved
+counts, ratings and streaks across LeetCode, Codeforces, CodeChef, GeeksforGeeks and HackerRank from
+public usernames alone, keeps a solve log with the time and space complexity of each solution (read
+off the code, editable, never presented as fact), and surfaces the daily problem, a class board and
+upcoming contests that can be added to the deadline list in one tap. See “Coding practice” above.
 
 **Not implemented in this pass** (explicitly out of scope per the brief): the admin panel,
 Cloud Functions for timetable publishing/leave approval/notification fan-out, and a live

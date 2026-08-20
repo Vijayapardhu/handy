@@ -434,6 +434,54 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // A student's coding-practice setup and their latest snapshot from
+    // LeetCode/Codeforces/CodeChef/GeeksforGeeks/HackerRank.
+    //
+    // Read-only to the client, including to its owner. Everything in here is
+    // written by api/coding.js with the Admin SDK after verifying the caller's
+    // own ID token, because three of these fields decide a leaderboard:
+    // `totalSolved` is summed from what the platforms reported, `peerKey` is
+    // derived from the student document rather than from anything typed, and
+    // `shareToLeaderboard` removes a row from other students' boards. A client
+    // that could write its own solved count is a client that could win.
+    //
+    // Only the owner may read it: `handles` names a student's accounts on five
+    // other sites, which is not something a classmate needs. The leaderboard
+    // therefore never queries this collection from the browser — api/coding.js
+    // reads it server-side and returns names and totals only.
+    match /codingProfiles/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    // The solve log: problems a student kept, with the complexity verdict for
+    // each. Student-authored and student-owned, exactly like `tasks` — no
+    // platform will tell you how something was solved, so this is the one
+    // half of practice tracking that cannot be captured.
+    //
+    // The stored `code` is a student's own submission and is readable by
+    // nobody else, not even to build a leaderboard.
+    match /codingSolutions/{solutionId} {
+      allow read: if isSignedIn() && resource.data.studentId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.solvedAt is string
+        && request.resource.data.platform in ['leetcode', 'codeforces', 'codechef', 'gfg', 'hackerrank'];
+      allow update: if isSignedIn()
+        && resource.data.studentId == request.auth.uid
+        && request.resource.data.studentId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.studentId == request.auth.uid;
+    }
+
+    // `appConfig/ai` (the OpenRouter key api/coding-complexity.js analyses
+    // solutions with), `codingCache/*` (the shared contest and daily-problem
+    // feeds) and `codingAiLimits/{uid}` are all deliberately absent, for the
+    // same reason hubAccounts is: no match block means default-deny for every
+    // client. A key readable from a browser is not a key, and a rate-limit
+    // counter a client could reset is not a rate limit.
+
     // `hubAccounts/{uid}` is deliberately absent from this file. It holds a
     // student's encrypted Hub (Maya/CodeForge) portal password and cached
     // auth token — see api/hub-connect.js and api/hub-attendance.js — and has

@@ -20,6 +20,7 @@ import type { TaskDoc } from "@/types/task";
 import type { FaqDoc } from "@/types/faq";
 import type { FeedbackDoc } from "@/types/feedback";
 import type { AcademicRecordDoc } from "@/types/academicRecord";
+import type { CodingSolutionDoc } from "@/types/coding";
 import type {
   AnnouncementDoc,
   ClassGroupMemberDoc,
@@ -69,6 +70,7 @@ export const COLLECTIONS = {
   faqs: "faqs",
   feedback: "feedback",
   academicRecords: "academicRecords",
+  codingSolutions: "codingSolutions",
 } as const;
 
 export const studentsCol = () => typedCollection<StudentDoc>(COLLECTIONS.students);
@@ -96,6 +98,9 @@ export const classGroupMembersCol = () =>
 export const classNotesCol = () => typedCollection<ClassNoteDoc>(COLLECTIONS.classNotes);
 export const faqsCol = () => typedCollection<FaqDoc>(COLLECTIONS.faqs);
 export const feedbackCol = () => typedCollection<FeedbackDoc>(COLLECTIONS.feedback);
+
+export const codingSolutionsCol = () =>
+  typedCollection<CodingSolutionDoc>(COLLECTIONS.codingSolutions);
 
 export const studentDocRef = (studentId: string) =>
   doc(db, COLLECTIONS.students, studentId).withConverter(makeConverter<StudentDoc>());
