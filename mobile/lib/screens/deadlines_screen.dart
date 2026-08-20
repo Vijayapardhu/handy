@@ -8,6 +8,7 @@ import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import 'deadline_detail_screen.dart';
+import 'practice_screen.dart';
 import '../widgets/form_sheet.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/app_icon.dart';
@@ -35,7 +36,36 @@ enum _Filter { all, overdue, today, week }
 /// list trying to serve all three ends up serving none.
 enum _View { upcoming, calendar, done }
 
+/// The three halves of "what should I be doing" — the same three the website
+/// puts on /tasks. Deadlines keeps its own Upcoming/Calendar/Done switcher
+/// underneath, because a deadline list answers three questions and practice
+/// answers one.
+enum _Section { deadlines, practice, goals }
+
 class _DeadlinesScreenState extends State<DeadlinesScreen> {
+  _Section _section = _Section.deadlines;
+
+  /// Built once for the screen rather than per section: Practice and Goals
+  /// read the same profile, and two controllers would show two totals for a
+  /// moment after a refresh. Created lazily so a student who never opens
+  /// Practice never calls /api/coding at all.
+  PracticeController? _practice;
+
+  PracticeController get practice {
+    final existing = _practice;
+    if (existing != null) return existing;
+    final created = PracticeController();
+    _practice = created;
+    created.load();
+    return created;
+  }
+
+  @override
+  void dispose() {
+    _practice?.dispose();
+    super.dispose();
+  }
+
   _Filter _filter = _Filter.all;
   final bool _showDone = false;
   _View _view = _View.upcoming;
@@ -47,6 +77,18 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
   /// Day selected in the calendar view; null means the whole month.
   DateTime? _selectedDay;
   late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
+
+  /// Deadlines / Practice / Goals — same three names, same order as the web.
+  Widget _sectionSwitcher() => SegmentedButton<_Section>(
+        segments: const [
+          ButtonSegment(value: _Section.deadlines, label: Text('Deadlines')),
+          ButtonSegment(value: _Section.practice, label: Text('Practice')),
+          ButtonSegment(value: _Section.goals, label: Text('Goals')),
+        ],
+        selected: {_section},
+        showSelectedIcon: false,
+        onSelectionChanged: (s) => setState(() => _section = s.first),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +137,29 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
 
     final groups = _group(visible, now);
 
+    // Practice and Goals are their own scrollables rather than slivers in this
+    // list: they have nothing to say about deadlines, and threading them
+    // through the same CustomScrollView would put a deadline search box above
+    // a solve log.
+    if (_section != _Section.deadlines) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Tasks')),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: _sectionSwitcher(),
+            ),
+            Expanded(
+              child: _section == _Section.practice
+                  ? PracticeView(controller: practice)
+                  : GoalsView(controller: practice),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openForm(context, state),
@@ -106,6 +171,13 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
           SliverAppBar.large(
             title: const Text('Tasks'),
             expandedHeight: 118,
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: _sectionSwitcher(),
+            ),
           ),
 
           SliverToBoxAdapter(
