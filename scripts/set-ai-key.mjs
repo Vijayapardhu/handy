@@ -59,7 +59,11 @@ if (!first.startsWith('sk-or-')) {
   process.exit(1);
 }
 
-const model = second ?? 'anthropic/claude-sonnet-4.5';
+// A free OpenRouter model by default — analysis runs at no per-request cost
+// unless a paid model is explicitly named as the second argument. OpenRouter's
+// free lineup turns over; `--status` shows what is actually stored, and
+// https://openrouter.ai/models?max_price=0 is the current list.
+const model = second ?? 'cohere/north-mini-code:free';
 
 await ref.set(
   {

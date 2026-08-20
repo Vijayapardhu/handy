@@ -27,8 +27,17 @@ import { getFirestore } from "firebase-admin/firestore";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-/** Sensible default; overridden by `model` on appConfig/ai or OPENROUTER_MODEL. */
-const DEFAULT_MODEL = "anthropic/claude-sonnet-4.5";
+/**
+ * Sensible default; overridden by `model` on appConfig/ai or OPENROUTER_MODEL.
+ *
+ * A free OpenRouter model, deliberately — this project runs analysis at no
+ * cost per request rather than against a paid tier. Cohere's own
+ * code-flavoured free model, chosen over a general-purpose one because that is
+ * exactly what this endpoint asks it to do. OpenRouter's free lineup turns
+ * over; check `https://openrouter.ai/models?max_price=0` before assuming this
+ * slug still exists.
+ */
+const DEFAULT_MODEL = "cohere/north-mini-code:free";
 
 /**
  * Longer than any single interview-style solution, short enough that a pasted
@@ -230,8 +239,16 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
           // OpenRouter attributes usage to these; they show up on the
           // dashboard, which is how a runaway bill gets traced to a feature.
+          //
+          // Plain ASCII only, deliberately — a header *value* (not the body)
+          // has to be Latin-1, and Node's fetch throws synchronously on
+          // anything outside that range rather than encoding it. An em dash
+          // here once took the whole endpoint down: every request failed
+          // before it left the function, was caught by the generic network
+          // handler below, and reported as "ai_unreachable" — a message that
+          // pointed at OpenRouter for a bug that was entirely local.
           "HTTP-Referer": "https://handy.vijayaapardhu.dev",
-          "X-Title": "Handy — practice complexity",
+          "X-Title": "Handy - practice complexity",
         },
         body: JSON.stringify({
           model: config.model,
