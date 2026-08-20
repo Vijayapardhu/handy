@@ -10,7 +10,64 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 55vh;
+  min-height: 45vh;
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  margin-bottom: var(--space-3);
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.chipSelected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+/* Overdue keeps its danger color even unselected — the one chip that should
+   never read as neutral, since it's the one worth acting on. */
+.chipDanger:not(.chipSelected) {
+  border-color: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.chipCount {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.chipSelected .chipCount {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.filterEmpty {
+  padding: var(--space-6) 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-faint);
 }
 
 .list {
@@ -51,7 +108,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   padding: var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-bg);
@@ -64,9 +121,13 @@
 }
 
 .freeDayCount {
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--color-text-faint);
-  white-space: nowrap;
+}
+
+.freeDayHas {
+  color: var(--color-primary);
 }
 
 @media (min-width: 768px) {

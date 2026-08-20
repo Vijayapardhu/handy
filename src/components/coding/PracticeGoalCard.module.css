@@ -31,6 +31,25 @@
   color: var(--status-good);
 }
 
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.countBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ringPercent {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
 .count {
   display: flex;
   align-items: baseline;

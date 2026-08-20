@@ -2,9 +2,12 @@ import { useState } from "react";
 import { Check, ExternalLink, Plus, Target } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { useCreateTask } from "@/hooks/useTasks";
+import { PLATFORM_BRAND } from "@/constants/codingBrand";
 import { todayIso } from "@/lib/date";
 import type { DailyProblem } from "@/types/coding";
 import styles from "./DailyProblemCard.module.css";
+
+const LEETCODE = PLATFORM_BRAND.leetcode;
 
 /**
  * LeetCode's problem of the day.
@@ -39,6 +42,9 @@ export function DailyProblemCard({ daily }: { daily: DailyProblem }) {
       <div className={styles.head}>
         <p className={styles.label}>
           <Target size={14} /> Today's problem
+          <span className={styles.source} style={{ color: LEETCODE.color, background: `color-mix(in srgb, ${LEETCODE.color} 15%, transparent)` }}>
+            LeetCode
+          </span>
         </p>
         {daily.difficulty && (
           <span className={styles.difficulty} data-level={daily.difficulty}>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ConnectPlatformsCard } from "@/components/coding/ConnectPlatformsCard";
 import { DailyProblemCard } from "@/components/coding/DailyProblemCard";
@@ -27,8 +28,10 @@ import {
   currentStreak,
   longestStreak,
   totalByDifficulty,
+  weeklyProgress,
 } from "@/lib/calculations/coding";
 import { CodingError } from "@/services/coding/codingService";
+import { PLATFORM_BRAND } from "@/constants/codingBrand";
 import { formatShortDate, todayIso } from "@/lib/date";
 import { PLATFORM_META, type RecentSolve } from "@/types/coding";
 import styles from "./PracticeTab.module.css";
@@ -71,6 +74,10 @@ export function PracticeTab() {
   const best = longestStreak(activity);
   const difficulty = totalByDifficulty(profile?.stats ?? []);
   const coverage = complexityCoverage(solutions);
+  const goal = useMemo(
+    () => weeklyProgress(solutions, profile?.weeklyTarget ?? 0, today),
+    [solutions, profile?.weeklyTarget, today],
+  );
 
   if (profileQuery.isLoading) {
     return (
@@ -116,10 +123,20 @@ export function PracticeTab() {
     <div className={styles.stack}>
       <Card className={styles.summary}>
         <div className={styles.summaryHead}>
-          <div>
+          <div className={styles.summaryTotal}>
             <p className={styles.total}>{profile?.totalSolved ?? 0}</p>
             <p className={styles.totalLabel}>problems solved, all platforms</p>
           </div>
+
+          {/* A teaser into Goals, not a duplicate of it: the ring shows only
+              this week's number, never the full goal card's controls. */}
+          {goal.target > 0 && (
+            <ProgressRing percent={goal.percent} size={64} strokeWidth={6} color={goal.met ? "var(--status-good)" : "var(--color-primary)"}>
+              <span className={styles.ringValue}>{goal.solved}</span>
+              <span className={styles.ringOf}>/{goal.target}</span>
+            </ProgressRing>
+          )}
+
           <div className={styles.summaryActions}>
             <button
               type="button"
@@ -247,6 +264,7 @@ function RecentSolveRow({
 }) {
   return (
     <li className={styles.recentRow}>
+      <span className={styles.recentDot} style={{ background: PLATFORM_BRAND[solve.platform].color }} aria-hidden="true" />
       <div className={styles.recentBody}>
         <a className={styles.recentTitle} href={solve.url} target="_blank" rel="noreferrer noopener">
           {solve.title} <ExternalLink size={11} />

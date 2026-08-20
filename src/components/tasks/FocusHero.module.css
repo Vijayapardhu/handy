@@ -1,0 +1,87 @@
+.hero {
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  box-shadow: var(--shadow-card);
+}
+
+/* Overdue work gets its own gradient, not just a red badge on the usual one —
+   the whole band should read as "this needs you" before a word is read. */
+.urgent {
+  background: linear-gradient(135deg, var(--color-danger), #a51515);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.messageIcon {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stats {
+  display: flex;
+  align-items: center;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.statIcon {
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 2px;
+}
+
+.flameLit {
+  /* The one moment of real color inside a gradient band that is otherwise
+     entirely white-on-color — a lit streak earns the one accent that isn't
+     just "the card's own tint". */
+  color: #ffd166;
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.22);
+  flex-shrink: 0;
+}

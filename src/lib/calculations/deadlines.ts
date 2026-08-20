@@ -72,6 +72,54 @@ export function getDueSoon(tasks: TaskDoc[], todayIso: string): TaskDoc[] {
   );
 }
 
+export interface UrgencyCounts {
+  overdue: number;
+  today: number;
+  /** Includes today and tomorrow — "this week" as a student means it, not a strict 2-7 day band. */
+  week: number;
+}
+
+/** How many open tasks fall into each urgency band. Feeds the Deadlines filter chips. */
+export function countByUrgency(tasks: TaskDoc[], todayIso: string): UrgencyCounts {
+  const open = sortByUrgency(tasks, todayIso);
+  let overdue = 0;
+  let today = 0;
+  let week = 0;
+  for (const task of open) {
+    const days = getDeadline(task.dueDate, todayIso).daysLeft;
+    if (days < 0) overdue += 1;
+    if (days === 0) today += 1;
+    if (days >= 0 && days <= 7) week += 1;
+  }
+  return { overdue, today, week };
+}
+
+/**
+ * The one sentence the Tasks hero leads with — the answer to "what actually
+ * needs me right now", picked in the order a student would triage it
+ * themselves: what's already late outranks what's merely due, which outranks
+ * what's simply next.
+ */
+export function focusMessage(tasks: TaskDoc[], todayIso: string): string {
+  const open = sortByUrgency(tasks, todayIso);
+  if (open.length === 0) return "Nothing on your plate — good time to get ahead.";
+
+  const counts = countByUrgency(tasks, todayIso);
+  if (counts.overdue > 0) {
+    return counts.overdue === 1 ? "1 thing overdue — clear that first." : `${counts.overdue} things overdue — clear those first.`;
+  }
+  if (counts.today > 0) {
+    return counts.today === 1 ? "1 thing due today." : `${counts.today} things due today.`;
+  }
+
+  const next = open[0];
+  const deadline = getDeadline(next.dueDate, todayIso);
+  if (deadline.daysLeft <= SOON_DAYS) {
+    return `${next.title} — ${deadline.label.toLowerCase()}.`;
+  }
+  return open.length === 1 ? "1 thing on your list, nothing urgent yet." : `${open.length} things on your list, nothing urgent yet.`;
+}
+
 /**
  * The next due date after completing a repeating task. Mirrors
  * Repository.nextOccurrence in mobile/lib/data/repository.dart — months are

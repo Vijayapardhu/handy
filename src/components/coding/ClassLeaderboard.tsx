@@ -12,6 +12,10 @@ import styles from "./ClassLeaderboard.module.css";
  * groups announcements use (a coding board that split by lecturer would make
  * no sense).
  *
+ * The top three get a podium treatment (gold/silver/bronze) — the one place
+ * on this page that leans into competition on purpose, because a board that
+ * looks identical from row 1 to row 25 does not feel like a board.
+ *
  * The rows carry a name, a roll number and a total, and nothing else: the
  * server never sends a classmate's handles, streak or solve log, so there is
  * no version of this screen that leaks them. Opting out removes the row for
@@ -58,7 +62,9 @@ export function ClassLeaderboard({
         <ol className={styles.list}>
           {entries.map((entry, index) => (
             <li key={entry.rollNumber + index} className={cn(styles.row, entry.isMe && styles.me)}>
-              <span className={styles.rank}>{index + 1}</span>
+              <span className={styles.rank} data-medal={index < 3 ? index + 1 : undefined}>
+                {index < 3 ? "" : index + 1}
+              </span>
               <span className={styles.name}>
                 {entry.name}
                 <span className={styles.roll}>{entry.rollNumber}</span>

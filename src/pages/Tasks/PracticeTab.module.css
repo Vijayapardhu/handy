@@ -26,9 +26,26 @@
 
 .summaryHead {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-3);
+}
+
+.summaryTotal {
+  flex: 1;
+  min-width: 0;
+}
+
+.ringValue {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.ringOf {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-faint);
+  margin-top: -2px;
 }
 
 .total {
@@ -136,6 +153,13 @@
   gap: var(--space-3);
   padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-border);
+}
+
+.recentDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
 .recentRow:last-child {

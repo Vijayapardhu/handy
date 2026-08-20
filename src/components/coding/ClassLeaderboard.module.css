@@ -51,15 +51,48 @@
 }
 
 .rank {
-  width: 20px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   font-size: 12px;
   font-weight: 700;
   color: var(--color-text-faint);
   text-align: center;
 }
 
-.me .rank {
+/* Top three get a medal disc instead of a bare number — the one deliberately
+   competitive moment on this page, everywhere else stays plain. */
+.rank[data-medal="1"] {
+  background: #ffd166;
+  color: #6b4900;
+}
+.rank[data-medal="1"]::before {
+  content: "1";
+}
+
+.rank[data-medal="2"] {
+  background: #d9dde3;
+  color: #4a4f57;
+}
+.rank[data-medal="2"]::before {
+  content: "2";
+}
+
+.rank[data-medal="3"] {
+  background: #e3ad7a;
+  color: #5c3618;
+}
+.rank[data-medal="3"]::before {
+  content: "3";
+}
+
+/* Excludes a medal rank on purpose — a student who is also top-3 keeps the
+   medal's own color rather than losing it to the "this is you" tint. */
+.me .rank:not([data-medal]) {
   color: var(--color-primary-dark);
 }
 

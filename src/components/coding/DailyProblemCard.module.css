@@ -22,6 +22,14 @@
   color: var(--color-text-faint);
 }
 
+.source {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  font-size: 9.5px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .difficulty {
   font-size: 10.5px;
   font-weight: 700;

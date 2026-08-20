@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getDeadline, getDueSoon, nextOccurrence, sortByUrgency } from "./deadlines";
+import { countByUrgency, focusMessage, getDeadline, getDueSoon, nextOccurrence, sortByUrgency } from "./deadlines";
 import type { TaskDoc } from "@/types/task";
 
 const TODAY = "2026-08-15";
@@ -103,6 +103,53 @@ describe("getDueSoon", () => {
       TODAY,
     );
     expect(soon.map((t) => t.id)).toEqual(["overdue", "today", "in3"]);
+  });
+});
+
+describe("countByUrgency", () => {
+  it("counts overdue, today and the week separately, with today double-counted into the week", () => {
+    const tasks = [
+      task("overdue", "2026-08-13"),
+      task("today", TODAY),
+      task("soon", "2026-08-17"),
+      task("later", "2026-08-30"),
+    ];
+    expect(countByUrgency(tasks, TODAY)).toEqual({ overdue: 1, today: 1, week: 2 });
+  });
+
+  it("is all zeroes with nothing open", () => {
+    expect(countByUrgency([], TODAY)).toEqual({ overdue: 0, today: 0, week: 0 });
+  });
+});
+
+describe("focusMessage", () => {
+  it("leads with overdue over everything else", () => {
+    const tasks = [task("overdue", "2026-08-10"), task("today", TODAY)];
+    expect(focusMessage(tasks, TODAY)).toBe("1 thing overdue — clear that first.");
+  });
+
+  it("pluralises more than one overdue", () => {
+    const tasks = [task("a", "2026-08-10"), task("b", "2026-08-11")];
+    expect(focusMessage(tasks, TODAY)).toBe("2 things overdue — clear those first.");
+  });
+
+  it("leads with today when nothing is overdue", () => {
+    const tasks = [task("today", TODAY), task("later", "2026-08-30")];
+    expect(focusMessage(tasks, TODAY)).toBe("1 thing due today.");
+  });
+
+  it("names the next task when it falls within the soon window", () => {
+    const tasks = [task("record", "2026-08-17", { title: "Lab record" })];
+    expect(focusMessage(tasks, TODAY)).toBe("Lab record — 2 days left.");
+  });
+
+  it("falls back to a plain count once nothing is urgent", () => {
+    const tasks = [task("a", "2026-08-25"), task("b", "2026-08-30")];
+    expect(focusMessage(tasks, TODAY)).toBe("2 things on your list, nothing urgent yet.");
+  });
+
+  it("has a distinct empty state", () => {
+    expect(focusMessage([], TODAY)).toBe("Nothing on your plate — good time to get ahead.");
   });
 });
 

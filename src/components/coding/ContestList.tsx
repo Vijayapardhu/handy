@@ -3,6 +3,7 @@ import { format, parseISO } from "date-fns";
 import { CalendarClock, Check, ExternalLink, Plus } from "@/components/ui/icons";
 import { Card } from "@/components/ui/Card";
 import { useCreateTask } from "@/hooks/useTasks";
+import { PLATFORM_BRAND } from "@/constants/codingBrand";
 import { PLATFORM_META, type ContestItem } from "@/types/coding";
 import styles from "./ContestList.module.css";
 
@@ -51,6 +52,11 @@ export function ContestList({ contests }: { contests: ContestItem[] }) {
           const isAdded = added.has(contest.url);
           return (
             <li key={contest.url} className={styles.row}>
+              <span
+                className={styles.dot}
+                style={{ background: PLATFORM_BRAND[contest.platform].color }}
+                aria-hidden="true"
+              />
               <div className={styles.body}>
                 <a
                   className={styles.name}

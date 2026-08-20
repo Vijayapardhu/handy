@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CalendarClock, Check, Minus, Plus, Target } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { ProgressBar } from "@/components/ui/ProgressBar";
+import { ProgressRing } from "@/components/ui/ProgressRing";
 import { formatTime12h, WEEKDAY_LABELS } from "@/lib/date";
 import type { FreePeriod } from "@/lib/calculations/timetable";
 import type { WeeklyProgress } from "@/lib/calculations/coding";
@@ -18,6 +18,9 @@ const MAX_SUGGESTIONS = 4;
  * problems a week, and you have a free period Tuesday at 11:10" is a plan.
  * The free periods come from the same timetable calculation the deadlines tab
  * already runs, so this is the student's real week rather than generic advice.
+ *
+ * The ring is the same component the app's flagship attendance number draws
+ * — a goal met is meant to feel like the same kind of win.
  */
 export function PracticeGoalCard({
   progress,
@@ -58,18 +61,27 @@ export function PracticeGoalCard({
       </div>
 
       {progress.target > 0 ? (
-        <>
-          <p className={styles.count}>
-            {progress.solved}
-            <span className={styles.of}>/ {progress.target} logged this week</span>
-          </p>
-          <ProgressBar value={progress.percent} status={progress.met ? "excellent" : "average"} />
-          <p className={styles.hint}>
-            {progress.met
-              ? "Goal met — anything else this week is a bonus."
-              : `${progress.remaining} to go, ${progress.daysLeft} ${progress.daysLeft === 1 ? "day" : "days"} left.`}
-          </p>
-        </>
+        <div className={styles.top}>
+          <div className={styles.countBlock}>
+            <p className={styles.count}>
+              {progress.solved}
+              <span className={styles.of}>/ {progress.target}</span>
+            </p>
+            <p className={styles.hint}>
+              {progress.met
+                ? "Goal met — anything else this week is a bonus."
+                : `${progress.remaining} to go, ${progress.daysLeft} ${progress.daysLeft === 1 ? "day" : "days"} left.`}
+            </p>
+          </div>
+          <ProgressRing
+            percent={progress.percent}
+            size={68}
+            strokeWidth={7}
+            color={progress.met ? "var(--status-good)" : "var(--color-primary)"}
+          >
+            <span className={styles.ringPercent}>{progress.percent}%</span>
+          </ProgressRing>
+        </div>
       ) : (
         <p className={styles.hint}>
           No goal yet. Pick a number you'd actually hit in a normal week — three is a real goal,
