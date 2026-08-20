@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Two cells wide, one tall: a total and a streak is the whole of it at the
+  default size, and that fits on two rows. Resizes down to a single cell, where
+  the provider drops everything but the number, and up to a taller tile that
+  earns the goal and the per-platform breakdown.
+
+  Half-hourly refresh, matching the CodeForge tile. The numbers behind it are
+  cached server-side for thirty minutes anyway (see STATS_TTL_MS in
+  api/coding.js), so asking more often would redraw the same figures.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="130dp"
+    android:minHeight="57dp"
+    android:minResizeWidth="40dp"
+    android:minResizeHeight="40dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:initialLayout="@layout/widget_practice"
+    android:previewLayout="@layout/widget_preview_practice"
+    android:previewImage="@mipmap/ic_launcher"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_practice_description"
+    android:updatePeriodMillis="1800000" />

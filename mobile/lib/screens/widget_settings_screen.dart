@@ -37,11 +37,14 @@ class WidgetSettingsScreen extends StatelessWidget {
             Text(
               AppStateScope.of(context).entries.isEmpty
                   ? 'Long-press your home screen, choose Widgets, then Handy. Your college '
-                      'publishes attendance but not a timetable, so the attendance widget is '
-                      'the one with data to show — the next-class and today widgets would be '
-                      'empty.'
-                  : 'Long-press your home screen, choose Widgets, then Handy. There '
-                      'are five: next class, attendance, today, deadlines, and Overview '
+                      'publishes attendance but not a timetable, so attendance, deadlines and '
+                      'practice are the ones with data to show — the next-class and today '
+                      'widgets would be empty.'
+                  // Deliberately no longer a count. It read "five" while there
+                  // were already six in the picker, and a number in this
+                  // sentence goes stale every time a widget is added.
+                  : 'Long-press your home screen, choose Widgets, then Handy: next class, '
+                      'attendance, today, deadlines, practice, CodeForge, and Overview '
                       '— the one you arrange below.',
               style: Theme.of(context).textTheme.bodySmall,
             ),

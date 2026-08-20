@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/coding.dart';
+import '../data/widget_publish.dart';
 import '../logic/coding.dart';
 import '../main.dart';
 import '../models/coding.dart';
@@ -62,9 +63,31 @@ class PracticeController extends ChangeNotifier {
     _solutionsSub ??= _coding.watchSolutions().listen((list) {
       solutions = list;
       notifyListeners();
+      // The tile carries a streak and a weekly count, and both move the moment
+      // something is logged — so it is republished here rather than only after
+      // a profile refresh.
+      unawaited(_publishWidget());
     });
 
     if (linked) unawaited(_loadExtras());
+    unawaited(_publishWidget());
+  }
+
+  /// Hands the home-screen tile the figures it cannot fetch for itself.
+  ///
+  /// Never allowed to fail the load: a tile that could not be updated is a
+  /// stale tile, which is a far smaller problem than a screen that would not
+  /// open because of one.
+  Future<void> _publishWidget() async {
+    try {
+      await publishPractice(
+        profile: result?.profile,
+        solutions: solutions,
+        todayIso: _todayIso(),
+      );
+    } catch (_) {
+      // Nothing to tell the student: they never asked for this.
+    }
   }
 
   /// The three feeds that only make sense once something is connected. Each

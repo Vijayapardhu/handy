@@ -1,7 +1,7 @@
 {
   "name": "handy",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.5",
   "type": "module",
   "description": "Handy — Student Attendance & Academic Assistant",
   "license": "AGPL-3.0-or-later",

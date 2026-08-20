@@ -7,5 +7,6 @@
     <string name="widget_today_description">Your classes for the day at a glance.</string>
     <string name="widget_dues_description">Assignments and deadlines coming up.</string>
     <string name="widget_codeforge_description">CodeForge and skills-hour sessions, from Maya.</string>
+    <string name="widget_practice_description">Problems solved across LeetCode, Codeforces and the rest, with your streak.</string>
     <string name="widget_overview_description">Build your own: attendance, classes, timetable and dues in the order you choose.</string>
 </resources>

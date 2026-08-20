@@ -140,6 +140,21 @@
                 android:resource="@xml/codeforge_widget_info" />
         </receiver>
 
+        <!-- Coding practice: problems solved and the streak. Follows the
+             student's palette, unlike CodeForge above — nothing else on a home
+             screen shows a solved count, so there is nothing to confuse it
+             with. -->
+        <receiver
+            android:name=".PracticeWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/practice_widget_info" />
+        </receiver>
+
         <!-- Where PackageInstaller reports an update's progress. Not exported:
              the only thing that ever sends to it is the system, on behalf of a
              session this app created. -->

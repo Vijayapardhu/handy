@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:home_widget/home_widget.dart';
 
 import '../logic/attendance.dart';
+import '../logic/coding.dart';
 import '../logic/timetable.dart';
+import '../models/coding.dart';
 import '../models/hub_attendance.dart';
 import '../models/models.dart';
 import '../models/timetable_entry.dart';
@@ -26,6 +28,7 @@ const widgetProviders = <String>[
   'DuesWidgetProvider',
   'OverviewWidgetProvider',
   'CodeForgeWidgetProvider',
+  'PracticeWidgetProvider',
 ];
 
 /// Deadlines shown across the widgets. Dues shows three, Overview four.
@@ -181,4 +184,72 @@ Future<void> publishCodeForge({
   await put('forgeNext', next == null ? '' : 'Next session $next');
 
   await HomeWidget.updateWidget(androidName: 'CodeForgeWidgetProvider');
+}
+
+/// Publishes what the Practice tile shows.
+///
+/// Separate from publishWidgetData for the same reason publishCodeForge is:
+/// these figures come from five outside websites through /api/coding, on their
+/// own schedule and with their own ways of failing. Folding them in would mean
+/// a slow platform holding up tiles that were ready.
+///
+/// Called from wherever the practice profile is loaded, which today is the
+/// Practice tab. So the tile shows what was true the last time the student
+/// opened it: a widget has no network of its own, and a number that is a day
+/// old is better than a spinner that never resolves.
+Future<void> publishPractice({
+  required CodingProfile? profile,
+  required List<CodingSolution> solutions,
+  required String todayIso,
+}) async {
+  Future<void> put(String key, String value) =>
+      HomeWidget.saveWidgetData<String>(key, value);
+
+  final linked = profile != null && profile.isLinked;
+  await put('practiceLinked', linked ? '1' : '0');
+
+  if (!linked) {
+    // Blanked rather than left behind: a student who unlinked every platform
+    // should not keep seeing the total they had when they did.
+    for (final key in [
+      'practiceSolved',
+      'practiceStreak',
+      'practiceGoal',
+      'practicePlatforms',
+    ]) {
+      await put(key, '');
+    }
+    await HomeWidget.updateWidget(androidName: 'PracticeWidgetProvider');
+    return;
+  }
+
+  await put('practiceSolved', '${profile.totalSolved}');
+
+  // The same activity map the Practice tab builds its heatmap from, so the
+  // tile and the screen can never disagree about whether today counted.
+  final activity = buildActivityMap(profile.stats, solutions);
+  final streak = currentStreak(activity, todayIso);
+  await put('practiceStreak', streak == 0 ? '' : '$streak-day streak');
+
+  final progress = weeklyProgress(solutions, profile.weeklyTarget, todayIso);
+  await put(
+    'practiceGoal',
+    // No goal set is an empty line rather than "0 of 0": a target nobody chose
+    // is a question, not a figure, and the tile drops the row entirely.
+    progress.target == 0 ? '' : '${progress.solved} of ${progress.target} this week',
+  );
+
+  // Where the total comes from, biggest first. One number across five sites
+  // invites "solved on what?", and this is the answer in one line. Platforms
+  // that failed to load are left out rather than shown as zero.
+  final counts = profile.stats
+      .where((entry) => entry.error == null && (entry.solved ?? 0) > 0)
+      .toList()
+    ..sort((a, b) => (b.solved ?? 0).compareTo(a.solved ?? 0));
+  await put(
+    'practicePlatforms',
+    counts.take(3).map((entry) => '${entry.platform.label} ${entry.solved}').join(' · '),
+  );
+
+  await HomeWidget.updateWidget(androidName: 'PracticeWidgetProvider');
 }
