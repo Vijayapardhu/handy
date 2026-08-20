@@ -15,6 +15,11 @@
 // the modules below; the content scripts remain plain non-module scripts.
 import { ACCOUNT_PASSWORD, ACCOUNT_STATE, forgetAccount, getAccount, setPassword } from "./account.js";
 import { syncSnapshotToCloud } from "./cloudSync.js";
+import { checkForUpdate, dismissUpdate, getStoredUpdate } from "./updateCheck.js";
+
+/** How often to ask appUpdates whether a newer extension build exists. */
+const UPDATE_CHECK_ALARM = "handy-update-check";
+const UPDATE_CHECK_PERIOD_MINUTES = 12 * 60;
 
 const SNAPSHOT_KEY = "handy:lastSnapshot";
 const HISTORY_KEY = "handy:history";
@@ -62,6 +67,20 @@ chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => 
 // portal again — retry once the browser comes back up.
 chrome.runtime.onStartup.addListener(() => {
   retryPendingSync().catch((error) => console.warn("[Handy] startup retry failed:", error));
+  checkForUpdate().catch(() => {});
+});
+
+// The alarm is what keeps checking while the browser stays open for days —
+// onStartup alone would mean a machine nobody restarts never learns about a
+// release. Re-created on every install/update rather than assumed to survive
+// one, since Chrome does drop alarms in some upgrade paths.
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.alarms.create(UPDATE_CHECK_ALARM, { periodInMinutes: UPDATE_CHECK_PERIOD_MINUTES });
+  checkForUpdate().catch(() => {});
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === UPDATE_CHECK_ALARM) checkForUpdate().catch(() => {});
 });
 
 async function handleProfileCapture(snapshot) {
@@ -226,11 +245,19 @@ async function buildStatus() {
           lastError: account.lastError ?? null,
         }
       : null,
+    // Read from storage, not a live Firestore check — the alarm and startup
+    // hook already keep this fresh, so opening the popup stays instant
+    // instead of paying for a round trip every time.
+    update: await getStoredUpdate(),
   };
 }
 
 async function handlePopupMessage(message) {
   switch (message?.type) {
+    case "DISMISS_UPDATE":
+      await dismissUpdate();
+      return buildStatus();
+
     case "GET_STATUS":
       return buildStatus();
 

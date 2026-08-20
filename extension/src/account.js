@@ -63,6 +63,20 @@ export async function forgetAccount(rollNumber) {
 }
 
 /**
+ * Every roll number this browser has an account for.
+ *
+ * Used by updateCheck.js, which needs *a* signed-in token to read the
+ * platform-wide `appUpdates` collection — not any particular student's. Any
+ * account here can authenticate that read, so this hands back the whole set
+ * and lets the caller try each until one works, rather than this module
+ * guessing which student's identity a background check should borrow.
+ */
+export async function listRollNumbers() {
+  const accounts = await readAll();
+  return Object.keys(accounts);
+}
+
+/**
  * Returns `{ idToken, uid }` for this roll number, creating the account on
  * first sight. Tries in order: cached refresh token (cheapest, and survives
  * service-worker eviction), sign-in, then registration.

@@ -21,12 +21,14 @@ function render() {
 
   if (!snapshot) {
     root.innerHTML = `
+      ${updateBanner()}
       <div class="empty">
         <div class="empty-mark">H</div>
         <p class="empty-title">Nothing captured yet</p>
         <p class="empty-hint">Sign in to Campus Connect and open your Student Profile.
         Handy picks it up from the page you're already on — and creates your account for you.</p>
       </div>`;
+    wireUpdateBanner();
     return;
   }
 
@@ -35,6 +37,8 @@ function render() {
   const percent = total?.percent ?? 0;
 
   root.innerHTML = `
+    ${updateBanner()}
+
     <div class="hero ${band(percent)}">
       ${ring(percent)}
       <div class="hero-body">
@@ -56,6 +60,47 @@ function render() {
 
   document.getElementById("openBtn").addEventListener("click", () => chrome.tabs.create({ url: HANDY_URL }));
   document.getElementById("syncBtn")?.addEventListener("click", sync);
+  wireUpdateBanner();
+}
+
+/**
+ * A newer build is on record in appUpdates — see updateCheck.js. Chrome
+ * cannot install it for the student (this extension is unpacked, not from the
+ * Web Store), so the only honest offer here is the download and a reminder of
+ * the manual reload step; INSTALL.md has the full version of those steps.
+ *
+ * `required` (the install has fallen below minSupportedVersion) drops the
+ * dismiss control — matches AppUpdate.required on mobile, and for the same
+ * reason: this build is expected to misbehave, not merely be behind.
+ */
+function updateBanner() {
+  const update = status?.update ?? null;
+  if (!update) return "";
+
+  return `
+    <div class="bar ${update.required ? "bad" : "update"} column">
+      <span><b>Handy ${escapeHtml(update.version)} is out.</b> ${escapeHtml(
+        update.required
+          ? "This copy is old enough that syncing may misbehave — please update."
+          : "New version available to download.",
+      )}</span>
+      <div class="row">
+        <button id="updateBtn" type="button" class="ghost">Get it</button>
+        ${update.required ? "" : '<button id="dismissUpdateBtn" type="button" class="ghost">Later</button>'}
+      </div>
+    </div>`;
+}
+
+function wireUpdateBanner() {
+  const update = status?.update ?? null;
+  if (!update) return;
+  document
+    .getElementById("updateBtn")
+    ?.addEventListener("click", () => chrome.tabs.create({ url: update.downloadUrl || HANDY_URL }));
+  document.getElementById("dismissUpdateBtn")?.addEventListener("click", async () => {
+    status = await chrome.runtime.sendMessage({ type: "DISMISS_UPDATE" });
+    render();
+  });
 }
 
 /** Progress ring — the one piece of chrome worth the pixels, since the number is the whole point. */

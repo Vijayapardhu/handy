@@ -85,6 +85,32 @@
             account: { ...account, state: "needsPassword", lastRoute: "endpoint" },
           },
           "nothing captured": { ok: true, snapshot: null, password: PASSWORD, account: null },
+          "update available": {
+            ok: true,
+            snapshot,
+            password: PASSWORD,
+            account,
+            update: {
+              version: "9.9.9",
+              changelog: "Rewrote the popup, faster sync.",
+              downloadUrl: "https://github.com/Vijayapardhu/handy/releases",
+              required: false,
+              checkedAt: capturedAt,
+            },
+          },
+          "update required": {
+            ok: true,
+            snapshot,
+            password: PASSWORD,
+            account,
+            update: {
+              version: "9.9.9",
+              changelog: "",
+              downloadUrl: "https://github.com/Vijayapardhu/handy/releases",
+              required: true,
+              checkedAt: capturedAt,
+            },
+          },
         };
 
         let current = "synced";

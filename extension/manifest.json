@@ -21,7 +21,7 @@
     "service_worker": "src/background.js",
     "type": "module"
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "alarms"],
   "host_permissions": [
     "https://info.aec.edu.in/*",
     "https://handy-aus.vercel.app/*",
