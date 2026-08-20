@@ -31,13 +31,21 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
  * Sensible default; overridden by `model` on appConfig/ai or OPENROUTER_MODEL.
  *
  * A free OpenRouter model, deliberately — this project runs analysis at no
- * cost per request rather than against a paid tier. Cohere's own
- * code-flavoured free model, chosen over a general-purpose one because that is
- * exactly what this endpoint asks it to do. OpenRouter's free lineup turns
- * over; check `https://openrouter.ai/models?max_price=0` before assuming this
- * slug still exists.
+ * cost per request rather than against a paid tier.
+ *
+ * Not `cohere/north-mini-code:free`, despite the code-flavoured name: it
+ * reasons before answering, and how much is unpredictable — 31 tokens for
+ * "Two Sum", 3130 for a two-function "Happy Number", both real measurements
+ * against this endpoint's own prompt. That variance is what MAX_TOKENS below
+ * has to cover, and it made the model expensive in the one currency a free
+ * tier still charges: latency and the chance of hitting the cap before ever
+ * answering (see the ai_truncated path). gpt-oss-20b measured at 445
+ * reasoning tokens for the same "Happy Number" case and finished with room to
+ * spare. OpenRouter's free lineup turns over; check
+ * `https://openrouter.ai/models?max_price=0` before assuming this slug still
+ * exists.
  */
-const DEFAULT_MODEL = "cohere/north-mini-code:free";
+const DEFAULT_MODEL = "openai/gpt-oss-20b:free";
 
 /**
  * Longer than any single interview-style solution, short enough that a pasted
@@ -229,7 +237,7 @@ export default async function handler(req, res) {
   let response;
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45_000);
+    const timer = setTimeout(() => controller.abort(), 75_000);
     try {
       response = await fetch(OPENROUTER_URL, {
         method: "POST",
@@ -255,7 +263,14 @@ export default async function handler(req, res) {
           // Not a creative task: the same solution should get the same bound
           // twice, or a student rightly stops believing it.
           temperature: 0,
-          max_tokens: 900,
+          // Generous on purpose. Free OpenRouter models commonly reason
+          // before they answer, and that reasoning is billed against this
+          // same cap — "Happy Number" (one helper function, one while loop)
+          // measured at 709 reasoning tokens before a single character of the
+          // JSON answer. At the old cap of 900 that finished with
+          // finish_reason "length" and a null content every time; nothing
+          // wrong with the code, the model simply never got to answer.
+          max_tokens: 4000,
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
@@ -283,12 +298,24 @@ export default async function handler(req, res) {
   }
 
   const body = await response.json().catch(() => null);
-  const verdict = normaliseVerdict(
-    extractVerdict(body?.choices?.[0]?.message?.content),
-    body?.model ?? config.model,
-  );
+  const choice = body?.choices?.[0];
+
+  // A model that reasons before it answers spends part of max_tokens on that
+  // reasoning, invisibly to the cap the caller set. Caught explicitly, ahead
+  // of the parse attempt, so a truncated reply is never lumped in with a
+  // genuinely malformed one — the two need different advice ("try again" vs.
+  // "something is actually wrong").
+  if (choice?.finish_reason === "length") {
+    console.error(
+      `[complexity] truncated before an answer for ${caller.uid}:`,
+      JSON.stringify(body?.usage ?? {}),
+    );
+    return res.status(502).json({ ok: false, error: "ai_truncated" });
+  }
+
+  const verdict = normaliseVerdict(extractVerdict(choice?.message?.content), body?.model ?? config.model);
   if (!verdict) {
-    console.error("[complexity] unparseable model reply for", caller.uid);
+    console.error("[complexity] unparseable model reply for", caller.uid, JSON.stringify(choice ?? {}).slice(0, 500));
     return res.status(502).json({ ok: false, error: "ai_unparseable" });
   }
 

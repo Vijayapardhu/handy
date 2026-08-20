@@ -60,10 +60,14 @@ if (!first.startsWith('sk-or-')) {
 }
 
 // A free OpenRouter model by default — analysis runs at no per-request cost
-// unless a paid model is explicitly named as the second argument. OpenRouter's
-// free lineup turns over; `--status` shows what is actually stored, and
-// https://openrouter.ai/models?max_price=0 is the current list.
-const model = second ?? 'cohere/north-mini-code:free';
+// unless a paid model is explicitly named as the second argument. Not a
+// "code-flavoured" free model — those reason before answering, and how much
+// is unpredictable enough to blow past a generous token cap on an ordinary
+// problem (see the comment on DEFAULT_MODEL in api/coding-complexity.js for
+// the measurements). OpenRouter's free lineup turns over; `--status` shows
+// what is actually stored, and https://openrouter.ai/models?max_price=0 is
+// the current list.
+const model = second ?? 'openai/gpt-oss-20b:free';
 
 await ref.set(
   {

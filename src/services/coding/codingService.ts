@@ -41,6 +41,7 @@ const MESSAGES: Record<string, string> = {
   ai_unreachable: "The analyser didn't respond. Try again, or enter the complexity yourself.",
   ai_failed: "The analyser couldn't read that solution. Try again, or enter it yourself.",
   ai_unparseable: "The analyser gave an answer we couldn't read. Try again.",
+  ai_truncated: "That solution needed more room to think through than we allow. Try again, or trim the code to just the solution.",
   code_too_long: "That's too much code to analyse — paste just the solution.",
   missing_code: "Paste your solution first.",
 };
