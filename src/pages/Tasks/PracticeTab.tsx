@@ -292,10 +292,10 @@ function RecentSolveRow({
             difficulty: solve.difficulty ?? "",
             language: solve.language ?? "Python",
             solvedAt: format(parseISO(solve.solvedAt), "yyyy-MM-dd"),
-            // Real tags only — Codeforces publishes them per solve, so this
-            // pre-fills; every other platform's recent list carries none
-            // (types/coding.ts's RecentSolve.tags), so this comes back empty
-            // and the student tags it themselves.
+            // Real tags only — Codeforces and LeetCode both publish them per
+            // solve, so this pre-fills for those two; CodeChef/GFG/HackerRank
+            // carry none (types/coding.ts's RecentSolve.tags), so this comes
+            // back empty for them and the student tags it themselves.
             topics: topicsFromTags(solve.platform, solve.tags),
           })
         }

@@ -3,13 +3,13 @@
  * platform actually publishes.
  *
  * Zero-manual-tracking (the product goal) only holds where a platform really
- * publishes topic tags per solved problem — today that is Codeforces alone.
- * LeetCode's public API exposes tags per *problem*, not per accepted
- * submission in a student's recent list, and CodeChef/GeeksforGeeks/
- * HackerRank expose none at all. Rather than guess a topic from a title,
- * every other source stays untagged until the student tags it themselves when
- * logging a solve — an untagged solve counts toward nothing rather than
- * toward a topic nobody confirmed.
+ * publishes topic tags per solved problem — Codeforces does directly, and
+ * LeetCode does per-problem, reached with one extra batched request per
+ * profile refresh (see fetchLeetCodeTopicTags in api/_codingPlatforms.js).
+ * CodeChef/GeeksforGeeks/HackerRank expose none at all. Rather than guess a
+ * topic from a title, every other source stays untagged until the student
+ * tags it themselves when logging a solve — an untagged solve counts toward
+ * nothing rather than toward a topic nobody confirmed.
  */
 
 export type DsaTopic =
@@ -131,9 +131,10 @@ const CODEFORCES_TAG_MAP: Record<string, DsaTopic> = {
 
 /**
  * LeetCode's own topicTags, exactly as GraphQL names them, mapped to the
- * canonical set. Not wired to a live query yet — see the module doc — kept
- * here so a future fetch of per-problem tags has a normaliser ready rather
- * than needing this file touched twice.
+ * canonical set. Fed by api/_codingPlatforms.js's fetchLeetCodeTopicTags,
+ * which batches a per-problem `question(titleSlug)` lookup for every recent
+ * solve into one extra request (aliased fields, not N+1) — LeetCode's own
+ * recent-submissions query carries no tags on its own.
  */
 const LEETCODE_TAG_MAP: Record<string, DsaTopic> = {
   array: "arrays",

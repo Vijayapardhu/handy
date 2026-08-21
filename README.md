@@ -171,7 +171,7 @@ Practice reads a student's public profiles on five sites from one place:
 
 | Platform | Source | Gives |
 | --- | --- | --- |
-| LeetCode | GraphQL (`leetcode.com/graphql`) | solved + difficulty split, contest rating, submission calendar, recent accepted, problem of the day |
+| LeetCode | GraphQL (`leetcode.com/graphql`) | solved + difficulty split, contest rating, submission calendar, recent accepted with tags, problem of the day |
 | Codeforces | official REST API | distinct problems solved, rating/max, rank, recent accepted with tags |
 | CodeChef | profile page, parsed with cheerio | rating, highest, stars, global rank, total solved |
 | GeeksforGeeks | `authapi.geeksforgeeks.org` profile JSON | solved, score, POTD streak, institute rank |
@@ -195,6 +195,22 @@ totals only: never a classmate's handles, streak or solutions.
 Upcoming contests (Codeforces, LeetCode, CodeChef) and LeetCode's problem of the day are shared by
 every student, so both are cached in `codingCache/*` — six hours and one hour respectively — and can
 be added to the deadline list in one tap, which is what puts them into the existing reminder path.
+
+#### Topic mastery
+
+How much of each DSA topic (Arrays, Graphs, DP, …) a student has actually practised, not just how
+many problems solved overall — `src/lib/calculations/mastery.ts` on web, `mobile/lib/logic/mastery.dart`
+on the phone, independent ports of the same deterministic formula (exposure + difficulty + recency,
+nothing else) with their own full test suites. No "success rate" or "contest performance" factor:
+Handy tracks neither, and a score built from data that doesn't exist would be exactly the kind of
+invented number the rest of this app refuses to produce.
+
+Topic tags come only from a platform that genuinely publishes them per solve — Codeforces directly,
+LeetCode per-problem via `fetchLeetCodeTopicTags` (`api/_codingPlatforms.js`), which batches a
+`question(titleSlug)` lookup for every recent solve into one extra GraphQL request using field
+aliasing, not one request per problem. CodeChef/GeeksforGeeks/HackerRank publish none, so a solve
+from those stays untagged until the student tags it themselves when logging it — never guessed from
+a title.
 
 #### Time and space complexity
 

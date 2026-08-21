@@ -151,7 +151,7 @@ export function parseLeetCodeCalendar(raw) {
   return Object.keys(calendar).length > 0 ? calendar : null;
 }
 
-export function normaliseLeetCode(handle, data) {
+export function normaliseLeetCode(handle, data, tagsBySlug = new Map()) {
   const user = data?.matchedUser;
   // Same { stats, recent } shape as the success path — fetchPlatform reads
   // both keys, and a bare stats object here would read as an undefined recent.
@@ -192,10 +192,56 @@ export function normaliseLeetCode(handle, data) {
     difficulty: null,
     language: row.lang ?? null,
     solvedAt: new Date(Number(row.timestamp) * 1000).toISOString(),
-    tags: [],
+    // Real tags, when the caller fetched them (see fetchLeetCodeTopicTags) —
+    // never guessed from a title. A slug fetchLeetCodeTopicTags failed to
+    // resolve (or wasn't asked for) simply has none.
+    tags: tagsBySlug.get(row.titleSlug) ?? [],
   }));
 
   return { stats, recent };
+}
+
+/**
+ * Each recent submission's own topic tags, in one extra request rather than
+ * one per problem.
+ *
+ * `recentAcSubmissionList` names a problem but carries none of its metadata
+ * — LeetCode's schema has no query that returns tags alongside a submission
+ * list, only `question(titleSlug)` for one problem at a time. GraphQL field
+ * aliasing turns "one problem at a time" into "all of them in one HTTP
+ * round trip": q0/q1/q2… each alias a separate `question` lookup, resolved
+ * together server-side. Confirmed against the live API before relying on it
+ * — LeetCode's public schema has no batch-by-slugs field to reach for
+ * instead.
+ *
+ * Best-effort and never throws: a broken tag fetch should cost topic tags on
+ * this refresh, not the whole platform card.
+ */
+export async function fetchLeetCodeTopicTags(titleSlugs) {
+  const slugs = [...new Set(titleSlugs)].filter(Boolean);
+  if (slugs.length === 0) return new Map();
+
+  const variableDecls = slugs.map((_, i) => `$s${i}: String!`).join(", ");
+  const fields = slugs
+    .map((_, i) => `q${i}: question(titleSlug: $s${i}) { titleSlug topicTags { name } }`)
+    .join("\n");
+  const variables = Object.fromEntries(slugs.map((slug, i) => [`s${i}`, slug]));
+
+  try {
+    const data = await leetcodeGraphql(`query handyTags(${variableDecls}) { ${fields} }`, variables);
+    const tagsBySlug = new Map();
+    for (const question of Object.values(data ?? {})) {
+      if (!question?.titleSlug) continue;
+      tagsBySlug.set(
+        question.titleSlug,
+        (question.topicTags ?? []).map((tag) => tag.name),
+      );
+    }
+    return tagsBySlug;
+  } catch (error) {
+    console.error("[coding] leetcode tag fetch failed:", error?.message);
+    return new Map();
+  }
 }
 
 async function fetchLeetCode(handle) {
@@ -203,7 +249,9 @@ async function fetchLeetCode(handle) {
     username: handle,
     year: new Date().getUTCFullYear(),
   });
-  return normaliseLeetCode(handle, data);
+  const slugs = (data?.recentAcSubmissionList ?? []).map((row) => row.titleSlug);
+  const tagsBySlug = await fetchLeetCodeTopicTags(slugs);
+  return normaliseLeetCode(handle, data, tagsBySlug);
 }
 
 // ── Codeforces ──────────────────────────────────────────────────────────────

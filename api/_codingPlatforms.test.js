@@ -62,6 +62,23 @@ describe("normaliseLeetCode", () => {
     const { stats } = normaliseLeetCode("neal_wu", { ...DATA, userContestRanking: null });
     expect(stats.rating).toBeNull();
   });
+
+  it("leaves a recent solve untagged when no tag map is passed", () => {
+    const { recent } = normaliseLeetCode("neal_wu", DATA);
+    expect(recent[0].tags).toEqual([]);
+  });
+
+  it("tags a recent solve from the batched fetchLeetCodeTopicTags result, matched by slug", () => {
+    const tagsBySlug = new Map([["two-sum", ["Array", "Hash Table"]]]);
+    const { recent } = normaliseLeetCode("neal_wu", DATA, tagsBySlug);
+    expect(recent[0].tags).toEqual(["Array", "Hash Table"]);
+  });
+
+  it("leaves a solve untagged when its slug has no entry in the map — a failed lookup, not a crash", () => {
+    const tagsBySlug = new Map([["some-other-problem", ["Graph"]]]);
+    const { recent } = normaliseLeetCode("neal_wu", DATA, tagsBySlug);
+    expect(recent[0].tags).toEqual([]);
+  });
 });
 
 describe("parseLeetCodeCalendar", () => {

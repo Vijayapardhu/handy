@@ -22,7 +22,7 @@ describe("normaliseTopic", () => {
     expect(normaliseTopic("gfg", "graphs")).toBeNull();
   });
 
-  it("maps LeetCode's own vocabulary too, unwired to a live fetch or not", () => {
+  it("maps LeetCode's own vocabulary too", () => {
     expect(normaliseTopic("leetcode", "Dynamic Programming")).toBe("dp");
     expect(normaliseTopic("leetcode", "Hash Table")).toBe("hashing");
   });

@@ -166,9 +166,11 @@ const _codeforcesTagMap = <String, DsaTopic>{
   '*special': DsaTopic.advancedGraph,
 };
 
-/// LeetCode's own topicTags. Not wired to a live fetch yet — LeetCode's
-/// recent-submission list carries no tags today (see RecentSolve.tags) — kept
-/// ready so a future fetch of per-problem tags has a normaliser already here.
+/// LeetCode's own topicTags. Fed by the server — api/_codingPlatforms.js's
+/// fetchLeetCodeTopicTags batches a per-problem lookup for every recent solve
+/// into one extra request, since LeetCode's own recent-submissions query
+/// carries no tags on its own — and RecentSolve.tags on this side just reads
+/// whatever came back.
 const _leetcodeTagMap = <String, DsaTopic>{
   'array': DsaTopic.arrays,
   'string': DsaTopic.strings,
