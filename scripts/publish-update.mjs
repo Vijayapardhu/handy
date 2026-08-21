@@ -9,10 +9,10 @@ initializeApp({
 const db = getFirestore();
 const messaging = getMessaging();
 
-const version = process.argv[2] || '1.0.5';
+const version = process.argv[2] || '1.0.7';
 const platform = 'android';
 const downloadUrl = `https://github.com/Vijayapardhu/handy/releases/download/v${version}/app-release.apk`;
-const changelog = '• Added Android Home Screen Practice Widget (problems solved & streak tracker)\n• Enhanced Tasks view with Deadlines, Practice, and Goals tabs\n• Whole-week timetable integration for widgets\n• General UI and performance improvements';
+const changelog = '• New DSA Roadmap — all 25 topics in order, tap one for an explanation + practice links\n• Time/space complexity now reads itself automatically, no button\n• Redesigned tabs, fixed platform cards, streak heatmap shows which platform you solved on';
 const minSupportedVersion = '1.0.0';
 
 const now = new Date().toISOString();
