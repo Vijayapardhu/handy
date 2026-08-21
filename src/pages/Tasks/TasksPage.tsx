@@ -1,29 +1,32 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { format, parseISO } from "date-fns";
-import { ClipboardList, Code2, Flame, Plus, Target } from "@/components/ui/icons";
+import { ClipboardList, Code2, Compass, Flame, Plus, Target } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { FocusHero } from "@/components/tasks/FocusHero";
 import { DeadlinesTab } from "./DeadlinesTab";
 import { PracticeTab } from "./PracticeTab";
 import { GoalsTab } from "./GoalsTab";
+import { RoadmapTab } from "./RoadmapTab";
 import { useTasks } from "@/hooks/useTasks";
 import { useCodingProfile, useSolutions } from "@/hooks/useCoding";
 import { useActiveSubjectsMap } from "@/hooks/useActiveSubjectsMap";
 import { useActiveTimetable } from "@/hooks/useTimetable";
 import { countByUrgency, focusMessage } from "@/lib/calculations/deadlines";
 import { buildActivityMap, currentStreak, weeklyProgress } from "@/lib/calculations/coding";
+import { roadmapMastery } from "@/lib/calculations/mastery";
 import { getWeeklyFreePeriods } from "@/lib/calculations/timetable";
+import { DSA_TOPICS } from "@/constants/dsaTopics";
 import { todayIso } from "@/lib/date";
 import { cn } from "@/lib/utils/cn";
 import type { IconComponent } from "@/components/ui/icons";
 import styles from "./TasksPage.module.css";
 
-type TabId = "deadlines" | "practice" | "goals";
+type TabId = "deadlines" | "practice" | "goals" | "roadmap";
 
 function isTabId(value: string | null): value is TabId {
-  return value === "deadlines" || value === "practice" || value === "goals";
+  return value === "deadlines" || value === "practice" || value === "goals" || value === "roadmap";
 }
 
 /**
@@ -68,6 +71,10 @@ export function TasksPage() {
     () => weeklyProgress(solutionsQuery.data ?? [], profile?.weeklyTarget ?? 0, today),
     [solutionsQuery.data, profile?.weeklyTarget, today],
   );
+  const topicsTouched = useMemo(
+    () => roadmapMastery(solutionsQuery.data ?? [], today).filter((entry) => entry.solved > 0).length,
+    [solutionsQuery.data, today],
+  );
 
   const freeCount = useMemo(() => {
     if (!timetableQuery.data) return 0;
@@ -75,7 +82,13 @@ export function TasksPage() {
     return [...byDay.values()].reduce((sum, periods) => sum + periods.length, 0);
   }, [timetableQuery.data]);
 
-  const TABS: { id: TabId; label: string; icon: IconComponent; badge: string | null; badgeTone: "danger" | "flame" | "goal" | null }[] = [
+  const TABS: {
+    id: TabId;
+    label: string;
+    icon: IconComponent;
+    badge: string | null;
+    badgeTone: "danger" | "flame" | "goal" | "roadmap" | null;
+  }[] = [
     {
       id: "deadlines",
       label: "Deadlines",
@@ -96,6 +109,13 @@ export function TasksPage() {
       icon: Target,
       badge: goalProgress.target > 0 ? `${goalProgress.percent}%` : null,
       badgeTone: "goal",
+    },
+    {
+      id: "roadmap",
+      label: "Roadmap",
+      icon: Compass,
+      badge: topicsTouched > 0 ? `${topicsTouched}/${DSA_TOPICS.length}` : null,
+      badgeTone: "roadmap",
     },
   ];
 
@@ -158,6 +178,7 @@ export function TasksPage() {
 
       {tab === "practice" && <PracticeTab />}
       {tab === "goals" && <GoalsTab />}
+      {tab === "roadmap" && <RoadmapTab />}
     </div>
   );
 }

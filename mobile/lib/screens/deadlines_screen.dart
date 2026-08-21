@@ -36,11 +36,11 @@ enum _Filter { all, overdue, today, week }
 /// list trying to serve all three ends up serving none.
 enum _View { upcoming, calendar, done }
 
-/// The three halves of "what should I be doing" — the same three the website
+/// The four halves of "what should I be doing" — the same four the website
 /// puts on /tasks. Deadlines keeps its own Upcoming/Calendar/Done switcher
 /// underneath, because a deadline list answers three questions and practice
 /// answers one.
-enum _Section { deadlines, practice, goals }
+enum _Section { deadlines, practice, goals, roadmap }
 
 class _DeadlinesScreenState extends State<DeadlinesScreen> {
   _Section _section = _Section.deadlines;
@@ -78,16 +78,16 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
   DateTime? _selectedDay;
   late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
 
-  /// Deadlines / Practice / Goals — same three names, same order as the web.
-  Widget _sectionSwitcher() => SegmentedButton<_Section>(
-        segments: const [
-          ButtonSegment(value: _Section.deadlines, label: Text('Deadlines')),
-          ButtonSegment(value: _Section.practice, label: Text('Practice')),
-          ButtonSegment(value: _Section.goals, label: Text('Goals')),
+  /// Deadlines / Practice / Goals / Roadmap — same names, same order as the web.
+  Widget _sectionSwitcher() => _TabStrip<_Section>(
+        value: _section,
+        onChanged: (s) => setState(() => _section = s),
+        options: const [
+          (_Section.deadlines, 'Deadlines'),
+          (_Section.practice, 'Practice'),
+          (_Section.goals, 'Goals'),
+          (_Section.roadmap, 'Roadmap'),
         ],
-        selected: {_section},
-        showSelectedIcon: false,
-        onSelectionChanged: (s) => setState(() => _section = s.first),
       );
 
   @override
@@ -137,10 +137,10 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
 
     final groups = _group(visible, now);
 
-    // Practice and Goals are their own scrollables rather than slivers in this
-    // list: they have nothing to say about deadlines, and threading them
-    // through the same CustomScrollView would put a deadline search box above
-    // a solve log.
+    // Practice, Goals and Roadmap are their own scrollables rather than
+    // slivers in this list: they have nothing to say about deadlines, and
+    // threading them through the same CustomScrollView would put a deadline
+    // search box above a solve log.
     if (_section != _Section.deadlines) {
       return Scaffold(
         appBar: AppBar(title: const Text('Tasks')),
@@ -151,9 +151,11 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
               child: _sectionSwitcher(),
             ),
             Expanded(
-              child: _section == _Section.practice
-                  ? PracticeView(controller: practice)
-                  : GoalsView(controller: practice),
+              child: switch (_section) {
+                _Section.practice => PracticeView(controller: practice),
+                _Section.roadmap => RoadmapView(controller: practice),
+                _ => GoalsView(controller: practice),
+              },
             ),
           ],
         ),
@@ -183,15 +185,14 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-              child: SegmentedButton<_View>(
-                segments: const [
-                  ButtonSegment(value: _View.upcoming, label: Text('Upcoming')),
-                  ButtonSegment(value: _View.calendar, label: Text('Calendar')),
-                  ButtonSegment(value: _View.done, label: Text('Done')),
+              child: _TabStrip<_View>(
+                value: _view,
+                onChanged: (v) => setState(() => _view = v),
+                options: const [
+                  (_View.upcoming, 'Upcoming'),
+                  (_View.calendar, 'Calendar'),
+                  (_View.done, 'Done'),
                 ],
-                selected: {_view},
-                showSelectedIcon: false,
-                onSelectionChanged: (s) => setState(() => _view = s.first),
               ),
             ),
           ),
@@ -657,6 +658,75 @@ class _MonthGrid extends StatelessWidget {
                 },
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A row of pill tabs — the shared look behind both switchers on this screen
+/// (Deadlines/Practice/Goals, and Upcoming/Calendar/Done underneath), and the
+/// same tinted-pill language the practice heatmap's Week/Month/3 Months
+/// range uses. Stock [SegmentedButton] reads as generic Material chrome next
+/// to the rest of this screen; this instead matches the app's own orange
+/// accent rather than the platform default.
+class _TabStrip<T> extends StatelessWidget {
+  const _TabStrip({required this.value, required this.onChanged, required this.options});
+
+  final T value;
+  final ValueChanged<T> onChanged;
+  final List<(T, String)> options;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var i = 0; i < options.length; i += 1) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: _TabChip(
+              label: options[i].$2,
+              selected: options[i].$1 == value,
+              onTap: () => onChanged(options[i].$1),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _TabChip extends StatelessWidget {
+  const _TabChip({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? HandyColors.orange.withValues(alpha: 0.16) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? HandyColors.orange : theme.dividerColor,
+            width: selected ? 1.4 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: selected ? HandyColors.orange : theme.textTheme.bodySmall?.color,
           ),
         ),
       ),

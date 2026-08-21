@@ -515,6 +515,28 @@ class LeaderboardEntry {
       );
 }
 
+/// The roadmap's "what is this" explanation for one DSA topic — generated
+/// once server-side and cached forever (api/topic-explainer.js).
+class TopicExplanation {
+  const TopicExplanation({required this.text, required this.model, required this.generatedAt});
+
+  final String text;
+  final String? model;
+  final String generatedAt;
+
+  static TopicExplanation? fromMap(Object? raw) {
+    if (raw is! Map) return null;
+    final map = raw.cast<String, dynamic>();
+    final text = '${map['text'] ?? ''}'.trim();
+    if (text.isEmpty) return null;
+    return TopicExplanation(
+      text: text,
+      model: map['model'] as String?,
+      generatedAt: '${map['generatedAt'] ?? ''}',
+    );
+  }
+}
+
 /// JSON numbers arrive as int or double depending on the platform and the
 /// encoder; both are counts here.
 int? _int(Object? value) {

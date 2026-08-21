@@ -48,6 +48,7 @@ import {
   LinkSquare01Icon,
   Loading03Icon,
   Location01Icon,
+  LockIcon,
   Logout01Icon,
   MailSend01Icon,
   Megaphone01Icon,
@@ -165,6 +166,7 @@ export const Sun = icon(Sun01Icon, "Sun");
 export const Moon = icon(Moon02Icon, "Moon");
 export const LogOut = icon(Logout01Icon, "LogOut");
 export const KeyRound = icon(Key01Icon, "KeyRound");
+export const Lock = icon(LockIcon, "Lock");
 export const MapPin = icon(Location01Icon, "MapPin");
 export const Search = icon(Search01Icon, "Search");
 

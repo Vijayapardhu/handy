@@ -36,14 +36,14 @@ export class CodingError extends Error {
 const MESSAGES: Record<string, string> = {
   rate_limited: "You've refreshed a lot in the last hour. Try again shortly.",
   coding_failed: "Could not reach the coding platforms. Try again shortly.",
-  ai_unconfigured:
-    "Complexity analysis isn't switched on for this app yet — you can still enter the complexity yourself.",
+  ai_unconfigured: "That isn't switched on for this app yet.",
   ai_unreachable: "The analyser didn't respond. Try again, or enter the complexity yourself.",
   ai_failed: "The analyser couldn't read that solution. Try again, or enter it yourself.",
   ai_unparseable: "The analyser gave an answer we couldn't read. Try again.",
   ai_truncated: "That solution needed more room to think through than we allow. Try again, or trim the code to just the solution.",
   code_too_long: "That's too much code to analyse — paste just the solution.",
   missing_code: "Paste your solution first.",
+  unknown_topic: "That topic isn't one Handy tracks.",
 };
 
 function messageFor(code: string, fallback: string): string {
@@ -151,6 +151,33 @@ export async function analyseComplexity(
     throw new CodingError(code, messageFor(code, "Could not analyse that solution."));
   }
   return data.verdict;
+}
+
+export interface TopicExplanation {
+  text: string;
+  model: string | null;
+  generatedAt: string;
+}
+
+/**
+ * A short explanation of one DSA topic — generated once per topic and cached
+ * server-side forever after (see api/topic-explainer.js), so this is fast and
+ * free after the first student anywhere asks about a given topic.
+ */
+export async function explainTopic(topic: string, idToken: string): Promise<TopicExplanation> {
+  const response = await fetch("/api/topic-explainer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ topic }),
+  });
+  const data = (await response.json().catch(() => null)) as
+    | { ok?: boolean; error?: string; explanation?: TopicExplanation }
+    | null;
+  if (!data?.ok || !data.explanation) {
+    const code = data?.error ?? "ai_failed";
+    throw new CodingError(code, messageFor(code, "Could not load an explanation for that topic."));
+  }
+  return data.explanation;
 }
 
 // ── Solve log (plain Firestore, student-owned) ──────────────────────────────

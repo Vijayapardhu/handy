@@ -9,6 +9,7 @@ import '../data/app_state.dart';
 import '../logic/campus_features.dart';
 import '../logic/deadlines.dart';
 import '../main.dart';
+import '../theme.dart';
 import '../widgets/form_sheet.dart';
 import '../widgets/update_sheet.dart';
 import 'profile_screen.dart';
@@ -363,7 +364,9 @@ class _HandyNavBarState extends State<_HandyNavBar> with SingleTickerProviderSta
                         height: _markHeight,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: scheme.primary,
+                            gradient: const LinearGradient(
+                              colors: [HandyColors.orange, HandyColors.orangeDeep],
+                            ),
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),

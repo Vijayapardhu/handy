@@ -173,6 +173,8 @@ class PracticeController extends ChangeNotifier {
   }) =>
       _coding.analyse(code: code, language: language, title: title, platform: platform);
 
+  Future<TopicExplanation> explainTopic(String topicId) => _coding.explainTopic(topicId);
+
   Future<void> saveSolution({
     required CodingPlatform platform,
     required String title,
@@ -249,10 +251,8 @@ class PracticeView extends StatelessWidget {
         final profile = controller.profile;
         final activity = buildActivityMap(profile.stats, controller.solutions);
         final activityDetail = buildActivityDetail(profile.stats, profile.recent, controller.solutions);
-        final heatmap = buildHeatmap(activity, _todayIso(), detail: activityDetail);
         final streak = currentStreak(activity, _todayIso());
         final best = longestStreak(activity);
-        final split = totalByDifficulty(profile.stats);
         final coverage = complexityCoverage(controller.solutions);
         final mastery = computeTopicMastery(controller.solutions, _todayIso());
 
@@ -261,13 +261,19 @@ class PracticeView extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
             children: [
-              _SummaryCard(controller: controller, split: split),
+              _SummaryCard(controller: controller),
               const SizedBox(height: 12),
 
               _PlatformGrid(stats: profile.stats),
               const SizedBox(height: 12),
 
-              _HeatmapCard(days: heatmap, streak: streak, longest: best),
+              _HeatmapCard(
+                activity: activity,
+                activityDetail: activityDetail,
+                todayIso: _todayIso(),
+                streak: streak,
+                longest: best,
+              ),
               const SizedBox(height: 12),
 
               if (mastery.isNotEmpty) ...[
@@ -291,6 +297,15 @@ class PracticeView extends StatelessWidget {
                     child: Text('Solve log', style: Theme.of(context).textTheme.titleMedium),
                   ),
                   FilledButton.tonalIcon(
+                    // The theme's FilledButton default is full-width
+                    // (minimumSize: Size.fromHeight(54), meant for the
+                    // stand-alone CTAs it's normally used for) — harmless on
+                    // its own, but next to this Expanded label it claims the
+                    // whole row and squeezes "Solve log" into a single-letter
+                    // column. This is the one FilledButton in the app that
+                    // sits beside flexible text, so it is the one that needs
+                    // its own, ordinarily-sized minimum.
+                    style: FilledButton.styleFrom(minimumSize: const Size(64, 40)),
                     onPressed: () => openSolutionSheet(context, controller),
                     icon: AppIcon(HugeIcons.strokeRoundedAdd01, size: 16),
                     label: const Text('Log'),
@@ -365,6 +380,304 @@ class GoalsView extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// All 25 canonical DSA topics, in curated learning-path order, each showing
+/// real mastery — not a summary card's top eight, the whole path.
+///
+/// "Locked" is cosmetic, not a restriction: it marks a topic that is both
+/// untouched and sits after the one topic nextFocusTopic() actually
+/// recommends next, so the path reads as an order to consider rather than a
+/// gate. A student who solves a graph problem before finishing arrays sees
+/// that solve counted immediately — locked only ever means "not reached
+/// yet", never "not allowed yet". Reads only the solve log, so it works
+/// whether or not any platform is connected.
+class RoadmapView extends StatefulWidget {
+  const RoadmapView({super.key, required this.controller});
+
+  final PracticeController controller;
+
+  @override
+  State<RoadmapView> createState() => _RoadmapViewState();
+}
+
+class _RoadmapViewState extends State<RoadmapView> {
+  DsaTopic? _selected;
+
+  Color _bandColor(MasteryBand band) => switch (band) {
+        MasteryBand.starting => HandyColors.lightMuted,
+        MasteryBand.learning => HandyColors.info,
+        MasteryBand.practicing => HandyColors.warn,
+        MasteryBand.strong => HandyColors.orange,
+        MasteryBand.advanced => HandyColors.good,
+        MasteryBand.mastered => HandyColors.excellent,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: widget.controller,
+      builder: (context, _) {
+        if (widget.controller.loading) return const ListSkeleton(rows: 3, height: 90);
+
+        final theme = Theme.of(context);
+        final roadmap = roadmapMastery(widget.controller.solutions, _todayIso());
+        final focus = nextFocusTopic(roadmap);
+        final focusIndex = focus == null ? -1 : dsaTopics.indexOf(focus);
+
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
+          children: [
+            Text(
+              'The 25 topics competitive problems draw from, in the order most students find '
+              'easiest to build on. A percent here comes only from solves you tagged when '
+              'logging them. Tap a topic to read what it is and where to practise it.',
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 14),
+            for (var i = 0; i < roadmap.length; i += 1) ...[
+              () {
+                final entry = roadmap[i];
+                final isFocus = entry.topic == focus;
+                final isLocked = entry.solved == 0 && focusIndex >= 0 && i > focusIndex;
+                final isMastered = entry.band == MasteryBand.mastered || entry.band == MasteryBand.advanced;
+                final isOpen = _selected == entry.topic;
+                final color = _bandColor(entry.band);
+
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: isLocked ? 0.08 : 0.15),
+                              shape: BoxShape.circle,
+                              border: isFocus ? Border.all(color: HandyColors.orange, width: 2) : null,
+                            ),
+                            child: isLocked
+                                ? AppIcon(HugeIcons.strokeRoundedLock, size: 13, color: color.withValues(alpha: 0.6))
+                                : isMastered
+                                    ? AppIcon(HugeIcons.strokeRoundedCheckmarkCircle01, size: 15, color: color)
+                                    : Text(
+                                        '${i + 1}',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color),
+                                      ),
+                          ),
+                          if (i < roadmap.length - 1)
+                            Expanded(
+                              child: Container(
+                                width: 2,
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                color: theme.dividerColor,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Card(
+                            margin: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: isFocus
+                                  ? const BorderSide(color: HandyColors.orange, width: 1.5)
+                                  : BorderSide.none,
+                            ),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => setState(
+                                () => _selected = isOpen ? null : entry.topic,
+                              ),
+                              child: Opacity(
+                                opacity: isLocked ? 0.6 : 1,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(entry.topic.label, style: theme.textTheme.bodyMedium),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: color.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(999),
+                                            ),
+                                            child: Text(
+                                              entry.band.label,
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(999),
+                                        child: LinearProgressIndicator(
+                                          value: entry.percent / 100,
+                                          minHeight: 6,
+                                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                                          color: color,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        isLocked
+                                            ? 'Not reached yet'
+                                            : '${entry.solved} solved · ${entry.easy}E ${entry.medium}M ${entry.hard}H',
+                                        style: theme.textTheme.labelSmall,
+                                      ),
+                                      if (isFocus)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 4),
+                                          child: Row(
+                                            children: [
+                                              AppIcon(HugeIcons.strokeRoundedCompass01, size: 12, color: HandyColors.orange),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Focus next',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: HandyColors.orange,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      if (isOpen) ...[
+                                        const SizedBox(height: 8),
+                                        Divider(height: 1, color: theme.dividerColor),
+                                        const SizedBox(height: 8),
+                                        _TopicDetail(controller: widget.controller, topic: entry.topic),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }(),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The explanation and practice links for one tapped roadmap topic.
+///
+/// Fetched once per topic per screen visit (not re-fetched on rebuild —
+/// [FutureBuilder] keys off the future instance, and [_future] is created
+/// exactly once in [initState]), and cached server-side forever after
+/// (api/topic-explainer.js), so re-opening the same topic later is instant.
+class _TopicDetail extends StatefulWidget {
+  const _TopicDetail({required this.controller, required this.topic});
+
+  final PracticeController controller;
+  final DsaTopic topic;
+
+  @override
+  State<_TopicDetail> createState() => _TopicDetailState();
+}
+
+class _TopicDetailState extends State<_TopicDetail> {
+  late final Future<TopicExplanation> _future = widget.controller.explainTopic(widget.topic.id);
+
+  static const _linkOrder = [
+    (label: 'LeetCode', color: HandyColors.orange),
+    (label: 'Codeforces', color: HandyColors.info),
+    (label: 'GeeksforGeeks', color: HandyColors.good),
+    (label: 'CodeChef', color: HandyColors.warn),
+    (label: 'HackerRank', color: HandyColors.excellent),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final links = topicResourceLinks(widget.topic);
+    final urls = <String, String?>{
+      'LeetCode': links.leetcode,
+      'Codeforces': links.codeforces,
+      'GeeksforGeeks': links.geeksforgeeks,
+      'CodeChef': links.codechef,
+      'HackerRank': links.hackerrank,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FutureBuilder<TopicExplanation>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  height: 14,
+                  width: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            }
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  snapshot.error is CodingException
+                      ? (snapshot.error as CodingException).message
+                      : 'Could not load an explanation.',
+                  style: TextStyle(fontSize: 12, color: theme.colorScheme.error),
+                ),
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(snapshot.data!.text, style: theme.textTheme.bodySmall),
+            );
+          },
+        ),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final entry in _linkOrder)
+              if (urls[entry.label] != null)
+                GestureDetector(
+                  onTap: () => _open(urls[entry.label]!),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: entry.color),
+                    ),
+                    child: Text(
+                      entry.label,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: entry.color),
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -458,10 +771,9 @@ class _ConnectCardState extends State<_ConnectCard> {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.controller, required this.split});
+  const _SummaryCard({required this.controller});
 
   final PracticeController controller;
-  final DifficultySplit? split;
 
   @override
   Widget build(BuildContext context) {
@@ -502,18 +814,6 @@ class _SummaryCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (split != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Wrap(
-                  spacing: 12,
-                  children: [
-                    _Chip('${split!.easy} easy', HandyColors.good),
-                    _Chip('${split!.medium} medium', HandyColors.warn),
-                    _Chip('${split!.hard} hard', HandyColors.bad),
-                  ],
-                ),
-              ),
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
@@ -534,17 +834,45 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip(this.label, this.color);
+/// One difficulty's count, boxed — the LeetCode-app style the student asked
+/// to match: a small tinted card with the label on top and the number below,
+/// stacked beside the tile's main number rather than squeezed under it.
+///
+/// LeetCode's own app pairs each count with that difficulty's total question
+/// bank size (e.g. "46/960"); Handy doesn't fetch that number from anywhere,
+/// so this shows only what was actually solved rather than inventing a
+/// denominator.
+class _DifficultyChip extends StatelessWidget {
+  const _DifficultyChip(this.label, this.count, this.color);
 
   final String label;
+  final int count;
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Text(
-        label,
-        style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.w700),
-      );
+  Widget build(BuildContext context) {
+    return Container(
+      width: 64,
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$count',
+            style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PlatformGrid extends StatelessWidget {
@@ -580,89 +908,165 @@ class _PlatformGrid extends StatelessWidget {
 /// different things, and a grid of dashes would say a site is broken when it is
 /// simply a different site. A platform that failed keeps its tile and says so,
 /// because a tile that vanished would read as a solved count of zero.
+///
+/// Every tile is the same fixed height regardless of how much of that content
+/// it has — a real zero next to a five-line profile should not look like the
+/// broken one. A genuine zero-with-nothing-else (no rating, no rank, no error)
+/// gets an explicit "No submissions found yet" rather than empty space, since
+/// an unexplained blank reads as a bug even when the number is honest.
 class _PlatformTile extends StatelessWidget {
   const _PlatformTile({required this.stats});
 
   final PlatformStats stats;
 
+  static const _height = 180.0;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final failed = stats.error != null;
+    final byDifficulty = stats.byDifficulty;
 
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
         onTap: () => _open(stats.profileUrl),
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      stats.platform.label,
-                      style: theme.textTheme.labelLarge,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (failed)
-                    AppIcon(HugeIcons.strokeRoundedAlert02, size: 14, color: HandyColors.warn),
-                ],
-              ),
-              const SizedBox(height: 4),
-              if (failed)
-                Text(
-                  stats.error == 'not_found'
-                      ? 'No profile at that username.'
-                      : "Couldn't read this profile just now.",
-                  style: theme.textTheme.bodySmall,
-                )
-              else ...[
-                Text(
-                  '${stats.solved ?? '—'}',
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                Text('solved', style: theme.textTheme.labelSmall),
-                if (stats.rank != null || stats.rating != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      [
-                        if (stats.rating != null) '${stats.rating} rating',
-                        if (stats.rank != null) stats.rank!,
-                      ].join(' · '),
-                      style: theme.textTheme.bodySmall,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-              const SizedBox(height: 4),
-              Text(stats.handle, style: theme.textTheme.labelSmall, overflow: TextOverflow.ellipsis),
-            ],
+        child: SizedBox(
+          height: _height,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: !failed && byDifficulty != null
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: _tileBody(theme, failed)),
+                      const SizedBox(width: 10),
+                      // LeetCode is the one platform that publishes a
+                      // difficulty split, so it is the one tile with room to
+                      // spare on the right — spent on this rather than left
+                      // as blank space next to the number.
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _DifficultyChip('Easy', byDifficulty.easy, HandyColors.good),
+                          _DifficultyChip('Med.', byDifficulty.medium, HandyColors.warn),
+                          _DifficultyChip('Hard', byDifficulty.hard, HandyColors.bad),
+                        ],
+                      ),
+                    ],
+                  )
+                : _tileBody(theme, failed),
           ),
         ),
       ),
     );
   }
+
+  Widget _tileBody(ThemeData theme, bool failed) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                stats.platform.label,
+                style: theme.textTheme.labelLarge,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (failed) AppIcon(HugeIcons.strokeRoundedAlert02, size: 14, color: HandyColors.warn),
+          ],
+        ),
+        const SizedBox(height: 4),
+        if (failed)
+          Text(
+            stats.error == 'not_found'
+                ? 'No profile at that username.'
+                : "Couldn't read this profile just now.",
+            style: theme.textTheme.bodySmall,
+          )
+        else ...[
+          Text(
+            '${stats.solved ?? '—'}',
+            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          Text('solved', style: theme.textTheme.labelSmall),
+          if (_secondaryLine != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _secondaryLine!,
+                style: theme.textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+        const Spacer(),
+        Text(stats.handle, style: theme.textTheme.labelSmall, overflow: TextOverflow.ellipsis),
+      ],
+    );
+  }
+
+  /// Rating/rank when the platform published one; otherwise an honest
+  /// explanation for a real zero, so it reads as a fact rather than a glitch.
+  String? get _secondaryLine {
+    if (stats.rating != null || stats.rank != null) {
+      return [
+        if (stats.rating != null) '${stats.rating} rating',
+        if (stats.rank != null) stats.rank!,
+      ].join(' · ');
+    }
+    if (stats.solved == 0) return 'No submissions found yet';
+    return null;
+  }
 }
 
-/// Twelve weeks of practice, one square per day.
+/// How much of the practice history the heatmap is currently showing.
+enum _HeatRange {
+  week,
+  month,
+  threeMonths;
+
+  int get days => switch (this) {
+        _HeatRange.week => 7,
+        _HeatRange.month => 30,
+        _HeatRange.threeMonths => 90,
+      };
+
+  String get label => switch (this) {
+        _HeatRange.week => 'Week',
+        _HeatRange.month => 'Month',
+        _HeatRange.threeMonths => '3 Months',
+      };
+}
+
+/// Practice history, one square per day, at whichever range the student picks.
 ///
-/// The gaps are the point — this is the one view that shows the weeks nothing
-/// happened, which a "247 solved" total hides completely.
+/// The gaps are the point — this is the one view that shows the days nothing
+/// happened, which a "247 solved" total hides completely. Cells are sized off
+/// the actual screen width rather than a fixed pixel size, so the grid always
+/// reaches the far edge instead of bunching up on the left with empty card
+/// behind it — true whether that's 7 big day-cells for a week or a dense
+/// 90-day block for three months.
 ///
 /// Tapping a day opens which platform(s) it actually came from — a day with
 /// zero never lists a platform, and a platform only appears once something
 /// real is attributed to it (its own calendar, a recent solve, or a logged
 /// solution).
 class _HeatmapCard extends StatefulWidget {
-  const _HeatmapCard({required this.days, required this.streak, required this.longest});
+  const _HeatmapCard({
+    required this.activity,
+    required this.activityDetail,
+    required this.todayIso,
+    required this.streak,
+    required this.longest,
+  });
 
-  final List<ActivityDay> days;
+  final Map<String, int> activity;
+  final Map<String, List<PlatformDayActivity>> activityDetail;
+  final String todayIso;
   final int streak;
   final int longest;
 
@@ -672,11 +1076,20 @@ class _HeatmapCard extends StatefulWidget {
 
 class _HeatmapCardState extends State<_HeatmapCard> {
   ActivityDay? _selected;
+  _HeatRange _range = _HeatRange.month;
+
+  static const _gap = 3.0;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final active = widget.days.where((day) => day.count > 0).length;
+    final days = buildHeatmap(
+      widget.activity,
+      widget.todayIso,
+      days: _range.days,
+      detail: widget.activityDetail,
+    );
+    final active = days.where((day) => day.count > 0).length;
 
     return Card(
       child: Padding(
@@ -706,35 +1119,72 @@ class _HeatmapCardState extends State<_HeatmapCard> {
               ],
             ),
             const SizedBox(height: 12),
-            // Column-major: each column is a week, so the rows read as
-            // weekdays — the shape of every practice heatmap a student has
-            // already seen.
-            SizedBox(
-              height: 7 * 14,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                reverse: true,
-                child: Row(
+            Row(
+              children: [
+                for (final range in _HeatRange.values) ...[
+                  if (range != _HeatRange.values.first) const SizedBox(width: 8),
+                  Expanded(child: _RangeTab(range: range, selected: _range == range, onTap: () {
+                    setState(() {
+                      _range = range;
+                      _selected = null;
+                    });
+                  })),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = (days.length / 7).ceil();
+                if (columns <= 1) {
+                  // A week is one row of big day-cells, not a single tall
+                  // column — that is the shape a week actually has.
+                  final size = (constraints.maxWidth - (days.length - 1) * _gap) / days.length;
+                  return Row(
+                    children: [
+                      for (var i = 0; i < days.length; i += 1) ...[
+                        if (i > 0) const SizedBox(width: _gap),
+                        _Cell(
+                          day: days[i],
+                          size: size,
+                          selected: _selected?.date == days[i].date,
+                          onTap: () => _toggle(days[i]),
+                        ),
+                      ],
+                    ],
+                  );
+                }
+
+                // Column-major: each column is a week, so the rows read as
+                // weekdays — the shape of every practice heatmap a student has
+                // already seen. The cell size is solved for, not assumed, so
+                // the grid always fills the full width exactly.
+                final size = (constraints.maxWidth - (columns - 1) * _gap) / columns;
+                return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (var week = 0; week * 7 < widget.days.length; week += 1)
+                    for (var col = 0; col < columns; col += 1) ...[
+                      if (col > 0) const SizedBox(width: _gap),
                       Column(
                         children: [
-                          for (var row = 0; row < 7; row += 1)
-                            if (week * 7 + row < widget.days.length)
+                          for (var row = 0; row < 7; row += 1) ...[
+                            if (row > 0) const SizedBox(height: _gap),
+                            if (col * 7 + row < days.length)
                               _Cell(
-                                day: widget.days[week * 7 + row],
-                                selected: _selected?.date == widget.days[week * 7 + row].date,
-                                onTap: () => setState(() {
-                                  final day = widget.days[week * 7 + row];
-                                  _selected = _selected?.date == day.date ? null : day;
-                                }),
-                              ),
+                                day: days[col * 7 + row],
+                                size: size,
+                                selected: _selected?.date == days[col * 7 + row].date,
+                                onTap: () => _toggle(days[col * 7 + row]),
+                              )
+                            else
+                              SizedBox(width: size, height: size),
+                          ],
                         ],
                       ),
+                    ],
                   ],
-                ),
-              ),
+                );
+              },
             ),
             if (_selected != null) ...[
               const SizedBox(height: 12),
@@ -745,12 +1195,53 @@ class _HeatmapCardState extends State<_HeatmapCard> {
       ),
     );
   }
+
+  void _toggle(ActivityDay day) {
+    setState(() => _selected = _selected?.date == day.date ? null : day);
+  }
+}
+
+class _RangeTab extends StatelessWidget {
+  const _RangeTab({required this.range, required this.selected, required this.onTap});
+
+  final _HeatRange range;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? HandyColors.orange.withValues(alpha: 0.16) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? HandyColors.orange : theme.dividerColor,
+            width: selected ? 1.4 : 1,
+          ),
+        ),
+        child: Text(
+          range.label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected ? HandyColors.orange : theme.textTheme.bodySmall?.color,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _Cell extends StatelessWidget {
-  const _Cell({required this.day, required this.selected, required this.onTap});
+  const _Cell({required this.day, required this.size, required this.selected, required this.onTap});
 
   final ActivityDay day;
+  final double size;
   final bool selected;
   final VoidCallback onTap;
 
@@ -767,9 +1258,8 @@ class _Cell extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 11,
-        height: 11,
-        margin: const EdgeInsets.all(1.5),
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(3),
@@ -1537,10 +2027,11 @@ Future<void> _openConnectSheet(BuildContext context, PracticeController controll
 
 /// Logging a solved problem, and working out what it cost.
 ///
-/// The complexity step is a button rather than something that runs on save: it
-/// calls a model, it costs money, and a student who only wants to write down
-/// that they solved something should not trigger it by accident. Whatever comes
-/// back is editable before it is saved.
+/// The complexity read happens on its own, a moment after the student stops
+/// typing or pasting code — no button to remember to press. Debounced rather
+/// than fired on every keystroke, so a model call happens once per pause
+/// rather than once per character. Whatever comes back is still editable
+/// before it is saved, exactly as when this was a manual step.
 Future<void> openSolutionSheet(
   BuildContext context,
   PracticeController controller, {
@@ -1594,20 +2085,36 @@ class _SolutionSheetState extends State<_SolutionSheet> {
   bool _analysing = false;
   bool _saving = false;
   String? _error;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _code.addListener(_onCodeChanged);
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
+    _code.removeListener(_onCodeChanged);
     for (final field in [_title, _url, _code, _notes, _time, _space]) {
       field.dispose();
     }
     super.dispose();
   }
 
+  /// Reads the code a moment after the student stops changing it — the
+  /// automatic replacement for the "Work out the complexity" button. A pause
+  /// of 900ms is long enough that pasting or actively typing never fires it
+  /// mid-keystroke, and short enough that it feels immediate once they stop.
+  void _onCodeChanged() {
+    _debounce?.cancel();
+    if (_code.text.trim().isEmpty) return;
+    _debounce = Timer(const Duration(milliseconds: 900), _analyse);
+  }
+
   Future<void> _analyse() async {
-    if (_code.text.trim().isEmpty) {
-      setState(() => _error = "Paste your solution first — there's nothing to read yet.");
-      return;
-    }
+    if (_code.text.trim().isEmpty || _analysing) return;
     setState(() {
       _analysing = true;
       _error = null;
@@ -1805,12 +2312,20 @@ class _SolutionSheetState extends State<_SolutionSheet> {
               isDense: true,
             ),
           ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _analysing ? null : _analyse,
-            icon: AppIcon(HugeIcons.strokeRoundedSparkles, size: 16),
-            label: Text(_analysing ? 'Reading your code…' : 'Work out the complexity'),
-          ),
+          if (_analysing) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 8),
+                Text('Reading your code…', style: theme.textTheme.labelSmall),
+              ],
+            ),
+          ],
           const SizedBox(height: 10),
           Row(
             children: [
@@ -1885,8 +2400,11 @@ class _SolutionSheetState extends State<_SolutionSheet> {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _saving ? null : _save,
-              child: const Text('Save to solve log'),
+              // Waits out an in-flight auto-analysis rather than saving
+              // ahead of it — the whole point of doing this automatically is
+              // that the result is there when the student saves.
+              onPressed: (_saving || _analysing) ? null : _save,
+              child: Text(_analysing ? 'Reading your code…' : 'Save to solve log'),
             ),
           ),
         ],

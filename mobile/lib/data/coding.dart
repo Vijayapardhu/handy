@@ -141,6 +141,24 @@ class Coding {
     return verdict;
   }
 
+  /// The roadmap's "what is this" explanation for one topic — generated once
+  /// server-side and cached forever after (api/topic-explainer.js), so this
+  /// is fast and free after the first student anywhere asks about a topic.
+  Future<TopicExplanation> explainTopic(String topicId) async {
+    final body = await _send(
+      {'topic': topicId},
+      path: '/api/topic-explainer',
+      timeout: const Duration(seconds: 45),
+      fallback: 'Could not load an explanation for that topic.',
+    );
+
+    final explanation = TopicExplanation.fromMap(body?['explanation']);
+    if (explanation == null) {
+      throw const CodingException('ai_unparseable', "The analyser gave an answer we couldn't read. Try again.");
+    }
+    return explanation;
+  }
+
   // ── Solve log (Firestore, student-owned) ──────────────────────────────────
 
   /// Newest first — the question is always "what did I do lately".
@@ -270,8 +288,7 @@ class Coding {
   static const _messages = <String, String>{
     'rate_limited': "You've refreshed a lot in the last hour. Try again shortly.",
     'coding_failed': 'Could not reach the coding platforms. Try again shortly.',
-    'ai_unconfigured':
-        "Complexity analysis isn't switched on for this app yet — you can still enter the complexity yourself.",
+    'ai_unconfigured': "That isn't switched on for this app yet.",
     'ai_unreachable': "The analyser didn't respond. Try again, or enter the complexity yourself.",
     'ai_failed': "The analyser couldn't read that solution. Try again, or enter it yourself.",
     'ai_unparseable': "The analyser gave an answer we couldn't read. Try again.",
@@ -279,6 +296,7 @@ class Coding {
         "That solution needed more room to think through than we allow. Try again, or trim the code to just the solution.",
     'code_too_long': "That's too much code to analyse — paste just the solution.",
     'missing_code': 'Paste your solution first.',
+    'unknown_topic': "That topic isn't one Handy tracks.",
   };
 }
 

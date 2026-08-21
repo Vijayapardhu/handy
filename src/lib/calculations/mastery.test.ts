@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bandFor, computeTopicMastery, nextFocusTopic, weakestTopic } from "./mastery";
+import { bandFor, computeTopicMastery, nextFocusTopic, roadmapMastery, weakestTopic } from "./mastery";
 import type { CodingSolutionDoc, ProblemDifficulty } from "@/types/coding";
 import { DSA_TOPICS } from "@/constants/dsaTopics";
 
@@ -151,5 +151,39 @@ describe("nextFocusTopic", () => {
 
   it("recommends the very first curated topic for a student who has solved nothing", () => {
     expect(nextFocusTopic([])).toBe(DSA_TOPICS[0]);
+  });
+});
+
+describe("roadmapMastery", () => {
+  it("returns every canonical topic, not just the ones with exposure", () => {
+    const roadmap = roadmapMastery([], TODAY);
+    expect(roadmap).toHaveLength(DSA_TOPICS.length);
+    expect(roadmap.map((entry) => entry.topic)).toEqual(DSA_TOPICS);
+  });
+
+  it("fills an untouched topic with a real zero rather than leaving it out", () => {
+    const roadmap = roadmapMastery([], TODAY);
+    expect(roadmap[0]).toEqual({
+      topic: DSA_TOPICS[0],
+      solved: 0,
+      byDifficulty: { easy: 0, medium: 0, hard: 0 },
+      percent: 0,
+      band: "starting",
+      lastSolvedAt: null,
+    });
+  });
+
+  it("carries the real computed entry through for a topic with exposure", () => {
+    const solutions = [solution("s1", TODAY, [DSA_TOPICS[0]], "hard")];
+    const roadmap = roadmapMastery(solutions, TODAY);
+    expect(roadmap[0].solved).toBe(1);
+    expect(roadmap[0].byDifficulty).toEqual({ easy: 0, medium: 0, hard: 1 });
+    expect(roadmap[0].percent).toBeGreaterThan(0);
+  });
+
+  it("stays in curated order regardless of solve order", () => {
+    const solutions = [solution("s1", TODAY, [DSA_TOPICS[10]]), solution("s2", TODAY, [DSA_TOPICS[2]])];
+    const roadmap = roadmapMastery(solutions, TODAY);
+    expect(roadmap.map((entry) => entry.topic)).toEqual(DSA_TOPICS);
   });
 });

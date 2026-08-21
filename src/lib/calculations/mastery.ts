@@ -156,3 +156,25 @@ export function nextFocusTopic(masteries: TopicMastery[]): DsaTopic | null {
   if (untouched) return untouched;
   return weakestTopic(masteries)?.topic ?? null;
 }
+
+/**
+ * Every canonical topic, in curated learning-path order — the roadmap.
+ *
+ * Unlike computeTopicMastery(), which leaves an untouched topic out entirely,
+ * this fills it in with a real, honest zero: "not started yet" is the fact
+ * this view exists to show, not something to hide by omission.
+ */
+export function roadmapMastery(solutions: CodingSolutionDoc[], todayIso: string): TopicMastery[] {
+  const byTopic = new Map(computeTopicMastery(solutions, todayIso).map((entry) => [entry.topic, entry]));
+  return DSA_TOPICS.map(
+    (topic) =>
+      byTopic.get(topic) ?? {
+        topic,
+        solved: 0,
+        byDifficulty: { easy: 0, medium: 0, hard: 0 },
+        percent: 0,
+        band: "starting",
+        lastSolvedAt: null,
+      },
+  );
+}

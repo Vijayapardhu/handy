@@ -4,6 +4,7 @@ import {
   analyseComplexity,
   createSolution,
   deleteSolution,
+  explainTopic,
   fetchCodingProfile,
   fetchContests,
   fetchDailyProblem,
@@ -155,5 +156,22 @@ export function useAnalyseComplexity() {
     { code: string; language: string; title?: string; platform?: CodingPlatform }
   >({
     mutationFn: async (input) => analyseComplexity(input, await user!.getIdToken()),
+  });
+}
+
+/**
+ * The roadmap's "what is this" explanation for one topic — generated once
+ * server-side and cached forever after (api/topic-explainer.js), so an
+ * Infinity staleTime here just means the browser does not re-ask for
+ * something that cannot change.
+ */
+export function useTopicExplainer(topic: string | null) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["topicExplainer", topic],
+    queryFn: async () => explainTopic(topic!, await user!.getIdToken()),
+    enabled: Boolean(user) && Boolean(topic),
+    staleTime: Infinity,
+    retry: false,
   });
 }

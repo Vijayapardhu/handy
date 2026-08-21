@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normaliseTopic, topicsFromTags } from "./dsaTopics";
+import { DSA_TOPICS, normaliseTopic, topicResourceLinks, topicsFromTags } from "./dsaTopics";
 
 describe("normaliseTopic", () => {
   it("maps real Codeforces tags to the canonical set", () => {
@@ -41,5 +41,31 @@ describe("topicsFromTags", () => {
 
   it("is empty for an untagged solve", () => {
     expect(topicsFromTags("codechef", [])).toEqual([]);
+  });
+});
+
+describe("topicResourceLinks", () => {
+  it("builds a real LeetCode tag URL for a topic LEETCODE_TAG_MAP actually reaches", () => {
+    expect(topicResourceLinks("dp").leetcode).toBe("https://leetcode.com/tag/dynamic-programming/");
+    expect(topicResourceLinks("two-pointers").leetcode).toBe("https://leetcode.com/tag/two-pointers/");
+  });
+
+  it("builds a real Codeforces tag URL for a topic CODEFORCES_TAG_MAP actually reaches", () => {
+    expect(topicResourceLinks("dp").codeforces).toBe("https://codeforces.com/problemset?tags=dp");
+  });
+
+  it("leaves leetcode/codeforces null for a topic neither tag map reaches, rather than guessing", () => {
+    const links = topicResourceLinks("number-theory");
+    // number-theory has no clean single LeetCode tag in LEETCODE_TAG_MAP.
+    expect(links.leetcode).toBeNull();
+  });
+
+  it("always gives a GFG search link, CodeChef and HackerRank practice links, for every topic", () => {
+    for (const topic of DSA_TOPICS) {
+      const links = topicResourceLinks(topic);
+      expect(links.geeksforgeeks).toContain("geeksforgeeks.org/?s=");
+      expect(links.codechef).toBe("https://www.codechef.com/practice");
+      expect(links.hackerrank).toBe("https://www.hackerrank.com/domains/algorithms");
+    }
   });
 });

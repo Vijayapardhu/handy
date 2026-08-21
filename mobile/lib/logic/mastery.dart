@@ -220,6 +220,58 @@ List<String> topicsFromTags(CodingPlatform platform, List<String> rawTags) {
   return [for (final topic in found) topic.id];
 }
 
+/// The reverse of a tag map: canonical topic -> that platform's own primary
+/// tag name for it. Built from the maps above rather than a second
+/// hand-written list, so it can never name a platform tag those maps do not
+/// already vouch for. Where a topic has more than one raw tag, the first one
+/// in the map's own declaration order wins.
+Map<DsaTopic, String> _primaryTagFor(Map<String, DsaTopic> map) {
+  final out = <DsaTopic, String>{};
+  for (final entry in map.entries) {
+    out.putIfAbsent(entry.value, () => entry.key);
+  }
+  return out;
+}
+
+final _leetcodePrimaryTag = _primaryTagFor(_leetcodeTagMap);
+final _codeforcesPrimaryTag = _primaryTagFor(_codeforcesTagMap);
+
+/// Where to read up on and practise one topic — never a guessed URL. See
+/// topicResourceLinks in src/constants/dsaTopics.ts, which this ports rule
+/// for rule: LeetCode and Codeforces get a real per-topic link only when that
+/// topic's own tag map actually reaches it; GeeksforGeeks gets a search link
+/// rather than a guessed article slug; CodeChef/HackerRank get their general
+/// practice page rather than a fabricated topic filter.
+class TopicResourceLinks {
+  const TopicResourceLinks({
+    required this.leetcode,
+    required this.codeforces,
+    required this.geeksforgeeks,
+    required this.codechef,
+    required this.hackerrank,
+  });
+
+  final String? leetcode;
+  final String? codeforces;
+  final String geeksforgeeks;
+  final String codechef;
+  final String hackerrank;
+}
+
+TopicResourceLinks topicResourceLinks(DsaTopic topic) {
+  final leetcodeTag = _leetcodePrimaryTag[topic];
+  final codeforcesTag = _codeforcesPrimaryTag[topic];
+  return TopicResourceLinks(
+    leetcode: leetcodeTag == null ? null : 'https://leetcode.com/tag/${leetcodeTag.replaceAll(' ', '-')}/',
+    codeforces: codeforcesTag == null
+        ? null
+        : 'https://codeforces.com/problemset?tags=${Uri.encodeComponent(codeforcesTag)}',
+    geeksforgeeks: 'https://www.geeksforgeeks.org/?s=${Uri.encodeComponent(topic.label)}',
+    codechef: 'https://www.codechef.com/practice',
+    hackerrank: 'https://www.hackerrank.com/domains/algorithms',
+  );
+}
+
 enum MasteryBand { starting, learning, practicing, strong, advanced, mastered }
 
 extension MasteryBandLabel on MasteryBand {
@@ -369,4 +421,27 @@ DsaTopic? nextFocusTopic(List<TopicMastery> masteries) {
     if (!touched.contains(topic)) return topic;
   }
   return weakestTopic(masteries)?.topic;
+}
+
+/// Every canonical topic, in curated learning-path order — the roadmap.
+///
+/// Unlike computeTopicMastery(), which leaves an untouched topic out
+/// entirely, this fills it in with a real, honest zero: "not started yet" is
+/// the fact this view exists to show, not something to hide by omission.
+List<TopicMastery> roadmapMastery(List<CodingSolution> solutions, String todayIso) {
+  final byTopic = {for (final entry in computeTopicMastery(solutions, todayIso)) entry.topic: entry};
+  return [
+    for (final topic in dsaTopics)
+      byTopic[topic] ??
+          TopicMastery(
+            topic: topic,
+            solved: 0,
+            easy: 0,
+            medium: 0,
+            hard: 0,
+            percent: 0,
+            band: MasteryBand.starting,
+            lastSolvedAt: '',
+          ),
+  ];
 }

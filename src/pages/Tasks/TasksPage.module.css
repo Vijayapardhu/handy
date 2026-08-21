@@ -67,6 +67,11 @@
   color: var(--status-good) !important;
 }
 
+.roadmap {
+  background: var(--color-info-bg) !important;
+  color: var(--color-info) !important;
+}
+
 .tabHead {
   display: flex;
   justify-content: flex-end;

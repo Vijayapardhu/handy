@@ -214,4 +214,69 @@ void main() {
       expect(nextFocusTopic([]), dsaTopics[0]);
     });
   });
+
+  group('roadmapMastery', () {
+    test('returns every canonical topic, not just the ones with exposure', () {
+      final roadmap = roadmapMastery([], _today);
+      expect(roadmap, hasLength(dsaTopics.length));
+      expect(roadmap.map((entry) => entry.topic), dsaTopics);
+    });
+
+    test('fills an untouched topic with a real zero rather than leaving it out', () {
+      final roadmap = roadmapMastery([], _today);
+      final first = roadmap[0];
+      expect(first.topic, dsaTopics[0]);
+      expect(first.solved, 0);
+      expect(first.easy, 0);
+      expect(first.medium, 0);
+      expect(first.hard, 0);
+      expect(first.percent, 0);
+      expect(first.band, MasteryBand.starting);
+      expect(first.lastSolvedAt, isEmpty);
+    });
+
+    test('carries the real computed entry through for a topic with exposure', () {
+      final solutions = [_solution('s1', _today, [dsaTopics[0].id], difficulty: ProblemDifficulty.hard)];
+      final roadmap = roadmapMastery(solutions, _today);
+      expect(roadmap[0].solved, 1);
+      expect(roadmap[0].hard, 1);
+      expect(roadmap[0].percent, greaterThan(0));
+    });
+
+    test('stays in curated order regardless of solve order', () {
+      final solutions = [
+        _solution('s1', _today, [dsaTopics[10].id]),
+        _solution('s2', _today, [dsaTopics[2].id]),
+      ];
+      final roadmap = roadmapMastery(solutions, _today);
+      expect(roadmap.map((entry) => entry.topic), dsaTopics);
+    });
+  });
+
+  group('topicResourceLinks', () {
+    test('builds a real LeetCode tag URL for a topic the tag map actually reaches', () {
+      expect(topicResourceLinks(DsaTopic.dp).leetcode, 'https://leetcode.com/tag/dynamic-programming/');
+      expect(
+        topicResourceLinks(DsaTopic.twoPointers).leetcode,
+        'https://leetcode.com/tag/two-pointers/',
+      );
+    });
+
+    test('builds a real Codeforces tag URL for a topic the tag map actually reaches', () {
+      expect(topicResourceLinks(DsaTopic.dp).codeforces, 'https://codeforces.com/problemset?tags=dp');
+    });
+
+    test('leaves leetcode null for a topic the tag map does not reach, rather than guessing', () {
+      expect(topicResourceLinks(DsaTopic.numberTheory).leetcode, isNull);
+    });
+
+    test('always gives a GFG search link, CodeChef and HackerRank practice links', () {
+      for (final topic in dsaTopics) {
+        final links = topicResourceLinks(topic);
+        expect(links.geeksforgeeks, contains('geeksforgeeks.org/?s='));
+        expect(links.codechef, 'https://www.codechef.com/practice');
+        expect(links.hackerrank, 'https://www.hackerrank.com/domains/algorithms');
+      }
+    });
+  });
 }

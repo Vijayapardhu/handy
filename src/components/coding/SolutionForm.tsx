@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Cpu, Sparkle, Timer, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -50,9 +50,10 @@ function emptyDraft(initial?: Partial<SolutionDraft>): SolutionDraft {
 /**
  * Logging a solved problem, and working out what it cost.
  *
- * The complexity step is deliberately a button rather than something that runs
- * on save: it calls a model, it costs money, and a student who just wants to
- * write down that they solved something should not trigger it by accident.
+ * The complexity read happens on its own, a moment after the student stops
+ * changing the code field — no button to remember to press. Debounced rather
+ * than fired on every keystroke, so a model call happens once per pause in
+ * typing rather than once per character.
  *
  * Whatever comes back is editable before it is saved. A verdict is an
  * estimate read off the code, and the student is the one who knows whether the
@@ -78,6 +79,11 @@ export function SolutionForm({
   const analyse = useAnalyseComplexity();
   const create = useCreateSolution();
 
+  // Read at the moment the debounce timer fires, not when it was scheduled —
+  // the student may have changed the platform or language while it waited.
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+
   const set = <K extends keyof SolutionDraft>(key: K, value: SolutionDraft[K]) =>
     setDraft((previous) => ({ ...previous, [key]: value }));
 
@@ -97,19 +103,15 @@ export function SolutionForm({
     );
   }
 
-  async function handleAnalyse() {
+  async function analyseCode(target: SolutionDraft) {
     setError(null);
-    if (!draft.code.trim()) {
-      setError("Paste your solution first — there's nothing to read yet.");
-      return;
-    }
     try {
       setVerdict(
         await analyse.mutateAsync({
-          code: draft.code,
-          language: draft.language,
-          title: draft.title || undefined,
-          platform: draft.platform,
+          code: target.code,
+          language: target.language,
+          title: target.title || undefined,
+          platform: target.platform,
         }),
       );
     } catch (caught) {
@@ -129,6 +131,19 @@ export function SolutionForm({
       });
     }
   }
+
+  // The automatic replacement for the "Work out the complexity" button. A
+  // 900ms pause is long enough that pasting or actively typing never fires it
+  // mid-keystroke, short enough that it feels immediate once they stop.
+  useEffect(() => {
+    if (!draft.code.trim()) return;
+    const timer = setTimeout(() => analyseCode(draftRef.current), 900);
+    return () => clearTimeout(timer);
+    // Re-runs only when the code itself changes — analyseCode reads the rest
+    // of the draft through draftRef at fire time, so this does not need to
+    // restart the timer just because the platform or language changed too.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.code]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -296,15 +311,11 @@ export function SolutionForm({
             spellCheck={false}
             onChange={(event) => set("code", event.target.value)}
           />
-          <button
-            type="button"
-            className={styles.analyse}
-            onClick={handleAnalyse}
-            disabled={analyse.isPending}
-          >
-            <Sparkle size={14} />
-            {analyse.isPending ? "Reading your code…" : "Work out the complexity"}
-          </button>
+          {analyse.isPending && (
+            <p className={styles.analysing}>
+              <Sparkle size={14} /> Reading your code…
+            </p>
+          )}
         </div>
 
         {verdict && (
@@ -371,8 +382,16 @@ export function SolutionForm({
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <Button type="submit" loading={create.isPending} fullWidth>
-          Save to solve log
+        <Button
+          type="submit"
+          loading={create.isPending}
+          // Waits out an in-flight auto-analysis rather than saving ahead of
+          // it — the whole point of doing this automatically is that the
+          // result is there by the time the student saves.
+          disabled={analyse.isPending}
+          fullWidth
+        >
+          {analyse.isPending ? "Reading your code…" : "Save to solve log"}
         </Button>
       </form>
     </Card>
