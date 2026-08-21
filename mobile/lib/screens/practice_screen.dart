@@ -248,7 +248,8 @@ class PracticeView extends StatelessWidget {
 
         final profile = controller.profile;
         final activity = buildActivityMap(profile.stats, controller.solutions);
-        final heatmap = buildHeatmap(activity, _todayIso());
+        final activityDetail = buildActivityDetail(profile.stats, profile.recent, controller.solutions);
+        final heatmap = buildHeatmap(activity, _todayIso(), detail: activityDetail);
         final streak = currentStreak(activity, _todayIso());
         final best = longestStreak(activity);
         final split = totalByDifficulty(profile.stats);
@@ -553,14 +554,20 @@ class _PlatformGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final half = (screenWidth - 42) / 2;
+    final full = screenWidth - 32;
+
     return Wrap(
       spacing: 10,
       runSpacing: 10,
       children: [
-        for (final entry in stats)
+        for (var i = 0; i < stats.length; i += 1)
           SizedBox(
-            width: (MediaQuery.sizeOf(context).width - 42) / 2,
-            child: _PlatformTile(stats: entry),
+            // An odd count leaves the last tile alone in its row — give it
+            // the full row instead of sitting half-empty next to a gap.
+            width: (i == stats.length - 1 && stats.length.isOdd) ? full : half,
+            child: _PlatformTile(stats: stats[i]),
           ),
       ],
     );
@@ -647,7 +654,12 @@ class _PlatformTile extends StatelessWidget {
 ///
 /// The gaps are the point — this is the one view that shows the weeks nothing
 /// happened, which a "247 solved" total hides completely.
-class _HeatmapCard extends StatelessWidget {
+///
+/// Tapping a day opens which platform(s) it actually came from — a day with
+/// zero never lists a platform, and a platform only appears once something
+/// real is attributed to it (its own calendar, a recent solve, or a logged
+/// solution).
+class _HeatmapCard extends StatefulWidget {
   const _HeatmapCard({required this.days, required this.streak, required this.longest});
 
   final List<ActivityDay> days;
@@ -655,9 +667,16 @@ class _HeatmapCard extends StatelessWidget {
   final int longest;
 
   @override
+  State<_HeatmapCard> createState() => _HeatmapCardState();
+}
+
+class _HeatmapCardState extends State<_HeatmapCard> {
+  ActivityDay? _selected;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final active = days.where((day) => day.count > 0).length;
+    final active = widget.days.where((day) => day.count > 0).length;
 
     return Card(
       child: Padding(
@@ -670,18 +689,18 @@ class _HeatmapCard extends StatelessWidget {
                 AppIcon(
                   HugeIcons.strokeRoundedFire,
                   size: 16,
-                  color: streak > 0 ? HandyColors.orange : theme.textTheme.labelSmall?.color,
+                  color: widget.streak > 0 ? HandyColors.orange : theme.textTheme.labelSmall?.color,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    streak > 0 ? '$streak-day streak' : 'No streak yet',
+                    widget.streak > 0 ? '${widget.streak}-day streak' : 'No streak yet',
                     style: theme.textTheme.titleSmall,
                   ),
                 ),
                 Text(
                   '$active active ${active == 1 ? 'day' : 'days'}'
-                  '${longest > 0 ? ' · best $longest' : ''}',
+                  '${widget.longest > 0 ? ' · best ${widget.longest}' : ''}',
                   style: theme.textTheme.labelSmall,
                 ),
               ],
@@ -698,18 +717,29 @@ class _HeatmapCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (var week = 0; week * 7 < days.length; week += 1)
+                    for (var week = 0; week * 7 < widget.days.length; week += 1)
                       Column(
                         children: [
                           for (var row = 0; row < 7; row += 1)
-                            if (week * 7 + row < days.length)
-                              _Cell(level: days[week * 7 + row].level),
+                            if (week * 7 + row < widget.days.length)
+                              _Cell(
+                                day: widget.days[week * 7 + row],
+                                selected: _selected?.date == widget.days[week * 7 + row].date,
+                                onTap: () => setState(() {
+                                  final day = widget.days[week * 7 + row];
+                                  _selected = _selected?.date == day.date ? null : day;
+                                }),
+                              ),
                         ],
                       ),
                   ],
                 ),
               ),
             ),
+            if (_selected != null) ...[
+              const SizedBox(height: 12),
+              _DayDetail(day: _selected!, onClose: () => setState(() => _selected = null)),
+            ],
           ],
         ),
       ),
@@ -718,25 +748,116 @@ class _HeatmapCard extends StatelessWidget {
 }
 
 class _Cell extends StatelessWidget {
-  const _Cell({required this.level});
+  const _Cell({required this.day, required this.selected, required this.onTap});
 
-  final int level;
+  final ActivityDay day;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final base = HandyColors.orange;
-    final color = switch (level) {
+    final color = switch (day.level) {
       1 => base.withValues(alpha: 0.25),
       2 => base.withValues(alpha: 0.45),
       3 => base.withValues(alpha: 0.7),
       4 => base,
       _ => Theme.of(context).colorScheme.surfaceContainerHighest,
     };
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 11,
+        height: 11,
+        margin: const EdgeInsets.all(1.5),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(3),
+          border: selected ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5) : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// The tapped day's real platform breakdown — never a guess, and empty
+/// platforms are never listed.
+class _DayDetail extends StatelessWidget {
+  const _DayDetail({required this.day, required this.onClose});
+
+  final ActivityDay day;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      width: 11,
-      height: 11,
-      margin: const EdgeInsets.all(1.5),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  DateFormat('EEEE, d MMM yyyy').format(DateTime.parse(day.date)),
+                  style: theme.textTheme.labelLarge,
+                ),
+              ),
+              GestureDetector(
+                onTap: onClose,
+                child: AppIcon(HugeIcons.strokeRoundedCancel01, size: 16, color: theme.textTheme.labelSmall?.color),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (day.platforms.isEmpty)
+            Text('Nothing submitted this day.', style: theme.textTheme.bodySmall)
+          else
+            for (final entry in day.platforms)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(color: HandyColors.orange, shape: BoxShape.circle),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(text: entry.platform.label, style: theme.textTheme.labelLarge),
+                                TextSpan(
+                                  text: '  ${entry.count} ${entry.count == 1 ? 'submission' : 'submissions'}',
+                                  style: theme.textTheme.labelSmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (entry.titles.isNotEmpty)
+                            Text(entry.titles.join(', '), style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        ],
+      ),
     );
   }
 }

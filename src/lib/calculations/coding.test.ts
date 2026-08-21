@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildActivityDetail,
   buildActivityMap,
   buildHeatmap,
   complexityCoverage,
@@ -8,7 +9,7 @@ import {
   totalByDifficulty,
   weeklyProgress,
 } from "./coding";
-import type { CodingSolutionDoc, PlatformStats } from "@/types/coding";
+import type { CodingSolutionDoc, PlatformStats, RecentSolve } from "@/types/coding";
 
 function solution(solvedAt: string, withComplexity = false): CodingSolutionDoc {
   return {
@@ -77,6 +78,65 @@ describe("buildActivityMap", () => {
   });
 });
 
+function recentSolve(platform: RecentSolve["platform"], title: string, solvedAt: string): RecentSolve {
+  return { platform, title, url: "", difficulty: null, language: null, solvedAt, tags: [] };
+}
+
+describe("buildActivityDetail", () => {
+  it("uses the calendar count for a platform that publishes one, even with no title", () => {
+    const detail = buildActivityDetail([stats({ "2026-08-19": 3 })], [], []);
+    expect(detail.get("2026-08-19")).toEqual([{ platform: "leetcode", count: 3, titles: [] }]);
+  });
+
+  it("adds a recent solve's platform and title without double-counting a calendar day", () => {
+    const detail = buildActivityDetail(
+      [stats({ "2026-08-19": 3 })],
+      [recentSolve("leetcode", "Two Sum", "2026-08-19T10:00:00.000Z")],
+      [],
+    );
+    expect(detail.get("2026-08-19")).toEqual([{ platform: "leetcode", count: 3, titles: ["Two Sum"] }]);
+  });
+
+  it("counts a platform with no calendar purely off its named solves", () => {
+    const detail = buildActivityDetail(
+      [],
+      [recentSolve("codeforces", "Watermelon", "2026-08-19T10:00:00.000Z")],
+      [],
+    );
+    expect(detail.get("2026-08-19")).toEqual([
+      { platform: "codeforces", count: 1, titles: ["Watermelon"] },
+    ]);
+  });
+
+  it("adds a logged solution alongside a platform's recent solve on the same day", () => {
+    const detail = buildActivityDetail(
+      [],
+      [recentSolve("leetcode", "Two Sum", "2026-08-19T10:00:00.000Z")],
+      [solution("2026-08-19")],
+    );
+    const day = detail.get("2026-08-19")!;
+    expect(day).toHaveLength(1);
+    expect(day[0].count).toBe(1);
+    expect(day[0].titles).toEqual(["Two Sum"]);
+  });
+
+  it("lists platforms sorted alphabetically", () => {
+    const detail = buildActivityDetail(
+      [],
+      [
+        recentSolve("leetcode", "Two Sum", "2026-08-19T10:00:00.000Z"),
+        recentSolve("codeforces", "Watermelon", "2026-08-19T10:00:00.000Z"),
+      ],
+      [],
+    );
+    expect(detail.get("2026-08-19")!.map((entry) => entry.platform)).toEqual(["codeforces", "leetcode"]);
+  });
+
+  it("is empty for a day with nothing at all", () => {
+    expect(buildActivityDetail([stats(null)], [], []).size).toBe(0);
+  });
+});
+
 describe("currentStreak", () => {
   it("counts back from today", () => {
     const activity = new Map([
@@ -138,6 +198,14 @@ describe("buildHeatmap", () => {
     expect(cells[6].date).toBe("2026-08-20");
     expect(cells[6].count).toBe(5);
     expect(cells[0].level).toBe(0);
+    expect(cells[0].platforms).toEqual([]);
+  });
+
+  it("carries the platform breakdown into the matching cell when a detail map is passed", () => {
+    const detail = new Map([["2026-08-20", [{ platform: "leetcode" as const, count: 5, titles: ["Two Sum"] }]]]);
+    const cells = buildHeatmap(new Map([["2026-08-20", 5]]), "2026-08-20", 7, detail);
+    expect(cells[6].platforms).toEqual([{ platform: "leetcode", count: 5, titles: ["Two Sum"] }]);
+    expect(cells[0].platforms).toEqual([]);
   });
 
   it("puts any activity above level 0 and caps the shade at 4", () => {

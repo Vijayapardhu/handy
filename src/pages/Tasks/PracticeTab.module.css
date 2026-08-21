@@ -120,8 +120,14 @@
 
 .platformGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+/* An odd number of connected platforms leaves the last tile alone in its
+   row — give it the full row instead of sitting half-empty next to a gap. */
+.platformGrid > :last-child:nth-child(odd) {
+  grid-column: span 2;
 }
 
 .sectionHeading {

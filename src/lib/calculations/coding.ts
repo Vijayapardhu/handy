@@ -1,8 +1,10 @@
 import type {
+  CodingPlatform,
   CodingProfileDoc,
   CodingSolutionDoc,
   DifficultySplit,
   PlatformStats,
+  RecentSolve,
 } from "@/types/coding";
 
 /**
@@ -14,6 +16,14 @@ import type {
  * a streak that reads the clock is a streak that cannot be tested.
  */
 
+/** One platform's real, attributable share of a day's activity. */
+export interface PlatformDayActivity {
+  platform: CodingPlatform;
+  count: number;
+  /** Real titles only — from a recent solve or the solve log, never guessed. */
+  titles: string[];
+}
+
 /** One cell of the practice heatmap. */
 export interface ActivityDay {
   /** yyyy-MM-dd. */
@@ -21,6 +31,8 @@ export interface ActivityDay {
   count: number;
   /** 0-4, the shade. Bucketed rather than scaled so one heavy day cannot flatten the rest. */
   level: number;
+  /** Which platform(s) this count actually came from — empty for a day with nothing. */
+  platforms: PlatformDayActivity[];
 }
 
 function toUtcDay(iso: string): number {
@@ -59,6 +71,68 @@ export function buildActivityMap(
   return activity;
 }
 
+/**
+ * Which platform(s) actually contributed to each day, for the heatmap's
+ * click-through.
+ *
+ * Only LeetCode publishes a calendar, and even that carries no titles — a day
+ * can show "LeetCode, 3 submissions" with nothing named. A recent solve or a
+ * logged solution names the platform *and* the problem, so those take
+ * priority for the titles; the calendar's count stays authoritative for
+ * LeetCode since it is the platform's own number, not a count of what Handy
+ * happens to know the title of.
+ */
+export function buildActivityDetail(
+  stats: PlatformStats[],
+  recent: RecentSolve[],
+  solutions: CodingSolutionDoc[],
+): Map<string, PlatformDayActivity[]> {
+  const byDay = new Map<string, Map<CodingPlatform, PlatformDayActivity>>();
+  const calendarCovered = new Set<string>();
+
+  const entryFor = (date: string, platform: CodingPlatform): PlatformDayActivity => {
+    let day = byDay.get(date);
+    if (!day) {
+      day = new Map();
+      byDay.set(date, day);
+    }
+    let entry = day.get(platform);
+    if (!entry) {
+      entry = { platform, count: 0, titles: [] };
+      day.set(platform, entry);
+    }
+    return entry;
+  };
+
+  for (const platformStats of stats) {
+    for (const [date, count] of Object.entries(platformStats.calendar ?? {})) {
+      if (!date || count <= 0) continue;
+      entryFor(date, platformStats.platform).count = count;
+      calendarCovered.add(`${date}|${platformStats.platform}`);
+    }
+  }
+
+  const addTitle = (date: string, platform: CodingPlatform, title: string) => {
+    if (!date) return;
+    const entry = entryFor(date, platform);
+    if (entry.titles.includes(title)) return;
+    entry.titles.push(title);
+    if (!calendarCovered.has(`${date}|${platform}`)) entry.count += 1;
+  };
+
+  for (const solve of recent) addTitle(solve.solvedAt.slice(0, 10), solve.platform, solve.title);
+  for (const solution of solutions) addTitle(solution.solvedAt, solution.platform, solution.title);
+
+  const out = new Map<string, PlatformDayActivity[]>();
+  for (const [date, platforms] of byDay) {
+    out.set(
+      date,
+      [...platforms.values()].sort((a, b) => a.platform.localeCompare(b.platform)),
+    );
+  }
+  return out;
+}
+
 /** Four buckets. A day with anything at all is never level 0 — showing up counts. */
 function levelFor(count: number): number {
   if (count <= 0) return 0;
@@ -78,13 +152,14 @@ export function buildHeatmap(
   activity: Map<string, number>,
   todayIso: string,
   days = 84,
+  detail: Map<string, PlatformDayActivity[]> = new Map(),
 ): ActivityDay[] {
   const end = toUtcDay(todayIso);
   const out: ActivityDay[] = [];
   for (let offset = days - 1; offset >= 0; offset -= 1) {
     const date = isoFromUtcDay(end - offset * DAY_MS);
     const count = activity.get(date) ?? 0;
-    out.push({ date, count, level: levelFor(count) });
+    out.push({ date, count, level: levelFor(count), platforms: detail.get(date) ?? [] });
   }
   return out;
 }

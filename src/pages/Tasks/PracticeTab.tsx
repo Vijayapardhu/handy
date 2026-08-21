@@ -22,6 +22,7 @@ import {
   useSolutions,
 } from "@/hooks/useCoding";
 import {
+  buildActivityDetail,
   buildActivityMap,
   buildHeatmap,
   complexityCoverage,
@@ -72,7 +73,14 @@ export function PracticeTab() {
     () => buildActivityMap(profile?.stats ?? [], solutions),
     [profile?.stats, solutions],
   );
-  const heatmap = useMemo(() => buildHeatmap(activity, today), [activity, today]);
+  const activityDetail = useMemo(
+    () => buildActivityDetail(profile?.stats ?? [], profile?.recent ?? [], solutions),
+    [profile?.stats, profile?.recent, solutions],
+  );
+  const heatmap = useMemo(
+    () => buildHeatmap(activity, today, 84, activityDetail),
+    [activity, today, activityDetail],
+  );
   const streak = currentStreak(activity, today);
   const best = longestStreak(activity);
   const difficulty = totalByDifficulty(profile?.stats ?? []);

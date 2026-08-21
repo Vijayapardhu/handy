@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../data/installer.dart';
 import '../data/updates.dart';
 import '../main.dart';
+import '../theme.dart';
 import 'app_icon.dart';
 
 /// Tells a student there is a newer Handy, and installs it.
@@ -12,7 +13,9 @@ import 'app_icon.dart';
 /// behind it still works, and hiding a working app behind an advert for a
 /// slightly better one is a bad trade. A required update is a different case —
 /// that one cannot be dismissed, because the build underneath is known to
-/// misbehave.
+/// misbehave. The gradient hero below is how that difference is felt before a
+/// word is read — orange for "here if you want it", red for "this needs you" —
+/// the same distinction FocusHero draws on the web Tasks page.
 ///
 /// The button used to open a browser. It now downloads and installs in place
 /// (see installer.dart), because the browser round-trip was where most updates
@@ -110,60 +113,30 @@ class _UpdateSheetState extends State<_UpdateSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final update = widget.update;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        24,
-        8,
-        24,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
+        20,
+        4,
+        20,
+        20 + MediaQuery.viewInsetsOf(context).bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Center(
-                  child: AppIcon(
-                    HugeIcons.strokeRoundedArrowRight01,
-                    size: 20,
-                    color: scheme.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      update.required ? 'Update required' : 'Update available',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    Text(
-                      'Version ${update.version}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          _Hero(update: update),
 
           if (update.changelog.isNotEmpty && _stage == _Stage.idle) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
+            Text(
+              "WHAT'S NEW",
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+            const SizedBox(height: 8),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 220),
+              constraints: const BoxConstraints(maxHeight: 200),
               child: SingleChildScrollView(
                 child: Text(
                   update.changelog,
@@ -175,10 +148,12 @@ class _UpdateSheetState extends State<_UpdateSheet> {
 
           if (update.required && _stage == _Stage.idle) ...[
             const SizedBox(height: 16),
-            Text(
-              'This version is too old to keep working correctly, so Handy will '
-              'not continue until it is updated.',
-              style: Theme.of(context).textTheme.bodySmall,
+            const _Callout(
+              icon: HugeIcons.strokeRoundedAlert02,
+              tone: HandyColors.bad,
+              text:
+                  'This version is too old to keep working correctly, so Handy '
+                  'will not continue until it is updated.',
             ),
           ],
 
@@ -218,34 +193,52 @@ class _UpdateSheetState extends State<_UpdateSheet> {
           ],
 
         _Stage.downloading => [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: _progress,
-                minHeight: 8,
-                backgroundColor: Theme.of(context).dividerColor,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: _progress,
+                      minHeight: 8,
+                      backgroundColor: Theme.of(context).dividerColor,
+                    ),
+                  ),
+                ),
+                if (_progress != null) ...[
+                  const SizedBox(width: 10),
+                  Text(
+                    '${(_progress! * 100).toStringAsFixed(0)}%',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: HandyColors.orange,
+                          fontSize: 12.5,
+                        ),
+                  ),
+                ],
+              ],
             ),
             const SizedBox(height: 12),
-            _Note(
-              _progress == null
-                  ? 'Downloading…'
-                  : 'Downloading… ${(_progress! * 100).toStringAsFixed(0)}%',
-            ),
+            _Note(_progress == null ? 'Downloading…' : 'Downloading the update…'),
           ],
 
         _Stage.handingOver => [
-            _Note(
-              'Android is asking you to confirm the install. If a warning about '
-              'an unknown app appears, that is Android noticing Handy did not '
-              'come from the Play Store — choose to install anyway.',
+            const _Callout(
+              icon: HugeIcons.strokeRoundedInformationCircle,
+              tone: HandyColors.info,
+              text:
+                  'Android is asking you to confirm the install. If a warning about '
+                  'an unknown app appears, that is Android noticing Handy did not '
+                  'come from the Play Store — choose to install anyway.',
             ),
           ],
 
         _Stage.blocked => [
-            _Note(
-              'Android needs your permission to let Handy install updates. It is '
-              'asked once, and you will not see this again.',
+            const _Callout(
+              icon: HugeIcons.strokeRoundedShield02,
+              tone: HandyColors.warn,
+              text:
+                  'Android needs your permission to let Handy install updates. It is '
+                  'asked once, and you will not see this again.',
             ),
             const SizedBox(height: 14),
             SizedBox(
@@ -269,9 +262,10 @@ class _UpdateSheetState extends State<_UpdateSheet> {
           ],
 
         _Stage.failed => [
-            Text(
-              _error ?? 'The update could not be installed.',
-              style: Theme.of(context).textTheme.bodyMedium,
+            _Callout(
+              icon: HugeIcons.strokeRoundedAlert02,
+              tone: HandyColors.bad,
+              text: _error ?? 'The update could not be installed.',
             ),
             const SizedBox(height: 14),
             SizedBox(
@@ -287,6 +281,114 @@ class _UpdateSheetState extends State<_UpdateSheet> {
             ),
           ],
       };
+}
+
+/// The gradient band that opens the sheet — orange for an optional update,
+/// red for one that blocks the app until it is done. Mirrors FocusHero.tsx's
+/// urgent/default split on the web Tasks page, translated into the app's own
+/// gradient-card language (see the running-class card on Today).
+class _Hero extends StatelessWidget {
+  const _Hero({required this.update});
+
+  final AppUpdate update;
+
+  @override
+  Widget build(BuildContext context) {
+    final urgent = update.required;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: urgent
+              ? const [HandyColors.bad, Color(0xFFA51515)]
+              : const [HandyColors.orange, HandyColors.orangeDeep],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Center(
+              child: AppIcon(
+                urgent ? HugeIcons.strokeRoundedAlert02 : HugeIcons.strokeRoundedArrowRight01,
+                size: 22,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  urgent ? 'UPDATE REQUIRED' : 'UPDATE AVAILABLE',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.7,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Version ${update.version}',
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A tinted callout for the one line that matters at each stage — a
+/// permission ask, a required-update warning, a failure. Colour carries the
+/// tone so the sentence does not have to open with "Warning:" to read as one.
+class _Callout extends StatelessWidget {
+  const _Callout({required this.icon, required this.tone, required this.text});
+
+  final AppIconData icon;
+  final Color tone;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tone.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon(icon, size: 16, color: tone),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.45)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Note extends StatelessWidget {

@@ -10,9 +10,25 @@ library;
 
 import '../models/coding.dart';
 
+/// One platform's real, attributable share of a day's activity.
+class PlatformDayActivity {
+  const PlatformDayActivity({required this.platform, required this.count, required this.titles});
+
+  final CodingPlatform platform;
+  final int count;
+
+  /// Real titles only — from a recent solve or the solve log, never guessed.
+  final List<String> titles;
+}
+
 /// One cell of the practice heatmap.
 class ActivityDay {
-  const ActivityDay({required this.date, required this.count, required this.level});
+  const ActivityDay({
+    required this.date,
+    required this.count,
+    required this.level,
+    this.platforms = const [],
+  });
 
   /// yyyy-MM-dd.
   final String date;
@@ -21,6 +37,10 @@ class ActivityDay {
   /// 0-4, the shade. Bucketed rather than scaled, so one heavy day cannot
   /// flatten the rest of the grid.
   final int level;
+
+  /// Which platform(s) this count actually came from — empty for a day with
+  /// nothing.
+  final List<PlatformDayActivity> platforms;
 }
 
 /// Merges every source of "practice happened that day" into one map.
@@ -46,6 +66,68 @@ Map<String, int> buildActivityMap(
     add(solution.solvedAt, 1);
   }
   return activity;
+}
+
+/// Which platform(s) actually contributed to each day, for the heatmap's
+/// tap-through.
+///
+/// Only LeetCode publishes a calendar, and even that carries no titles — a
+/// day can show "LeetCode, 3 submissions" with nothing named. A recent solve
+/// or a logged solution names the platform *and* the problem, so those take
+/// priority for the titles; the calendar's count stays authoritative for
+/// LeetCode since it is the platform's own number, not a count of what Handy
+/// happens to know the title of.
+Map<String, List<PlatformDayActivity>> buildActivityDetail(
+  List<PlatformStats> stats,
+  List<RecentSolve> recent,
+  List<CodingSolution> solutions,
+) {
+  final byDay = <String, Map<CodingPlatform, _MutableDayActivity>>{};
+  final calendarCovered = <String>{};
+
+  _MutableDayActivity entryFor(String date, CodingPlatform platform) {
+    final day = byDay.putIfAbsent(date, () => {});
+    return day.putIfAbsent(platform, () => _MutableDayActivity(platform));
+  }
+
+  for (final platformStats in stats) {
+    platformStats.calendar?.forEach((date, count) {
+      if (date.isEmpty || count <= 0) return;
+      entryFor(date, platformStats.platform).count = count;
+      calendarCovered.add('$date|${platformStats.platform.id}');
+    });
+  }
+
+  void addTitle(String date, CodingPlatform platform, String title) {
+    if (date.isEmpty) return;
+    final entry = entryFor(date, platform);
+    if (entry.titles.contains(title)) return;
+    entry.titles.add(title);
+    if (!calendarCovered.contains('$date|${platform.id}')) entry.count += 1;
+  }
+
+  for (final solve in recent) {
+    addTitle(_iso(solve.solvedAt), solve.platform, solve.title);
+  }
+  for (final solution in solutions) {
+    addTitle(solution.solvedAt, solution.platform, solution.title);
+  }
+
+  return {
+    for (final entry in byDay.entries)
+      entry.key: (entry.value.values.toList()
+            ..sort((a, b) => a.platform.id.compareTo(b.platform.id)))
+          .map((m) => PlatformDayActivity(platform: m.platform, count: m.count, titles: m.titles))
+          .toList(),
+  };
+}
+
+class _MutableDayActivity {
+  _MutableDayActivity(this.platform);
+
+  final CodingPlatform platform;
+  int count = 0;
+  final List<String> titles = [];
 }
 
 /// Four buckets. A day with anything at all is never level 0 — showing up counts.
@@ -79,6 +161,7 @@ List<ActivityDay> buildHeatmap(
   Map<String, int> activity,
   String todayIso, {
   int days = 84,
+  Map<String, List<PlatformDayActivity>> detail = const {},
 }) {
   final end = _day(todayIso);
   return [
@@ -86,7 +169,12 @@ List<ActivityDay> buildHeatmap(
       () {
         final date = _iso(end.subtract(Duration(days: offset)));
         final count = activity[date] ?? 0;
-        return ActivityDay(date: date, count: count, level: _levelFor(count));
+        return ActivityDay(
+          date: date,
+          count: count,
+          level: _levelFor(count),
+          platforms: detail[date] ?? const [],
+        );
       }(),
   ];
 }
