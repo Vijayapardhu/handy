@@ -165,6 +165,7 @@ export interface NewSolution {
   notes?: string;
   solvedAt: string;
   complexity?: ComplexityVerdict | null;
+  topics?: string[];
 }
 
 /** Newest first — the question is always "what did I do lately", never "what did I do first". */
@@ -190,6 +191,7 @@ export async function createSolution(studentId: string, solution: NewSolution): 
     code: solution.code ?? "",
     notes: solution.notes?.trim() ?? "",
     complexity: solution.complexity ?? null,
+    topics: solution.topics ?? [],
     solvedAt: solution.solvedAt,
     createdAt: now,
     updatedAt: now,
@@ -206,6 +208,7 @@ export interface SolutionEdits {
   notes?: string;
   complexity?: ComplexityVerdict | null;
   solvedAt?: string;
+  topics?: string[];
 }
 
 /** Partial, like updateTask: this serves a full edit and a lone complexity correction equally. */
@@ -219,6 +222,7 @@ export async function updateSolution(solutionId: string, edits: SolutionEdits): 
   if (edits.notes !== undefined) data.notes = edits.notes.trim();
   if (edits.complexity !== undefined) data.complexity = edits.complexity;
   if (edits.solvedAt !== undefined) data.solvedAt = edits.solvedAt;
+  if (edits.topics !== undefined) data.topics = edits.topics;
   await updateDoc(doc(codingSolutionsCol(), solutionId), data);
 }
 

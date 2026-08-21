@@ -32,6 +32,9 @@ import {
 } from "@/lib/calculations/coding";
 import { CodingError } from "@/services/coding/codingService";
 import { PLATFORM_BRAND } from "@/constants/codingBrand";
+import { topicsFromTags } from "@/constants/dsaTopics";
+import { computeTopicMastery } from "@/lib/calculations/mastery";
+import { TopicMasteryCard } from "@/components/coding/TopicMasteryCard";
 import { formatShortDate, todayIso } from "@/lib/date";
 import { PLATFORM_META, type RecentSolve } from "@/types/coding";
 import styles from "./PracticeTab.module.css";
@@ -78,6 +81,7 @@ export function PracticeTab() {
     () => weeklyProgress(solutions, profile?.weeklyTarget ?? 0, today),
     [solutions, profile?.weeklyTarget, today],
   );
+  const mastery = useMemo(() => computeTopicMastery(solutions, today), [solutions, today]);
 
   if (profileQuery.isLoading) {
     return (
@@ -195,6 +199,8 @@ export function PracticeTab() {
 
       <StreakHeatmap days={heatmap} streak={streak} longest={best} />
 
+      {mastery.length > 0 && <TopicMasteryCard mastery={mastery} />}
+
       {dailyQuery.data && <DailyProblemCard daily={dailyQuery.data} />}
 
       {recent.length > 0 && (
@@ -286,6 +292,11 @@ function RecentSolveRow({
             difficulty: solve.difficulty ?? "",
             language: solve.language ?? "Python",
             solvedAt: format(parseISO(solve.solvedAt), "yyyy-MM-dd"),
+            // Real tags only — Codeforces publishes them per solve, so this
+            // pre-fills; every other platform's recent list carries none
+            // (types/coding.ts's RecentSolve.tags), so this comes back empty
+            // and the student tags it themselves.
+            topics: topicsFromTags(solve.platform, solve.tags),
           })
         }
       >

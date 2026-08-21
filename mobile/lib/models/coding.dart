@@ -398,6 +398,7 @@ class CodingSolution {
     required this.code,
     required this.notes,
     required this.complexity,
+    required this.topics,
     required this.solvedAt,
   });
 
@@ -410,6 +411,11 @@ class CodingSolution {
   final String code;
   final String notes;
   final ComplexityVerdict? complexity;
+
+  /// DsaTopic ids (see logic/mastery.dart) this solve counts toward. Empty,
+  /// not guessed — pre-filled from a platform's own tags where one genuinely
+  /// publishes them (Codeforces), left for the student to set otherwise.
+  final List<String> topics;
 
   /// The calendar day, which is what the streak and the heatmap count.
   final String solvedAt;
@@ -424,6 +430,7 @@ class CodingSolution {
         code: '${map['code'] ?? ''}',
         notes: '${map['notes'] ?? ''}',
         complexity: ComplexityVerdict.fromMap(map['complexity']),
+        topics: [for (final topic in (map['topics'] as List? ?? [])) '$topic'],
         solvedAt: '${map['solvedAt'] ?? ''}',
       );
 }

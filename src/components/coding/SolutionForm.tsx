@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/Card";
 import { useAnalyseComplexity, useCreateSolution } from "@/hooks/useCoding";
 import { CodingError } from "@/services/coding/codingService";
 import { todayIso } from "@/lib/date";
+import { DSA_TOPICS, DSA_TOPIC_LABELS, type DsaTopic } from "@/constants/dsaTopics";
+import { cn } from "@/lib/utils/cn";
 import {
   CODING_PLATFORMS,
   PLATFORM_META,
@@ -26,6 +28,8 @@ export interface SolutionDraft {
   solvedAt: string;
   code: string;
   notes: string;
+  /** DsaTopic ids. Pre-filled from a platform's own tags when the caller has them (see PracticeTab's "Log" button); otherwise the student picks. */
+  topics: string[];
 }
 
 function emptyDraft(initial?: Partial<SolutionDraft>): SolutionDraft {
@@ -38,6 +42,7 @@ function emptyDraft(initial?: Partial<SolutionDraft>): SolutionDraft {
     solvedAt: todayIso(),
     code: "",
     notes: "",
+    topics: [],
     ...initial,
   };
 }
@@ -53,6 +58,11 @@ function emptyDraft(initial?: Partial<SolutionDraft>): SolutionDraft {
  * estimate read off the code, and the student is the one who knows whether the
  * helper it assumed about is really O(log n) — so `source` flips to "manual"
  * the moment they change a field, and the row says which it is forever after.
+ *
+ * Topics work the same way: pre-filled where a platform genuinely publishes
+ * them (Codeforces tags, passed through in `initial`), never guessed for a
+ * platform that doesn't — the chips just start unselected, and only what the
+ * student actually picks counts toward a topic's mastery.
  */
 export function SolutionForm({
   initial,
@@ -70,6 +80,15 @@ export function SolutionForm({
 
   const set = <K extends keyof SolutionDraft>(key: K, value: SolutionDraft[K]) =>
     setDraft((previous) => ({ ...previous, [key]: value }));
+
+  function toggleTopic(topic: DsaTopic) {
+    setDraft((previous) => ({
+      ...previous,
+      topics: previous.topics.includes(topic)
+        ? previous.topics.filter((t) => t !== topic)
+        : [...previous.topics, topic],
+    }));
+  }
 
   /** Editing a returned verdict makes it the student's, not the model's. */
   function editVerdict(patch: Partial<ComplexityVerdict>) {
@@ -133,6 +152,7 @@ export function SolutionForm({
       notes: draft.notes,
       solvedAt: draft.solvedAt,
       complexity,
+      topics: draft.topics,
     });
     onClose();
   }
@@ -228,6 +248,25 @@ export function SolutionForm({
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>
+            Topics <span className={styles.optional}>optional — counts toward topic mastery</span>
+          </label>
+          <div className={styles.topicGrid}>
+            {DSA_TOPICS.map((topic) => (
+              <button
+                key={topic}
+                type="button"
+                className={cn(styles.topicChip, draft.topics.includes(topic) && styles.topicChipSelected)}
+                onClick={() => toggleTopic(topic)}
+                aria-pressed={draft.topics.includes(topic)}
+              >
+                {DSA_TOPIC_LABELS[topic]}
+              </button>
+            ))}
           </div>
         </div>
 

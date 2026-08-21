@@ -30,6 +30,12 @@ class HandyColors {
   static const good = Color(0xFF16A34A);
   static const warn = Color(0xFFD97706);
   static const bad = Color(0xFFDC2626);
+
+  // The two extra bands topic mastery needs beyond good/warn/bad — matches
+  // --color-info and --status-excellent in tokens.css exactly, so a "Learning"
+  // or "Mastered" chip is the same colour on both platforms.
+  static const info = Color(0xFF2563EB);
+  static const excellent = Color(0xFF059669);
 }
 
 /// Attendance colour. Null means no class held yet, which is grey rather than

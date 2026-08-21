@@ -1,0 +1,141 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rowHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.topicName {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.band {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+}
+
+.barTrack {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 0.3s ease;
+}
+
+.rowMeta {
+  font-size: 10.5px;
+  color: var(--color-text-faint);
+}
+
+/* One palette, six bands — a plain hue ramp from "just starting" (grey) to
+   "mastered" (the app's own success green), so the color alone says roughly
+   where a topic sits before a student reads the label. */
+.starting {
+  color: var(--color-text-faint);
+}
+.band.starting {
+  background: var(--color-bg);
+}
+.barFill.starting {
+  background: var(--color-text-faint);
+}
+
+.learning {
+  color: var(--color-info);
+}
+.band.learning {
+  background: var(--color-info-bg);
+}
+.barFill.learning {
+  background: var(--color-info);
+}
+
+.practicing {
+  color: var(--status-average);
+}
+.band.practicing {
+  background: var(--status-average-bg);
+}
+.barFill.practicing {
+  background: var(--status-average);
+}
+
+.strong {
+  color: var(--color-primary-dark);
+}
+.band.strong {
+  background: var(--color-primary-light);
+}
+.barFill.strong {
+  background: var(--color-primary);
+}
+
+.advanced {
+  color: var(--status-good);
+}
+.band.advanced {
+  background: var(--status-good-bg);
+}
+.barFill.advanced {
+  background: var(--status-good);
+}
+
+.mastered {
+  color: var(--status-excellent);
+}
+.band.mastered {
+  background: var(--status-excellent-bg);
+}
+.barFill.mastered {
+  background: var(--status-excellent);
+}
+
+.next {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-size: 12.5px;
+  color: var(--color-text);
+}
+
+.footnote {
+  font-size: 10.5px;
+  color: var(--color-text-faint);
+}

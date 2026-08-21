@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../data/coding.dart';
 import '../data/widget_publish.dart';
 import '../logic/coding.dart';
+import '../logic/mastery.dart';
 import '../main.dart';
 import '../models/coding.dart';
 import '../models/models.dart';
@@ -182,6 +183,7 @@ class PracticeController extends ChangeNotifier {
     String code = '',
     String notes = '',
     ComplexityVerdict? complexity,
+    List<String> topics = const [],
   }) =>
       _coding.createSolution(
         platform: platform,
@@ -193,6 +195,7 @@ class PracticeController extends ChangeNotifier {
         code: code,
         notes: notes,
         complexity: complexity,
+        topics: topics,
       );
 
   Future<void> deleteSolution(String id) => _coding.deleteSolution(id);
@@ -250,6 +253,7 @@ class PracticeView extends StatelessWidget {
         final best = longestStreak(activity);
         final split = totalByDifficulty(profile.stats);
         final coverage = complexityCoverage(controller.solutions);
+        final mastery = computeTopicMastery(controller.solutions, _todayIso());
 
         return RefreshIndicator(
           onRefresh: () => controller.load(forceRefresh: true),
@@ -264,6 +268,11 @@ class PracticeView extends StatelessWidget {
 
               _HeatmapCard(days: heatmap, streak: streak, longest: best),
               const SizedBox(height: 12),
+
+              if (mastery.isNotEmpty) ...[
+                _TopicMasteryCard(mastery: mastery),
+                const SizedBox(height: 12),
+              ],
 
               if (controller.daily != null) ...[
                 _DailyCard(daily: controller.daily!),
@@ -728,6 +737,135 @@ class _Cell extends StatelessWidget {
       height: 11,
       margin: const EdgeInsets.all(1.5),
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+    );
+  }
+}
+
+/// Which DSA topics a student has actually practised, and how deep.
+///
+/// Built entirely from the solve log's own topic tags — see
+/// logic/mastery.dart for exactly what the score does and does not claim to
+/// measure. Nothing here is an AI opinion; every number is a plain function
+/// of what was logged, which is also why an untagged solve (most platforms
+/// don't publish topics, so most solves start untagged) simply doesn't
+/// appear here rather than being guessed into some topic.
+class _TopicMasteryCard extends StatelessWidget {
+  const _TopicMasteryCard({required this.mastery});
+
+  final List<TopicMastery> mastery;
+
+  static const _visibleTopics = 8;
+
+  Color _bandColor(MasteryBand band) => switch (band) {
+        MasteryBand.starting => HandyColors.lightMuted,
+        MasteryBand.learning => HandyColors.info,
+        MasteryBand.practicing => HandyColors.warn,
+        MasteryBand.strong => HandyColors.orange,
+        MasteryBand.advanced => HandyColors.good,
+        MasteryBand.mastered => HandyColors.excellent,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final visible = mastery.take(_visibleTopics).toList();
+    final next = nextFocusTopic(mastery);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(HugeIcons.strokeRoundedTarget02, size: 16),
+                const SizedBox(width: 6),
+                Text('Topic mastery', style: theme.textTheme.titleSmall),
+              ],
+            ),
+            const SizedBox(height: 10),
+            for (final entry in visible)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(entry.topic.label, style: theme.textTheme.bodyMedium),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: _bandColor(entry.band).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            entry.band.label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: _bandColor(entry.band),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: entry.percent / 100,
+                        minHeight: 6,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        color: _bandColor(entry.band),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${entry.solved} solved · ${entry.easy}E ${entry.medium}M ${entry.hard}H',
+                      style: theme.textTheme.labelSmall,
+                    ),
+                  ],
+                ),
+              ),
+            if (next != null)
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    AppIcon(HugeIcons.strokeRoundedCompass01, size: 14),
+                    const SizedBox(width: 6),
+                    Text.rich(
+                      TextSpan(
+                        style: theme.textTheme.bodySmall,
+                        children: [
+                          const TextSpan(text: 'Focus next: '),
+                          TextSpan(
+                            text: next.label,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              "Only counts solves tagged with a topic — tag one when you log it to have it count here.",
+              style: theme.textTheme.labelSmall,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1322,6 +1460,15 @@ class _SolutionSheetState extends State<_SolutionSheet> {
       ? _todayIso()
       : DateFormat('yyyy-MM-dd').format(widget.from!.solvedAt);
 
+  // Real tags only — Codeforces publishes them per solve, so this pre-fills;
+  // every other platform's recent list carries none, so this starts empty
+  // and the student tags it themselves.
+  late final Set<DsaTopic> _topics = widget.from == null
+      ? {}
+      : topicsFromTags(widget.from!.platform, widget.from!.tags)
+          .map((id) => dsaTopics.firstWhere((t) => t.id == id))
+          .toSet();
+
   ComplexityVerdict? _verdict;
   bool _analysing = false;
   bool _saving = false;
@@ -1411,6 +1558,7 @@ class _SolutionSheetState extends State<_SolutionSheet> {
       code: _code.text,
       notes: _notes.text,
       complexity: complexity,
+      topics: [for (final topic in _topics) topic.id],
     );
     if (mounted) Navigator.of(context).pop();
   }
@@ -1494,6 +1642,29 @@ class _SolutionSheetState extends State<_SolutionSheet> {
                   onChanged: (value) => setState(() => _language = value ?? _language),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text('Topics — optional, counts toward topic mastery', style: theme.textTheme.labelSmall),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final topic in dsaTopics)
+                FilterChip(
+                  label: Text(topic.label),
+                  labelStyle: const TextStyle(fontSize: 11.5),
+                  visualDensity: VisualDensity.compact,
+                  selected: _topics.contains(topic),
+                  onSelected: (selected) => setState(() {
+                    if (selected) {
+                      _topics.add(topic);
+                    } else {
+                      _topics.remove(topic);
+                    }
+                  }),
+                ),
             ],
           ),
           const SizedBox(height: 10),

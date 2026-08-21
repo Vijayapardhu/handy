@@ -21,6 +21,7 @@ function solution(solvedAt: string, withComplexity = false): CodingSolutionDoc {
     language: "python",
     code: "",
     notes: "",
+    topics: [],
     complexity: withComplexity
       ? {
           time: "O(n)",

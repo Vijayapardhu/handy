@@ -25,6 +25,7 @@ import {
   Clock01Icon,
   CloudDownloadIcon,
   Coffee01Icon,
+  CompassIcon,
   CpuIcon,
   Database01Icon,
   Delete02Icon,
@@ -175,6 +176,7 @@ export const Lightbulb = icon(Idea01Icon, "Lightbulb");
 export const Flag = icon(Flag01Icon, "Flag");
 export const Flame = icon(FireIcon, "Flame");
 export const Target = icon(Target01Icon, "Target");
+export const Compass = icon(CompassIcon, "Compass");
 export const Rocket = icon(Rocket01Icon, "Rocket");
 export const PartyPopper = icon(PartyIcon, "PartyPopper");
 export const Coffee = icon(Coffee01Icon, "Coffee");

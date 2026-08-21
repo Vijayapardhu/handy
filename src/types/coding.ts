@@ -212,6 +212,14 @@ export interface CodingSolutionDoc {
   code: string;
   notes: string;
   complexity: ComplexityVerdict | null;
+  /**
+   * DSA topics (constants/dsaTopics.ts DsaTopic ids) this solve counts
+   * toward. Empty, not guessed — Codeforces solves can be pre-filled from the
+   * platform's own tags (see RecentSolve.tags), everything else is untagged
+   * until the student says otherwise. An untagged solve still counts toward
+   * the streak and the total; it just contributes to no topic's mastery.
+   */
+  topics: string[];
   /** ISO date (yyyy-MM-dd) — what the streak and the heatmap count. */
   solvedAt: string;
   createdAt: string;

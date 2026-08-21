@@ -169,6 +169,7 @@ class Coding {
     String code = '',
     String notes = '',
     ComplexityVerdict? complexity,
+    List<String> topics = const [],
   }) async {
     final now = DateTime.now().toIso8601String();
     await _db.collection('codingSolutions').add({
@@ -181,6 +182,7 @@ class Coding {
       'code': code,
       'notes': notes.trim(),
       'complexity': complexity?.toMap(),
+      'topics': topics,
       'solvedAt': solvedAt,
       'createdAt': now,
       'updatedAt': now,

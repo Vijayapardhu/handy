@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, Cpu, ExternalLink, Timer, Trash2 } from "@/components/ui/icons";
+import { DSA_TOPIC_LABELS, type DsaTopic } from "@/constants/dsaTopics";
 import { formatShortDate } from "@/lib/date";
 import { PLATFORM_META, type CodingSolutionDoc } from "@/types/coding";
 import { cn } from "@/lib/utils/cn";
@@ -43,6 +44,15 @@ export function SolutionRow({
             {` · ${solution.language}`}
             {` · ${formatShortDate(solution.solvedAt)}`}
           </p>
+          {solution.topics && solution.topics.length > 0 && (
+            <div className={styles.topics}>
+              {solution.topics.map((topic) => (
+                <span key={topic} className={styles.topicTag}>
+                  {DSA_TOPIC_LABELS[topic as DsaTopic] ?? topic}
+                </span>
+              ))}
+            </div>
+          )}
           {complexity ? (
             <div className={styles.badges}>
               <span className={styles.badge}>

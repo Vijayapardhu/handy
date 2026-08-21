@@ -38,6 +38,22 @@
   text-transform: capitalize;
 }
 
+.topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.topicTag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
 .badges {
   display: flex;
   flex-wrap: wrap;
