@@ -164,10 +164,10 @@ If the stored password stops working (changed on the Hub since connecting), `hub
 drops the stored credential and reports `linked: false` rather than failing the same way forever —
 the student just reconnects from Home.
 
-### Coding practice (`api/coding.js`, `api/coding-complexity.js`)
+### Coding practice (`api/coding.js`, `api/coding-complexity.js`, `api/topic-explainer.js`)
 
-The Tasks screen is three tabs — **Deadlines** (coursework, unchanged), **Practice**, and **Goals**.
-Practice reads a student's public profiles on five sites from one place:
+The Tasks screen is four tabs — **Deadlines** (coursework, unchanged), **Practice**, **Goals**, and
+**Roadmap**. Practice reads a student's public profiles on five sites from one place:
 
 | Platform | Source | Gives |
 | --- | --- | --- |
@@ -212,13 +212,31 @@ aliasing, not one request per problem. CodeChef/GeeksforGeeks/HackerRank publish
 from those stays untagged until the student tags it themselves when logging it — never guessed from
 a title.
 
+#### Roadmap
+
+`roadmapMastery()` (a sibling of `computeTopicMastery()` in the same file) lays out all 25 canonical
+topics in curated learning-path order — unlike the mastery card's summary of practised topics, every
+topic appears, including the untouched ones, at a real 0%. The next recommended topic (whichever
+`nextFocusTopic()` picks) is highlighted; topics after it that are still untouched are shown as
+"not reached yet" rather than hidden — cosmetic only, never a gate, so a solve on any topic in any
+order counts immediately.
+
+Tapping a topic opens a short AI-generated explanation, generated once per topic and cached forever
+in `topicExplainers/{topic}` (`api/topic-explainer.js` — shares `appConfig/ai` with the complexity
+endpoint below, so no separate key to manage), plus where to practise it: a real per-topic link for
+LeetCode and Codeforces, derived from the same tag maps above rather than a second guessed list
+(`topicResourceLinks()` in `constants/dsaTopics.ts` / `logic/mastery.dart`), a GeeksforGeeks search
+link (they publish no topic taxonomy Handy can trust, so a search beats a guessed article URL), and
+CodeChef/HackerRank's general practice pages.
+
 #### Time and space complexity
 
 No platform publishes it. LeetCode reports a runtime in milliseconds and a "beats 84%" percentile,
 which is one machine on one day against one test set — not a complexity. So it is read off the
-pasted code by a model via **OpenRouter**, and the student can overwrite any part of the verdict:
-`source` records whether the stored answer is theirs or the model's, and the row is labelled
-`estimate` for as long as it is the latter.
+pasted code by a model via **OpenRouter**, automatically, a moment after the student stops editing
+the code field (debounced 900ms, both platforms) — no button to press. The student can still
+overwrite any part of the verdict before saving: `source` records whether the stored answer is
+theirs or the model's, and the row is labelled `estimate` for as long as it is the latter.
 
 The key lives in Firestore at `appConfig/ai` — a document with no rule block, therefore unreadable by
 any browser — rather than in an environment variable, and never in a `VITE_` one:
@@ -231,7 +249,9 @@ node scripts/set-ai-key.mjs sk-or-v1-...  [model]
 capped at 15 runs per student per hour (`codingAiLimits/{uid}`, deliberately tighter than the 40/hour
 in `sync.js`, because each one costs money) and at 20,000 characters of code. With no key configured
 anywhere the endpoint answers `ai_unconfigured` and the UI falls back to typing the complexity in by
-hand — the solve log keeps working either way.
+hand — the solve log keeps working either way. The topic explainer shares that same key/kill-switch
+but has no per-student cost concern: with at most 25 topics, ever, and each one cached after its first
+call, its total spend is bounded regardless of how many students use it.
 
 ### ⚠️ Two things to be clear-eyed about
 
@@ -272,11 +292,14 @@ day-streak + this-week-vs-last-week insight card on Home, CSV export of your att
 and route-level code splitting (each page ships as its own chunk, fetched on first visit rather
 than all up front) for a faster initial load.
 
-**Coding practice:** the Tasks screen is now Deadlines / Practice / Goals. Practice tracks solved
-counts, ratings and streaks across LeetCode, Codeforces, CodeChef, GeeksforGeeks and HackerRank from
-public usernames alone, keeps a solve log with the time and space complexity of each solution (read
-off the code, editable, never presented as fact), and surfaces the daily problem, a class board and
-upcoming contests that can be added to the deadline list in one tap. See “Coding practice” above.
+**Coding practice:** the Tasks screen is now Deadlines / Practice / Goals / Roadmap. Practice tracks
+solved counts, ratings and streaks across LeetCode, Codeforces, CodeChef, GeeksforGeeks and HackerRank
+from public usernames alone, keeps a solve log with the time and space complexity of each solution
+(read automatically off the code as you stop typing, editable, never presented as fact), and surfaces
+the daily problem, a class board, upcoming contests that can be added to the deadline list in one tap,
+and a streak heatmap (Week/Month/3 Months) that names which platform(s) a day's activity actually came
+from. Roadmap lays out all 25 DSA topics in learning order with real per-topic mastery, and tapping one
+opens a cached AI explanation plus real practice links per platform. See “Coding practice” above.
 
 **Not implemented in this pass** (explicitly out of scope per the brief): the admin panel,
 Cloud Functions for timetable publishing/leave approval/notification fan-out, and a live

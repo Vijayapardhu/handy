@@ -9,6 +9,7 @@ import {
   Calendar03Icon,
   ChartLineData02Icon,
   Clock01Icon,
+  CompassIcon,
   DownloadCircle01Icon,
   Grid02Icon,
   Notification03Icon,
@@ -114,6 +115,11 @@ export const FEATURES = [
     icon: SourceCodeIcon,
     title: "CodeForge attendance",
     body: "For courses with a skills hour, your CodeForge sessions from Maya sit alongside your regular attendance — its own percentage, counting CodeForge only, refreshed for you each morning.",
+  },
+  {
+    icon: CompassIcon,
+    title: "DSA roadmap",
+    body: "All 25 topics in learning order, with real mastery from what you've actually solved on LeetCode, Codeforces, CodeChef, GeeksforGeeks and HackerRank. Tap a topic for a short explanation and where to practise it — the time and space complexity of every solution you log is read off the code automatically, no button to press.",
   },
   {
     icon: Grid02Icon,
